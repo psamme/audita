@@ -1,0 +1,108 @@
+/* Shadow Onboarding design tokens.
+   Two stones: Statuario (white, grey veins) and Nero Marquina (black, white veins).
+   Set data-stone="statuario|nero" on <html> to pin one; otherwise the OS theme picks.
+   Colour is reserved for state. Everything else is ink on stone. */
+
+:root {
+  --ground: #F3F2EF;
+  --surface: #FFFFFF;
+  --surface-2: #F7F6F4;
+  --ink: #0D0D0D;
+  --ink-2: #55565A;
+  --ink-3: #8B8C91;
+  --line: rgba(13, 13, 13, 0.10);
+  --line-strong: rgba(13, 13, 13, 0.24);
+  --invert: #0D0D0D;
+  --invert-ink: #FFFFFF;
+  --pos: #1F7A4D;
+  --pos-wash: rgba(31, 122, 77, 0.09);
+  --neg: #B3261E;
+  --neg-wash: rgba(179, 38, 30, 0.08);
+  --warn: #8A6100;
+  --focus: #0D0D0D;
+
+  --font: "Hanken Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* type scale, 1.2 minor third on a 15px base */
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-md: 0.9375rem;
+  --t-lg: 1.125rem;
+  --t-xl: 1.5rem;
+  --t-2xl: 2.25rem;
+  --t-3xl: 3.25rem;
+
+  --r-sm: 6px;
+  --r-md: 12px;
+  --r-pill: 999px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 40px;
+  --s-7: 64px;
+  --s-8: 104px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #060607;
+    --surface: #0F0F10;
+    --surface-2: #161618;
+    --ink: #F4F3F0;
+    --ink-2: #A4A5A9;
+    --ink-3: #6E6F74;
+    --line: rgba(255, 255, 255, 0.10);
+    --line-strong: rgba(255, 255, 255, 0.26);
+    --invert: #F4F3F0;
+    --invert-ink: #0D0D0D;
+    --pos: #6FCF9B;
+    --pos-wash: rgba(111, 207, 155, 0.10);
+    --neg: #F08A80;
+    --neg-wash: rgba(240, 138, 128, 0.10);
+    --warn: #E0B95A;
+    --focus: #F4F3F0;
+  }
+}
+
+:root[data-theme="dark"],
+:root[data-stone="nero"] {
+  --ground: #060607;
+  --surface: #0F0F10;
+  --surface-2: #161618;
+  --ink: #F4F3F0;
+  --ink-2: #A4A5A9;
+  --ink-3: #6E6F74;
+  --line: rgba(255, 255, 255, 0.10);
+  --line-strong: rgba(255, 255, 255, 0.26);
+  --invert: #F4F3F0;
+  --invert-ink: #0D0D0D;
+  --pos: #6FCF9B;
+  --pos-wash: rgba(111, 207, 155, 0.10);
+  --neg: #F08A80;
+  --neg-wash: rgba(240, 138, 128, 0.10);
+  --warn: #E0B95A;
+  --focus: #F4F3F0;
+}
+
+:root[data-stone="statuario"] {
+  --ground: #F3F2EF;
+  --surface: #FFFFFF;
+  --surface-2: #F7F6F4;
+  --ink: #0D0D0D;
+  --ink-2: #55565A;
+  --ink-3: #8B8C91;
+  --line: rgba(13, 13, 13, 0.10);
+  --line-strong: rgba(13, 13, 13, 0.24);
+  --invert: #0D0D0D;
+  --invert-ink: #FFFFFF;
+  --pos: #1F7A4D;
+  --pos-wash: rgba(31, 122, 77, 0.09);
+  --neg: #B3261E;
+  --neg-wash: rgba(179, 38, 30, 0.08);
+  --warn: #8A6100;
+  --focus: #0D0D0D;
+}

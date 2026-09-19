@@ -1,0 +1,4 @@
+# other seeds regenerate on demand: python run.py --seeds N
+data/seed-*/
+!data/seed-7/
+.pytest_cache/

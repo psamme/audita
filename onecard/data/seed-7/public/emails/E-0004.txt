@@ -1,0 +1,11 @@
+From: ap@valewoodhealth.example
+To: ar@kestrelinference.example
+Date: 2026-02-13
+Subject: Today's payment
+
+Hi,
+
+Today's payment of $6,000.00 should go against the invoices dated February 1. We're still reviewing the ones dated January 1 with your account team, so please leave those open for now.
+
+Best,
+Accounts Payable

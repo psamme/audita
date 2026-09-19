@@ -1,0 +1,11 @@
+From: treasury@halcyon.example
+To: ar@kestrelinference.example
+Date: 2025-12-31
+Subject: Wire on behalf of subsidiary
+
+Hello,
+
+Halcyon Holdings LLC handles treasury for our portfolio companies. Today's wire of $6,590.39 is on behalf of Ravenmoor Finance Co. Please apply it to their account.
+
+Regards,
+Group Treasury

@@ -1,0 +1,10 @@
+From: ap@northwindsecurity.example
+To: ar@kestrelinference.example
+Date: 2026-01-05
+Subject: New AP contact
+
+Hi,
+
+Please note our accounts payable contact has changed. Invoices go to ap@ from now on.
+
+Thanks
