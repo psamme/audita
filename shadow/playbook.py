@@ -328,7 +328,8 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
     Bands a person stated or answered are never recomputed.
     """
     from grade import same
-    observed = observed or {o["item"]["id"]: o for o in history.observe(con, pb["trained_before"])}
+    if observed is None:
+        observed = {o["item"]["id"]: o for o in history.observe(con, pb["trained_before"])}
     replay = list(_replay(con, pb["trained_before"]))
     for rule in pb["rules"]:
         if rule.get("status") == "retired" or not (rule.get("executable") or rule.get("executable_if_approved")):
