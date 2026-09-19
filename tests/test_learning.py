@@ -63,6 +63,25 @@ def test_band_answer_then_retraction_restores_the_band(fee_playbook):
         unlearn.retract("A", TRACK, correction_id="A-COR-9999")
 
 
+def test_retraction_is_a_clean_inverse(fee_playbook):
+    con, pb = fee_playbook
+    core = lambda p: json.dumps([{k: v for k, v in r.items()} for r in p["rules"]], sort_keys=True)
+    before = core(playbook.load("A", TRACK))
+    ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=50.0)
+    rule = playbook.load("A", TRACK)["rules"][0]
+    assert rule["when"]["amount_max"] == 50.0 and "50.00" in rule["text"]          # the sentence and the condition follow the stated limit
+    out = unlearn.retract("A", TRACK, correction_id=ans["correction_id"])
+    assert core(playbook.load("A", TRACK)) == before and out["rules_changed"] == ["A-R-001"]
+
+
+def test_held_answers_are_logged_as_held_and_cannot_be_retracted(fee_playbook):
+    held = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=90.0, role="bookkeeper")
+    log = [json.loads(l) for l in correct.log_path("A", TRACK).read_text().splitlines()]
+    assert log[-1]["status"] == "held" and log[-1]["summary"].startswith("Held")
+    with pytest.raises(ValueError):
+        unlearn.retract("A", TRACK, correction_id=held["correction_id"])
+
+
 def test_stated_limit_closes_the_band_and_not_amount_blocks_the_rule(fee_playbook):
     con, pb = fee_playbook
     ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=25.0)
@@ -82,7 +101,8 @@ def test_usual_way_does_not_widen_a_rule_with_an_open_question(fee_playbook):
     playbook.save("A", TRACK, {k: v for k, v in d.items() if k not in ("version", "created_at", "cause")}, {"type": "test"})
     lo = d["rules"][0]["bands"]["amount_max"]["lo"]
     ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", value=lo + 10, review=False)
-    assert ans["held"] and ans["band"]["lo"] == lo
+    assert ans["held"] and ans["band"]["lo"] == lo and ans["diff"] is None
+    assert playbook.load("A", TRACK)["rules"][0]["bands"]["amount_max"]["lo"] == lo
 
 
 def test_stale_evidence_is_noticed(tmp_path):

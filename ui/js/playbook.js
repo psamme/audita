@@ -35,6 +35,9 @@
   // A real controller knows their number, so stating the limit leads whenever the band is open ended.
   // The person on stage answers as the client's senior role; a non-senior answer is recorded but held.
   const SENIOR = { A: "owner", B: "controller" };
+  // ?role=bookkeeper answers as someone junior, to show an answer being recorded but held. No picker on
+  // the card: the stage path stays one click.
+  const asRole = () => { const r = new URLSearchParams(location.search).get("role"); return r && /^[a-z_]{2,24}$/.test(r) ? r : SENIOR[client]; };
   function bandCard() {
     const q = bandQs[0];
     if (!q) return bandResult;
@@ -49,7 +52,7 @@
         ${can("usual") ? `<button class="btn btn-secondary" data-answer="usual">No, ${usd(q.value)} is handled as usual</button>` : ""}
       </div>`;
     return `<section class="panel ask"><div class="panel-body stack">
-      <div class="label">One question · ${bandQs.length} band${bandQs.length === 1 ? "" : "s"} still open, widest first · answering as ${esc(SO.role(SENIOR[client]))}</div>
+      <div class="label">One question · ${bandQs.length} band${bandQs.length === 1 ? "" : "s"} still open, widest first · answering as ${esc(SO.role(asRole()))}</div>
       <h2 class="ask-q">${esc(text)}</h2>
       <div id="askBand">${bandBar(b, { client, value: q.value })}${b.categorical ? `<span class="state state-proposed" style="margin-top: 8px;">Looks like a fee schedule</span>` : ""}</div>
       <div class="answers">${limitFirst ? limit + yesNo : yesNo + limit}
@@ -66,7 +69,7 @@
     const said = { limit: `the limit is ${usd(amount || 0)}`, review: `yes, review one at ${usd(q.value)}`, usual: `no, ${usd(q.value)} is handled as usual`, not_amount: "it is not about the amount" }[kind];
     try {
       const res = await fetch("/api/playbook/answer-band", { method: "POST", headers: { "content-type": "application/json" },
-        body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, answer: kind, role: SENIOR[client],
+        body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, answer: kind, role: asRole(),
           limit: kind === "limit" ? amount : null, review: kind === "review" ? true : kind === "usual" ? false : null, not_amount: kind === "not_amount" }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json();
@@ -102,8 +105,8 @@
     const undone = new Set(inputs.filter((c) => c.type === "retraction").map((c) => c.retracted));
     return `${undoResult}<section class="panel"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
       ${inputs.map((c) => `<div class="rule-row input-row"><div><p>${esc(c.summary || c.note || c.answer || INPUT[c.type] || c.type)}</p>
-        <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${undone.has(c.correction_id) ? `<span class="state state-carry">Undone</span>` : ""}</div></div>
-        ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
+        <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${undone.has(c.correction_id) ? `<span class="state state-carry">Undone</span>` : ""}${c.status === "held" ? `<span class="state state-carry">Recorded, not applied</span>` : ""}</div></div>
+        ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) && c.status !== "held" ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
   }
 
   async function undo(btn) {

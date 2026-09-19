@@ -40,26 +40,48 @@ def _replay(client: str, base: dict, patches: list[dict], dropped: str | None) -
     return pb, notes
 
 
+def _touched_by(client: str, track: str, correction_id: str) -> set[str]:
+    """Rules the retracted input changed when it was applied (from the diff of the version it produced)."""
+    vs = pbmod.versions(client, track)
+    for v in vs:
+        pb = pbmod.load(client, track, v)
+        if pb["cause"].get("correction_id") == correction_id and pb["cause"].get("type") != "retraction" and v - 1 in vs:
+            d = pbmod.diff(pbmod.load(client, track, v - 1), pb)
+            return {r["id"] for r in d["added"] + d["removed"]} | {c["after"]["id"] for c in d["changed"]}
+    return set()
+
+
 def retract(client: str, track: str, correction_id: str | None = None, precedent_id: str | None = None, note: str = "") -> dict:
+    """Undo one input. Only rules that input touched may change; every other rule stays byte-identical."""
     assert correction_id or precedent_id
     con = db.connect(client, readonly=True)
     current = pbmod.load(client, track)
     base, patches = _patches(client, track)
     if correction_id and not any(c.get("correction_id") == correction_id for c in patches):
-        raise ValueError(f"{correction_id} is not an input of the current playbook")
-    pb, notes = _replay(client, base, patches, correction_id)
-    pb["excluded_precedents"] = sorted(set(current.get("excluded_precedents") or []) | ({precedent_id} if precedent_id else set()))
-    keep = {r["id"]: (r["status"], r.get("human_confirmed")) for r in pb["rules"]}
-    pbmod.backtest(con, pb)
-    for r in pb["rules"]:
-        status, confirmed = keep[r["id"]]
-        if status == "retired" or confirmed:
-            r["status"] = status
-    pb["findings"] = pbmod.findings(con, pb)
+        raise ValueError(f"{correction_id} is not an input of the current playbook (held answers and earlier retractions cannot be retracted)")
+    replayed, notes = _replay(client, base, patches, correction_id)
+    if precedent_id:
+        replayed["excluded_precedents"] = sorted(set(current.get("excluded_precedents") or []) | {precedent_id})
+        pbmod.backtest(con, replayed)
+        touched = {r["id"] for r in current["rules"] if precedent_id in (r.get("precedent_ids") or [])
+                   or any(precedent_id in (b.get("lo_precedent"), b.get("hi_precedent")) for b in (r.get("bands") or {}).values())}
+    else:
+        touched = _touched_by(client, track, correction_id)
+    by_id = {r["id"]: r for r in replayed["rules"]}
+    rules_out = []
+    for r in current["rules"]:
+        if r["id"] not in touched:
+            rules_out.append(r)                      # untouched: carried over exactly as it is
+        elif r["id"] in by_id:
+            rules_out.append(by_id[r["id"]])         # touched: as it would have been without that input
+    pb = {k: v for k, v in current.items() if k not in ("version", "created_at", "cause", "rules")} | {"rules": rules_out}
+    if precedent_id:
+        pb["excluded_precedents"] = replayed["excluded_precedents"]
+        pb["findings"] = pbmod.findings(con, replayed)
     entry = correct._log(client, {"type": "retraction", "retracted": correction_id or precedent_id, "note": note}, track)
     cause = {"type": "retraction", "correction_id": entry["correction_id"], "retracted": correction_id or precedent_id,
              "note": note or f"Retracted {correction_id or precedent_id}", "replay_notes": notes}
-    saved = pbmod.save(client, track, {k: v for k, v in pb.items() if k not in ("version", "created_at", "cause")}, cause)
+    saved = pbmod.save(client, track, pb, cause)
     d = pbmod.diff(current, saved)
     changed = {r["id"] for r in d["added"] + d["removed"]} | {c["after"]["id"] for c in d["changed"]}
     radius = blast_radius(client, track, changed, precedent_id, saved["version"])

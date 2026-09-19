@@ -45,6 +45,8 @@ when (bank items""" + rules.__doc__.split("when (bank items", 1)[1]
 def _summary(e: dict) -> str:
     """One line a person can read in a list of everything the playbook was ever told."""
     t = e.get("type")
+    if e.get("status") == "held":
+        return f"Held, nothing changed ({e.get('held')}): {_summary({k: v for k, v in e.items() if k != 'status'})}"
     if t == "correction":
         return f"Corrected {e.get('item_id')}: {e.get('note')}"
     if t == "interview" and "condition" in e:
@@ -150,18 +152,27 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 
 
+def _peek_id(client: str, track: str) -> str:
+    path = log_path(client, track)
+    return f"{client}-COR-{(len(path.read_text().splitlines()) if path.exists() else 0) + 1:04d}"
+
+
 def answer_band(client: str, track: str, rule_id: str, condition: str, value: float | None = None, review: bool | None = None,
                 limit: float | None = None, not_amount: bool = False, role: str | None = None) -> dict:
     """Answer to a band question: a stated limit, yes/no at the asked value, or "it is not about the amount".
-    Instant, no model call. Only a senior role may move a band."""
+    Instant, no model call. Only a senior role may move a band. An answer that was held changes nothing, is logged as
+    held, and cannot be retracted because there is nothing to retract."""
     con = db.connect(client, readonly=True)
     seniors = {u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
-    entry = _log(client, {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition, "value": value,
-                          "review": review, "limit": limit, "not_amount": not_amount, "by_role": role}, track)
+    said = {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition, "value": value,
+            "review": review, "limit": limit, "not_amount": not_amount, "by_role": role, "status": "applied"}
     if role is not None and role not in seniors:
-        return {"correction_id": entry["correction_id"], "diff": None, "held": f"{role} cannot move a limit; a senior role has to answer this"}
-    return pbmod.answer_band(client, track, rule_id, condition, value, review, entry["correction_id"], limit, not_amount) \
-        | {"correction_id": entry["correction_id"]}
+        held = f"{role} cannot move a limit; a senior role has to answer this"
+        entry = _log(client, said | {"status": "held", "held": held}, track)
+        return {"correction_id": entry["correction_id"], "diff": None, "held": held}
+    out = pbmod.answer_band(client, track, rule_id, condition, value, review, _peek_id(client, track), limit, not_amount)
+    entry = _log(client, said | ({"status": "held", "held": out["held"]} if out["held"] else {}), track)
+    return out | {"correction_id": entry["correction_id"]}
 
 
 def correct(client: str, track: str, item: dict, human: dict, note: str, run_id: str = "", usage: llm.Usage | None = None,

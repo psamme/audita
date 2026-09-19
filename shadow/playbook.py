@@ -402,6 +402,14 @@ def band_questions(pb: dict, limit: int = 8) -> list[dict]:
     return out[:limit]
 
 
+def _restate(text: str, old, new: float) -> str:
+    """Put the stated limit into the rule's sentence so the playbook a controller signs never contradicts its own band."""
+    for shown in ([f"{old:,.2f}", f"{old:,.0f}" if float(old).is_integer() else None, str(old)] if old is not None else []):
+        if shown and shown in text:
+            return text.replace(shown, f"{new:,.2f}")
+    return text.rstrip(".") + f" (limit stated by the client: {new:,.2f})."
+
+
 def apply_band_answer(new: dict, rule_id: str, condition: str, value: float | None, review: bool | None = None,
                       limit: float | None = None, not_amount: bool = False) -> dict | None:
     """Move one band in place. Returns {"before": band, "held": reason | None}, or None when the rule or band is gone.
@@ -423,6 +431,10 @@ def apply_band_answer(new: dict, rule_id: str, condition: str, value: float | No
                  "open_question": "You said this is not about the amount. What does decide how these are handled?"}
     elif limit is not None:
         band |= ({"lo": limit, "hi": round(limit + 0.01, 2)} if upper else {"lo": round(limit - 0.01, 2), "hi": limit}) | {"source": "stated"}
+        old = rules.get_cond(rule["when"], condition)
+        rule["when"] = rules.with_cond(rule["when"], condition, limit)
+        rule["text"] = _restate(rule["text"], old, limit)
+        band["written"] = limit
     elif review:
         band |= {"hi": value, "source": "interview"}
     elif rule.get("open_question") or (rule.get("backtest") or {}).get("conflicts"):
@@ -447,6 +459,8 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
     if res is None:
         raise ValueError("no such rule or band")
     band = next(r for r in new["rules"] if r["id"] == rule_id)["bands"][condition]
+    if res["held"]:
+        return {"new_version": old["version"], "diff": None, "band": band, "held": res["held"], "cause": None}
     unit = "%" if "pct" in condition else "$"
     said = ("it is not about the amount." if not_amount else f"the limit is {unit}{limit:,.2f}." if limit is not None
             else f"asked about {unit}{value:,.2f}: " + ("send it for review." if review else "handle it the usual way, no review."))
