@@ -10,3 +10,6 @@ runs/
 work/
 ui/replay.html
 ui/replay.json
+
+# Local TypeSafe credential (never served by the UI)
+.typesafe-key

@@ -4,10 +4,10 @@
 """
 import json
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, SecretStr
 
 from shadow import authority, preview, correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
 
@@ -387,6 +387,50 @@ def run_experiment(r: ExperimentRun):
 def stage_report():
     from shadow.stage import report
     return report()
+
+
+class JevKey(BaseModel):
+    key: SecretStr
+
+
+class JevReview(BaseModel):
+    client: str
+    item_ids: list[str] = Field(min_length=1, max_length=12)
+    note: str = Field(default='', max_length=2000)
+
+
+def _local_jev_request(request: Request):
+    # This prototype stores a key on the local server, never in browser storage.
+    from urllib.parse import urlsplit
+    host = request.url.hostname
+    if host not in {'127.0.0.1', 'localhost', '::1', 'testserver'}:
+        raise HTTPException(403, 'Jev setup is available only on the local demo server.')
+    origin = request.headers.get('origin')
+    if origin and (urlsplit(origin).netloc != request.url.netloc or urlsplit(origin).scheme != request.url.scheme):
+        raise HTTPException(403, 'Open the local demo to use Jev.')
+
+
+@app.get('/api/jev/status')
+def jev_status():
+    from shadow import jev
+    return jev.status()
+
+
+@app.post('/api/jev/key')
+def jev_key(r: JevKey, request: Request):
+    from shadow import jev
+    _local_jev_request(request)
+    return jev.configure(r.key.get_secret_value())
+
+
+@app.post('/api/jev/triage')
+def jev_triage(r: JevReview, request: Request):
+    from shadow import jev
+    _local_jev_request(request)
+    try:
+        return jev.triage(r.client, r.item_ids, r.note)
+    except jev.Unavailable as exc:
+        raise HTTPException(503, str(exc)) from None
 
 
 if (db.ROOT / "ui").exists():

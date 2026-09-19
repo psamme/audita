@@ -71,3 +71,8 @@ Rehearse the spoken demo once with a timer. Decide who operates the laptop and w
 4. Set the limit to 15, approve the displayed rule/account, and Preview what changes. The concise preview shows the new policy and affected cases; the full audit diff is expandable. Approve from the queue.
 5. Switch to Resolved to inspect the cleared cases. Undo latest policy answer reopens them. Search, company switching, reviewer selection and Refresh queue remain available.
 6. Use Walkthrough, Experiment, Playbook and Results for the rest of the presentation. The original run-based correction queue is preserved on non-stage tracks.
+
+
+## Optional live Jev routing
+
+The review queue includes Jev reviewer and next-step suggestions. See `docs/JEV_DEMO.md` for the short demo beat, setup, measured live responses and limits. Policy preview, approval and Undo remain deterministic; only an explicit Get suggestion request calls TypeSafe.
