@@ -153,3 +153,28 @@ def test_change_request_document_stops_the_first_payment_even_without_an_account
     flags = guardrails.scan(db.connect("A", readonly=True, path=copy), "2026-03")
     assert any(f["flag"] == "bank_change_request_on_file" for fl in flags.values() for f in fl)
     assert not any(f["flag"] == "bank_change_request_on_file" for fl in guardrails.scan(db.connect("A", readonly=True), "2026-03").values() for f in fl)
+
+
+def test_a_taught_rule_that_history_contradicts_does_not_execute(fee_playbook):
+    """One correction must not become a policy: a correction-origin rule that disagrees with replayed history is demoted."""
+    con, pb = fee_playbook
+    new = correct._apply_ops(pb, [{"op": "add", "text": "All bank fees go to merchant card fees.", "executable": True, "insert_before": "A-R-001",
+                                   "when": {"direction": "out", "counterparty_regex": "first prairie"}, "then": {"action": "book", "account": "6120"}}],
+                             "A", "correction A-COR-0001")
+    saved, d = correct._finish(con, "A", TRACK, pb, new, {"type": "correction", "correction_id": "A-COR-0001"})
+    taught = next(r for r in saved["rules"] if r["origin"].startswith("correction"))
+    assert taught["status"] == "proposed" and taught["below_floor"] and taught["open_question"]
+
+
+def test_investigator_cannot_book_on_an_unsigned_rule():
+    from shadow import investigator
+
+    class Desk:
+        def precedents(self):
+            return [{"id": f"P{i}"} for i in range(5)]
+    pb = {"rules": [{"id": "R1", "status": "proposed", "then": {"action": "escalate", "escalate_to": "controller"}, "open_question": "Is approval required?"}]}
+    res = {"action": "match_adjust", "ledger_ids": ["L1"], "adjustments": [{"account": "7710", "amount": 25}], "rule_id": "R1",
+           "precedent_ids": ["P1", "P2", "P3"], "rationale": "looks like a wire fee", "questions": []}
+    out = investigator.grounded(res, pb, Desk(), ["ar_lead", "controller"])
+    assert out["action"] == "escalate" and out["escalate_to"] == "controller" and out["questions"] == ["Is approval required?"]
+    assert out["proposed"]["action"] == "match_adjust" and out["ledger_ids"] == []

@@ -137,17 +137,28 @@ def _reproduces(con, pb: dict, period: str, item: dict, kind: str, human: dict) 
     return False, f"{rule['id']} fires first and gives {json.dumps(out['resolution'])} instead of the human's resolution"
 
 
+RULE_FLOOR = 0.6     # a taught rule that replayed history and agreed with less than this share of it does not execute
+
+
 def _finish(con, client, track, pb_old, pb_new, cause, period=None):
     before = pb_new.get("trained_before") or period
     pb_new["trained_before"] = before
     keep = {r["id"]: (r["status"], r.get("human_confirmed")) for r in pb_new["rules"]}
     pbmod.backtest(con, pb_new)
-    for r in pb_new["rules"]:       # what a human stated stays approved whatever the noisy trail says
+    for r in pb_new["rules"]:       # what a person stated stays approved, unless the client's own history contradicts it
         status, confirmed = keep[r["id"]]
         if status == "retired" or confirmed:
             r["status"] = status
             if confirmed:
                 r["open_question"] = None
+        bt = r.get("backtest") or {}
+        n = bt.get("support", 0) + bt.get("conflicts", 0)
+        if confirmed and status == "approved" and str(r.get("origin", "")).startswith("correction") and n >= 2 and bt["support"] / n < RULE_FLOOR:
+            # one correction must not become a policy that history disagrees with: it keeps the corrected item's lesson as
+            # guidance for the investigator and waits for a senior to say whether this is a change of policy or an exception
+            r |= {"status": "proposed", "human_confirmed": False, "below_floor": True,
+                  "open_question": f"This came from one correction, but it disagrees with {bt['conflicts']} of {n} comparable past items. "
+                                   "Is it a change of policy from now on, or was that item an exception?"}
     saved = pbmod.save(client, track, {k: v for k, v in pb_new.items() if k not in ("version", "created_at", "cause")}, cause)
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 

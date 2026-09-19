@@ -369,7 +369,8 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
             if not upper and band["hi"] is None:
                 band["hi"] = float(rules.get_cond(rule["when"], cond))   # nothing seen on the action side: keep the written line
             distinct = sorted({x[0] for x in known})
-            band["categorical"] = len(known) >= 2 and len(distinct) <= 3 and all(abs(v / 5 - round(v / 5)) < 1e-9 for v in distinct)
+            # amounts on a continuum carry cents; when every case is a whole multiple of 5 it is a schedule of charges, not a range
+            band["categorical"] = len(known) >= 2 and all(abs(v / 5 - round(v / 5)) < 1e-9 for v in distinct)
             bands[cond] = band | {"side": "upper" if upper else "lower", "n_known": len(known), "n_other": len(other),
                                   "written": rules.get_cond(rule["when"], cond), "source": "trail", "beyond": beyond[:5]}
         rule["bands"] = bands
