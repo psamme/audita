@@ -517,8 +517,8 @@
    "version_added": 1,
    "precedent_ids": [],
    "model_confidence": 0.65,
-   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
     "support": 0,
     "conflicts": 0,
@@ -543,7 +543,8 @@
      "source": "trail",
      "beyond": []
     }
-   }
+   },
+   "human_confirmed": true
   },
   {
    "id": "A-R-013",
@@ -569,8 +570,8 @@
    "version_added": 1,
    "precedent_ids": [],
    "model_confidence": 0.7,
-   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
     "support": 0,
     "conflicts": 0,
@@ -581,7 +582,6 @@
    "confidence": 0.25,
    "precedent_count": 0,
    "repaired_in_round": 3,
-   "executable_if_approved": true,
    "bands": {
     "diff_min": {
      "lo": 31.87,
@@ -596,16 +596,24 @@
      "source": "trail",
      "beyond": []
     }
-   }
+   },
+   "human_confirmed": true
   },
   {
    "id": "A-R-014",
-   "text": "A branch cash deposit with no route cash collection in 4000 Vending sales within 20.00 of it, or more than 20.00 over its collection, goes to the ops manager.",
+   "text": "A branch cash deposit that is more than 20.00 over its route cash collection in 4000 Vending sales goes to the ops manager.",
    "executable": true,
    "when": {
     "item_kind": "bank",
     "direction": "in",
-    "description_regex": "^deposit br"
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "diff_max": -20
    },
    "then": {
     "action": "escalate",
@@ -614,20 +622,14 @@
    "origin": "induced",
    "version_added": 1,
    "precedent_ids": [
-    "A-BL-00070",
-    "A-BL-00098",
-    "A-BL-00502",
-    "A-BL-00510",
-    "A-BL-00537",
-    "A-BL-00540",
     "A-BL-00544"
    ],
    "model_confidence": 0.45,
-   "open_question": "The trail agrees with this 7 times and disagrees 3 times. Is this how you want it handled?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
-    "support": 7,
-    "conflicts": 3,
+    "support": 1,
+    "conflicts": 1,
     "conflict_examples": [
      {
       "item_id": "A-BL-00092",
@@ -650,7 +652,110 @@
        "adjustments": [],
        "escalate_to": "ops_manager"
       }
-     },
+     }
+    ],
+    "supported_by": 1,
+    "conflict_ids": [
+     "A-BL-00092"
+    ]
+   },
+   "confidence": 0.5,
+   "precedent_count": 1,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {},
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0004"
+  },
+  {
+   "id": "A-R-026",
+   "text": "A branch cash deposit under 50.00 that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, is booked in full to 4990 Misc income.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "amount_max": 49.99
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "interview A-COR-0004",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 5,
+   "bands": {
+    "amount_max": {
+     "lo": 49.99,
+     "hi": 50.0,
+     "side": "upper",
+     "source": "stated",
+     "written": 49.99,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-027",
+   "text": "A branch cash deposit of 50.00 or more that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "amount_min": 50
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0004",
+   "precedent_ids": [
+    "A-BL-00070",
+    "A-BL-00098",
+    "A-BL-00502",
+    "A-BL-00510",
+    "A-BL-00537",
+    "A-BL-00540"
+   ],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 5,
+   "bands": {
+    "amount_min": {
+     "lo": 49.99,
+     "hi": 50,
+     "side": "lower",
+     "source": "stated",
+     "written": 50,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 6,
+    "conflicts": 2,
+    "conflict_examples": [
      {
       "item_id": "A-BL-00298",
       "observed": {
@@ -670,7 +775,7 @@
        "action": "escalate",
        "ledger_ids": [],
        "adjustments": [],
-       "escalate_to": "ops_manager"
+       "escalate_to": "owner"
       }
      },
      {
@@ -689,22 +794,19 @@
        "action": "escalate",
        "ledger_ids": [],
        "adjustments": [],
-       "escalate_to": "ops_manager"
+       "escalate_to": "owner"
       }
      }
     ],
-    "supported_by": 7,
+    "supported_by": 6,
     "conflict_ids": [
-     "A-BL-00092",
      "A-BL-00298",
      "A-BL-00504"
     ]
    },
-   "confidence": 0.667,
-   "precedent_count": 7,
-   "executable_if_approved": true,
-   "repaired_in_round": 3,
-   "bands": {}
+   "confidence": 0.7,
+   "precedent_count": 6,
+   "executable_if_approved": true
   },
   {
    "id": "A-R-015",
@@ -867,7 +969,7 @@
   },
   {
    "id": "A-R-018",
-   "text": "A customer receipt that is short of or over its invoice in 1200 Accounts receivable by 12.28 or less is matched and the difference is booked to 6990 Cash over/short and small balances.",
+   "text": "A commercial laundry customer receipt that is short of its invoice in 1200 Accounts receivable by 15.00 or less is matched and the shortfall is written off to 6990 Cash over/short and small balances.",
    "executable": true,
    "when": {
     "item_kind": "bank",
@@ -878,7 +980,8 @@
      "window_days": 10,
      "max_entries": 1
     },
-    "diff_abs_max": 12.28
+    "diff_min": 0,
+    "diff_max": 15
    },
    "then": {
     "action": "match_adjust",
@@ -892,12 +995,41 @@
     "A-BL-00636"
    ],
    "model_confidence": 0.75,
-   "open_question": "The trail agrees with this 3 times and disagrees 1 times. Is this how you want it handled?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
     "support": 3,
-    "conflicts": 1,
+    "conflicts": 2,
     "conflict_examples": [
+     {
+      "item_id": "A-BL-00217",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "4000",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      }
+     },
      {
       "item_id": "A-BL-00423",
       "observed": {
@@ -930,44 +1062,45 @@
     ],
     "supported_by": 3,
     "conflict_ids": [
+     "A-BL-00217",
      "A-BL-00423"
     ]
    },
-   "confidence": 0.667,
+   "confidence": 0.571,
    "precedent_count": 3,
    "executable_if_approved": true,
    "repaired_in_round": 3,
    "bands": {
-    "diff_abs_max": {
+    "diff_max": {
      "lo": 15,
      "hi": 15.01,
-     "lo_precedent": "A-BL-00636",
-     "hi_precedent": "A-BL-00629",
-     "categorical": false,
      "side": "upper",
-     "n_known": 3,
-     "n_other": 1,
-     "written": 12.28,
      "source": "stated",
+     "written": 15,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
      "beyond": []
     }
-   }
+   },
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0005"
   },
   {
    "id": "A-R-019",
-   "text": "A customer receipt short of its invoice in 1200 Accounts receivable by more than 12.28 goes to the owner.",
+   "text": "A commercial laundry customer receipt that is short of its invoice in 1200 Accounts receivable by more than 15.00 goes to the owner.",
    "executable": true,
    "when": {
     "item_kind": "bank",
     "direction": "in",
-    "description_regex": "ach credit",
     "candidate": {
      "by": "counterparty",
      "account": "1200",
      "window_days": 10,
      "max_entries": 1
     },
-    "diff_min": 12.28
+    "diff_min": 15
    },
    "then": {
     "action": "escalate",
@@ -980,20 +1113,19 @@
     "A-BL-00629"
    ],
    "model_confidence": 0.8,
-   "open_question": "The trail agrees with this 2 times and disagrees 0 times. Is this how you want it handled?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "bands": {
     "diff_min": {
-     "lo": 12.28,
-     "hi": 12.28,
-     "lo_precedent": "A-BL-00217",
-     "hi_precedent": null,
-     "categorical": false,
+     "lo": 14.99,
+     "hi": 15,
      "side": "lower",
+     "source": "stated",
+     "written": 15,
      "n_known": 0,
-     "n_other": 5,
-     "written": 12.28,
-     "source": "trail",
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
      "beyond": []
     }
    },
@@ -1006,7 +1138,45 @@
    },
    "confidence": 0.75,
    "precedent_count": 2,
-   "executable_if_approved": true
+   "executable_if_approved": true,
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0005"
+  },
+  {
+   "id": "A-R-028",
+   "text": "A commercial laundry customer receipt that pays more than its invoice in 1200 Accounts receivable, by any amount, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_max": -0.01
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0005",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 6,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
   },
   {
    "id": "A-R-020",
@@ -1060,6 +1230,7 @@
    "version_added": 1,
    "precedent_ids": [
     "A-BL-00202",
+    "A-BL-00205",
     "A-BL-00204",
     "A-BL-00203",
     "A-BL-00206",
@@ -1069,8 +1240,7 @@
     "A-BL-00418",
     "A-BL-00415",
     "A-BL-00420",
-    "A-BL-00620",
-    "A-BL-00622"
+    "A-BL-00620"
    ],
    "model_confidence": 0.85,
    "open_question": null,
@@ -1091,7 +1261,7 @@
     }
    },
    "backtest": {
-    "support": 16,
+    "support": 17,
     "conflicts": 1,
     "conflict_examples": [
      {
@@ -1120,13 +1290,13 @@
       }
      }
     ],
-    "supported_by": 16,
+    "supported_by": 17,
     "conflict_ids": [
      "A-BL-00207"
     ]
    },
-   "confidence": 0.895,
-   "precedent_count": 16
+   "confidence": 0.9,
+   "precedent_count": 17
   },
   {
    "id": "A-R-022",
@@ -1313,33 +1483,84 @@
  ],
  "client": "A",
  "track": "main",
- "version": 4,
- "created_at": "2026-09-19T14:40:55",
+ "version": 6,
+ "created_at": "2026-09-19T14:43:56",
  "cause": {
   "type": "interview",
-  "source": "interview",
-  "correction_id": "A-COR-0003",
+  "correction_id": "A-COR-0005",
   "rule_id": "A-R-018",
-  "condition": "diff_abs_max",
-  "value": 89.55,
-  "note": "The limit is $15.00.",
-  "held": null,
-  "band_before": {
-   "lo": 11.87,
-   "hi": 167.23
-  },
-  "band_after": {
-   "lo": 15,
-   "hi": 15.01
-  },
+  "note": "No. The limit is $15, not $12.28, and it only covers short-pays. If a commercial laundry customer pays up to $15 less than the invoice in 1200, match it and write the difference off to 6990. Shorts over $15 and any overpayments come to me (owner).",
+  "explanation": "The controller rejected the 12.28 two-way tolerance. It is now $15 on short-pays only. Shorts over $15 and all overpayments go to the owner. I changed A-R-018 to diff 0 to 15 and A-R-019 to diff 15 or more, and removed A-R-019's 'ach credit' filter so it covers the same receipts as A-R-018. I added an overpayment rule to escalate to the owner, inserted before A-R-020.",
   "patch": {
-   "kind": "band",
-   "rule_id": "A-R-018",
-   "condition": "diff_abs_max",
-   "value": 89.55,
-   "review": null,
-   "limit": 15,
-   "not_amount": false
+   "kind": "ops",
+   "ops": [
+    {
+     "op": "modify",
+     "rule_id": "A-R-018",
+     "executable": true,
+     "text": "A commercial laundry customer receipt that is short of its invoice in 1200 Accounts receivable by 15.00 or less is matched and the shortfall is written off to 6990 Cash over/short and small balances.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "in",
+      "candidate": {
+       "by": "counterparty",
+       "account": "1200",
+       "window_days": 10,
+       "max_entries": 1
+      },
+      "diff_min": 0,
+      "diff_max": 15
+     },
+     "then": {
+      "action": "match_adjust",
+      "account": "6990"
+     }
+    },
+    {
+     "op": "modify",
+     "rule_id": "A-R-019",
+     "executable": true,
+     "text": "A commercial laundry customer receipt that is short of its invoice in 1200 Accounts receivable by more than 15.00 goes to the owner.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "in",
+      "candidate": {
+       "by": "counterparty",
+       "account": "1200",
+       "window_days": 10,
+       "max_entries": 1
+      },
+      "diff_min": 15
+     },
+     "then": {
+      "action": "escalate",
+      "escalate_to": "owner"
+     }
+    },
+    {
+     "op": "add",
+     "insert_before": "A-R-020",
+     "executable": true,
+     "text": "A commercial laundry customer receipt that pays more than its invoice in 1200 Accounts receivable, by any amount, goes to the owner.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "in",
+      "candidate": {
+       "by": "counterparty",
+       "account": "1200",
+       "window_days": 10,
+       "max_entries": 1
+      },
+      "diff_max": -0.01
+     },
+     "then": {
+      "action": "escalate",
+      "escalate_to": "owner"
+     },
+     "assigned_id": "A-R-028"
+    }
+   ],
+   "origin": "interview A-COR-0005"
   }
  }
 }

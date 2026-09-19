@@ -87,7 +87,9 @@ def review_queue(client: str, track: str, run_id: str, key_path, date_to: str, l
     for it in queue[:limit]:
         k = key[it["item_id"]]
         human = {f: k[f] for f in ("action", "ledger_ids", "adjustments", "escalate_to")}
-        out.append(correct.correct(client, track, it, human, k["note"] or "handled the usual way", run_id=run_id, usage=usage))
+        # the person who answers an escalation is the senior it was addressed to
+        out.append(correct.correct(client, track, it, human, k["note"] or "handled the usual way", run_id=run_id, usage=usage,
+                                   role=it["resolution"].get("escalate_to")))
         if on_answer:
             on_answer("correction", it["item_id"], k["note"])
     return out

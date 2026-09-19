@@ -3,23 +3,11 @@
  "rules": [
   {
    "id": "B-R-001",
-   "text": "When a Paystream payout does not agree to the net on its Paystream payout report, send it to the controller, who posts the unexplained remainder to 1290 after review.",
-   "executable": true,
+   "text": "A ledger entry posted more than 5 business days after the end of its own month goes to the controller for approval before it is reconciled.",
+   "executable": false,
    "when": {
-    "item_kind": "bank",
-    "direction": "in",
-    "counterparty_regex": "paystream",
-    "description_regex": "PAYSTREAM PAYOUT",
-    "candidate": {
-     "by": "ref",
-     "account": "1250",
-     "window_days": 7,
-     "max_entries": 1
-    },
-    "doc": {
-     "type": "processor_report",
-     "net_diff_abs_min": 0.01
-    }
+    "item_kind": "ledger",
+    "posted_after_close": true
    },
    "then": {
     "action": "escalate",
@@ -27,41 +15,107 @@
    },
    "origin": "induced",
    "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00014",
-    "B-BL-00142",
-    "B-BL-00263"
-   ],
-   "model_confidence": 0.75,
-   "open_question": "I see 3 Paystream payouts with an unexplained remainder of 200 to 260 posted to 1290 after 3 to 9 days, each approved by Dana. Does every unexplained Paystream difference need controller approval, or is there a small amount staff may post to 1290 without it?",
-   "status": "approved",
+   "precedent_ids": [],
+   "model_confidence": 0.8,
+   "open_question": "The replay found no ledger entries posted after close in the trail, so there is nothing to confirm this against. Do late-posted entries need controller approval before they are reconciled, or should this rule be dropped?",
+   "status": "proposed",
    "backtest": {
-    "support": 3,
+    "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 3
+    "supported_by": 0,
+    "conflict_ids": []
    },
-   "confidence": 0.8,
-   "precedent_count": 3
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3
   },
   {
    "id": "B-R-002",
-   "text": "Match each Paystream payout to its gross charges entry in 1250 and book the difference from the Paystream payout report: fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "text": "A Paystream gross charges entry in 1250 dated within 2 days of month end with no payout yet in the bank is carried forward to next month.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
+    "item_kind": "ledger",
+    "description_regex": "paystream gross charges",
+    "age_days_max": 2
+   },
+   "then": {
+    "action": "carry_forward"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-LE-00029",
+    "B-LE-00030",
+    "B-LE-00031",
+    "B-LE-00161",
+    "B-LE-00162",
+    "B-LE-00163"
+   ],
+   "model_confidence": 0.9,
+   "open_question": null,
+   "status": "approved",
+   "bands": {},
+   "backtest": {
+    "support": 6,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 6,
+    "conflict_ids": []
+   },
+   "confidence": 0.875,
+   "precedent_count": 6
+  },
+  {
+   "id": "B-R-003",
+   "text": "A vendor payment entry in 2000 dated within 1 day of month end that has not yet cleared the bank is carried forward to next month.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger",
+    "description_regex": "^AP payment",
+    "age_days_max": 1
+   },
+   "then": {
+    "action": "carry_forward"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-LE-00106",
+    "B-LE-00116",
+    "B-LE-00237",
+    "B-LE-00245",
+    "B-LE-00249"
+   ],
+   "model_confidence": 0.85,
+   "open_question": null,
+   "status": "approved",
+   "bands": {},
+   "backtest": {
+    "support": 5,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 5,
+    "conflict_ids": []
+   },
+   "confidence": 0.857,
+   "precedent_count": 5
+  },
+  {
+   "id": "B-R-004",
+   "text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "executable": true,
+   "when": {
     "direction": "in",
     "counterparty_regex": "paystream",
-    "description_regex": "PAYSTREAM PAYOUT",
     "candidate": {
      "by": "ref",
      "account": "1250",
-     "window_days": 7,
+     "window_days": 10,
      "max_entries": 1
     },
     "doc": {
      "type": "processor_report",
-     "net_diff_abs_min": 0,
      "net_diff_abs_max": 0.01
     }
    },
@@ -90,8 +144,9 @@
     "B-BL-00013"
    ],
    "model_confidence": 0.85,
-   "open_question": "Most Paystream refunds go to 4090 (44 payouts), but 7 payouts had the refund portion booked to 4000 subscription revenue (e.g. B-BL-00023, B-BL-00031, B-BL-00002). I treated 4090 as the rule and the 4000 postings as errors. Is that right, and should those 7 be reclassed?",
+   "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
     "support": 77,
     "conflicts": 8,
@@ -261,20 +316,71 @@
       }
      }
     ],
-    "supported_by": 77
+    "supported_by": 77,
+    "conflict_ids": [
+     "B-BL-00002",
+     "B-BL-00023",
+     "B-BL-00029",
+     "B-BL-00031",
+     "B-BL-00129",
+     "B-BL-00154",
+     "B-BL-00256",
+     "B-BL-00278"
+    ]
    },
    "confidence": 0.897,
    "precedent_count": 77
   },
   {
-   "id": "B-R-003",
-   "text": "Send any Paystream payout that cannot be tied to a Paystream payout report or a gross charges entry in 1250 to the controller.",
+   "id": "B-R-005",
+   "text": "A Paystream payout whose bank amount differs from the net on the Paystream payout report by more than 0.01 goes to the controller, who books the unexplained remainder to 1290.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
     "counterparty_regex": "paystream",
-    "description_regex": "PAYSTREAM PAYOUT"
+    "candidate": {
+     "by": "ref",
+     "account": "1250",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 0.01
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00014",
+    "B-BL-00142",
+    "B-BL-00263"
+   ],
+   "model_confidence": 0.8,
+   "open_question": null,
+   "status": "approved",
+   "bands": {},
+   "backtest": {
+    "support": 3,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 3,
+    "conflict_ids": []
+   },
+   "confidence": 0.8,
+   "precedent_count": 3
+  },
+  {
+   "id": "B-R-006",
+   "text": "A Paystream payout received into operating cash 1010 goes to the controller when there is no Paystream payout report or no gross charges entry in 1250 Paystream clearing with the same PS-PO reference.",
+   "executable": false,
+   "when": {
+    "direction": "in",
+    "description_regex": "paystream|pstrm|ps-po"
    },
    "then": {
     "action": "escalate",
@@ -283,32 +389,31 @@
    "origin": "induced",
    "version_added": 1,
    "precedent_ids": [],
-   "model_confidence": 0.5,
-   "open_question": null,
-   "status": "approved",
+   "model_confidence": 0.6,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
    "backtest": {
     "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 0
+    "supported_by": 0,
+    "conflict_ids": []
    },
    "confidence": 0.25,
    "precedent_count": 0,
-   "human_confirmed": true
+   "repaired_in_round": 1
   },
   {
-   "id": "B-R-004",
-   "text": "On Skarvik Shipping wires only, clear the invoice and book a shortfall of up to 5.00 to 7710 bank charges without sending it to anyone, under Dana's standing approval.",
+   "id": "B-R-007",
+   "text": "A Skarvik Shipping receipt that is 0.01 to 5.00 short of the open invoices it references in 1200 accounts receivable is matched, and the shortfall is booked to 7710 bank charges.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
     "counterparty_regex": "skarvik",
     "candidate": {
-     "by": "counterparty",
+     "by": "ref_in_description",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
+     "window_days": 90
     },
     "diff_min": 0.01,
     "diff_max": 5
@@ -320,31 +425,46 @@
    "origin": "induced",
    "version_added": 1,
    "precedent_ids": [],
-   "model_confidence": 0.9,
+   "model_confidence": 0.85,
    "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "retired",
+   "status": "proposed",
    "backtest": {
     "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 0
+    "supported_by": 0,
+    "conflict_ids": []
    },
    "confidence": 0.25,
-   "precedent_count": 0
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {
+    "diff_max": {
+     "lo": 0.0,
+     "hi": null,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "categorical": false,
+     "side": "upper",
+     "n_known": 0,
+     "n_other": 0,
+     "written": 5,
+     "source": "trail",
+     "beyond": []
+    }
+   }
   },
   {
-   "id": "B-R-005",
-   "text": "Treat a Skarvik Shipping wire that is short by more than 5.00 as a short-pay and send it to the AR lead.",
+   "id": "B-R-008",
+   "text": "A Skarvik Shipping receipt that is more than 5.00 short of the open invoices it references in 1200 accounts receivable is a short-pay and goes to the AR lead.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
     "counterparty_regex": "skarvik",
     "candidate": {
-     "by": "counterparty",
+     "by": "ref_in_description",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
+     "window_days": 90
     },
     "diff_min": 5.01
    },
@@ -355,35 +475,49 @@
    "origin": "induced",
    "version_added": 1,
    "precedent_ids": [],
-   "model_confidence": 0.9,
+   "model_confidence": 0.85,
    "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "retired",
+   "status": "proposed",
    "backtest": {
     "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 0
+    "supported_by": 0,
+    "conflict_ids": []
    },
    "confidence": 0.25,
-   "precedent_count": 0
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {
+    "diff_min": {
+     "lo": null,
+     "hi": 5.01,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "categorical": false,
+     "side": "lower",
+     "n_known": 0,
+     "n_other": 0,
+     "written": 5.01,
+     "source": "trail",
+     "beyond": []
+    }
+   }
   },
   {
-   "id": "B-R-006",
-   "text": "From April 2026, match a Varnholt Biosciences wire to its invoice and book the Ledgerlane supplier fee to 6310, provided the deduction is exactly 1.25% of the invoice and the Ledgerlane remittance shows it. Otherwise apply the normal short-pay rules.",
+   "id": "B-R-009",
+   "text": "A Varnholt Biosciences receipt through the Ledgerlane supplier portal that is short of the 1200 invoice by exactly 1.25% is matched and the 1.25% booked to 6310 payment processing fees, provided the Ledgerlane remittance shows the deduction.",
    "executable": false,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
-    "counterparty_regex": "varnholt",
+    "counterparty_regex": "varnholt|ledgerlane",
     "candidate": {
      "by": "counterparty",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
+     "window_days": 10
     },
-    "diff_min": 0,
-    "diff_pct_min": 1.24,
-    "diff_pct_max": 1.26
+    "diff_pct_min": 1.249,
+    "diff_pct_max": 1.251
    },
    "then": {
     "action": "match_adjust",
@@ -392,36 +526,34 @@
    "origin": "induced",
    "version_added": 1,
    "precedent_ids": [],
-   "model_confidence": 0.8,
-   "open_question": "Dana's standing approval depends on the Ledgerlane remittance showing the 1.25% fee, and the system cannot check that yet. Can the Ledgerlane remittance be loaded as a document so these wires clear automatically when the deduction is exactly 1.25%?",
+   "model_confidence": 0.75,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
    "status": "proposed",
    "backtest": {
     "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 0
+    "supported_by": 0,
+    "conflict_ids": []
    },
    "confidence": 0.25,
    "precedent_count": 0
   },
   {
-   "id": "B-R-007",
-   "text": "When Halcyon Robotics pays an invoice 2% short and the wire is 135,526.63 or less, match it to the invoice in 1200 and book the 2% to 4050 sales discounts.",
+   "id": "B-R-010",
+   "text": "A Halcyon Robotics receipt that is 2% short of its 1200 invoice and arrives within 10 days of the invoice date is matched and the 2% booked to 4050 sales discounts as the contractual 2/10 net 30 early-payment discount.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
-    "counterparty_regex": "halcyon robotics",
-    "amount_max": 135526.63,
+    "counterparty_regex": "halcyon",
     "candidate": {
      "by": "counterparty",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 1
+     "window_days": 10
     },
-    "diff_min": 0,
     "diff_pct_min": 1.99,
-    "diff_pct_max": 2.01
+    "diff_pct_max": 2.01,
+    "invoice_age_days_max": 10
    },
    "then": {
     "action": "match_adjust",
@@ -440,34 +572,108 @@
     "B-BL-00296",
     "B-BL-00288"
    ],
-   "model_confidence": 0.85,
-   "open_question": "Halcyon's 2% deduction was always booked to 4050 same week by staff (9 wires, up to 135,526.63). Is this an agreed early-payment discount in Halcyon's contract, and should wires above 135,526.63 still go to the AR lead?",
+   "model_confidence": 0.75,
+   "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
     "support": 9,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 9
+    "supported_by": 9,
+    "conflict_ids": []
    },
    "confidence": 0.909,
-   "precedent_count": 9
+   "precedent_count": 9,
+   "executable_if_approved": true,
+   "human_confirmed": true,
+   "origin_of_change": "interview B-COR-0006"
   },
   {
-   "id": "B-R-008",
-   "text": "When a customer wire whose bank line says LESS CHGS arrives 15.00 to 35.00 short of the invoices it pays, match it and book the shortfall to 7710 bank charges.",
+   "id": "B-R-021",
+   "text": "A Halcyon Robotics receipt that is 2% short of its 1200 invoice and arrives more than 10 days after the invoice date does not qualify for the 2/10 net 30 early-payment discount and goes to the AR lead.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
-    "description_regex": "^WIRE IN.*LESS CHGS",
+    "counterparty_regex": "halcyon",
     "candidate": {
      "by": "counterparty",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
+     "window_days": 90
     },
-    "diff_min": 15,
-    "diff_max": 35
+    "diff_pct_min": 1.99,
+    "diff_pct_max": 2.01,
+    "invoice_age_days_min": 11
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ar_lead"
+   },
+   "origin": "interview B-COR-0006",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 7,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-011",
+   "text": "A customer receipt that equals the total of one or more open invoices for the same customer in 1200 accounts receivable, to the cent, is matched to those invoices with no adjustment.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 6
+    },
+    "diff_abs_max": 0.005
+   },
+   "then": {
+    "action": "match"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.9,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {}
+  },
+  {
+   "id": "B-R-012",
+   "text": "A customer receipt that is short of its open invoices in 1200 accounts receivable by any amount, where the bank line says LESS CHGS, is matched and the shortfall booked to 7710 bank charges.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "less\\s*chgs",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10
+    },
+    "diff_min": 0.01
    },
    "then": {
     "action": "match_adjust",
@@ -479,125 +685,76 @@
     "B-BL-00175",
     "B-BL-00282"
    ],
-   "model_confidence": 0.75,
+   "model_confidence": 0.85,
    "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
     "support": 2,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 2
+    "supported_by": 2,
+    "conflict_ids": []
    },
    "confidence": 0.75,
    "precedent_count": 2,
    "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0009",
-   "executable_if_approved": true
-  },
-  {
-   "id": "B-R-009",
-   "text": "When one customer wire pays several open invoices in 1200 and the total agrees exactly, match the wire to those invoices.",
-   "executable": true,
-   "when": {
-    "item_kind": "bank",
-    "direction": "in",
-    "description_regex": "^WIRE IN",
-    "candidate": {
-     "by": "counterparty",
-     "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
-    },
-    "diff_abs_max": 0
-   },
-   "then": {
-    "action": "match"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00162",
-    "B-BL-00039",
-    "B-BL-00287",
-    "B-BL-00166",
-    "B-BL-00043",
-    "B-BL-00158",
-    "B-BL-00053",
-    "B-BL-00160",
-    "B-BL-00176",
-    "B-BL-00033",
-    "B-BL-00281",
-    "B-BL-00164"
-   ],
-   "model_confidence": 0.9,
-   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "proposed",
-   "backtest": {
-    "support": 0,
-    "conflicts": 0,
-    "conflict_examples": [],
-    "supported_by": 0
-   },
-   "confidence": 0.25,
-   "precedent_count": 0
+   "executable_if_approved": true,
+   "origin_of_change": "interview B-COR-0007"
   },
   {
    "id": "B-R-022",
-   "text": "When a customer wire arrives 15.00 to 35.00 short of the invoices it pays and the remittance advice states that bank charge, match it and book the shortfall to 7710 bank charges.",
+   "text": "A customer receipt that is short of its open invoices in 1200 accounts receivable by any amount, where the remittance advice states the bank charge, is matched and the shortfall booked to 7710 bank charges.",
    "executable": false,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
-    "description_regex": "^WIRE IN",
     "candidate": {
      "by": "counterparty",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
+     "window_days": 10
     },
-    "diff_min": 15,
-    "diff_max": 35
+    "diff_min": 0.01
    },
    "then": {
     "action": "match_adjust",
     "account": "7710"
    },
-   "origin": "interview B-COR-0009",
+   "origin": "interview B-COR-0007",
    "precedent_ids": [
     "B-BL-00047",
+    "B-BL-00034",
+    "B-BL-00174",
     "B-BL-00285",
     "B-BL-00301",
-    "B-BL-00286",
-    "B-BL-00290",
-    "B-BL-00298"
+    "B-BL-00290"
    ],
    "status": "approved",
    "human_confirmed": true,
    "open_question": null,
-   "version_added": 10,
+   "version_added": 8,
+   "bands": {},
    "backtest": {
     "support": 6,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 6
+    "supported_by": 6,
+    "conflict_ids": []
    },
    "confidence": 0.875,
    "precedent_count": 6
   },
   {
-   "id": "B-R-010",
-   "text": "Send any other customer wire that does not agree to its invoices in 1200, short or over and whatever the amount, to the AR lead as a short-pay.",
-   "executable": true,
+   "id": "B-R-013",
+   "text": "A customer receipt that is short of its open invoices in 1200 accounts receivable by any amount, where neither the bank line says LESS CHGS nor the remittance advice states the charge, goes to the AR lead and the shortfall stays in 1200.",
+   "executable": false,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
-    "description_regex": "^WIRE IN",
     "candidate": {
      "by": "counterparty",
      "account": "1200",
-     "window_days": 5,
-     "max_entries": 5
-    }
+     "window_days": 10
+    },
+    "diff_min": 0.01
    },
    "then": {
     "action": "escalate",
@@ -605,26 +762,62 @@
    },
    "origin": "induced",
    "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00034",
-    "B-BL-00174"
-   ],
-   "model_confidence": 0.85,
+   "precedent_ids": [],
+   "model_confidence": 0.8,
    "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
-    "support": 2,
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "executable_if_approved": true,
+   "human_confirmed": true,
+   "origin_of_change": "interview B-COR-0007"
+  },
+  {
+   "id": "B-R-014",
+   "text": "A customer receipt that is more than 35.00 and more than 1% short of the open invoices for the same customer in 1200 accounts receivable is a short-pay and goes to the AR lead.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 5,
+     "max_entries": 6
+    },
+    "diff_min": 35.01,
+    "diff_pct_min": 1
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ar_lead"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.75,
+   "open_question": "The trail agrees with this 0 times and disagrees 1 times. Is this how you want it handled?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
     "conflicts": 1,
     "conflict_examples": [
      {
-      "item_id": "B-BL-00250",
+      "item_id": "B-BL-00373",
       "observed": {
        "action": "book",
        "ledger_ids": [],
        "adjustments": [
         {
          "account": "2450",
-         "amount": -150000.0
+         "amount": -250000.0
         }
        ],
        "escalate_to": null
@@ -637,21 +830,39 @@
       }
      }
     ],
-    "supported_by": 2
+    "supported_by": 0,
+    "conflict_ids": [
+     "B-BL-00373"
+    ]
    },
-   "confidence": 0.6,
-   "precedent_count": 2,
-   "human_confirmed": true,
-   "executable_if_approved": true
+   "confidence": 0.333,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "executable_if_approved": true,
+   "bands": {
+    "diff_min": {
+     "lo": 15679.59,
+     "hi": 35.01,
+     "lo_precedent": "B-BL-00301",
+     "hi_precedent": null,
+     "categorical": false,
+     "side": "lower",
+     "n_known": 0,
+     "n_other": 10,
+     "written": 35.01,
+     "source": "trail",
+     "beyond": [
+      "B-BL-00034"
+     ]
+    }
+   }
   },
   {
-   "id": "B-R-011",
-   "text": "Book a customer wire with no open invoice in 1200 in full to 2450 customer deposits and prepaid commits only when we have a signed order form email for it, whatever the amount and whether or not it says PREPAY.",
+   "id": "B-R-015",
+   "text": "A customer receipt of any amount, with or without a PREPAY label, that has no open invoice in 1200 accounts receivable is booked in full to 2450 customer deposits and prepaid commits only when there is a signed order form email for it, and without a signed order form email it goes to the AR lead.",
    "executable": false,
    "when": {
-    "item_kind": "bank",
-    "direction": "in",
-    "description_regex": "^WIRE IN"
+    "direction": "in"
    },
    "then": {
     "action": "book",
@@ -662,96 +873,40 @@
    "precedent_ids": [
     "B-BL-00126",
     "B-BL-00037",
+    "B-BL-00125",
+    "B-BL-00250",
     "B-BL-00156",
+    "B-BL-00248",
     "B-BL-00299",
-    "B-BL-00373",
-    "B-BL-00295"
+    "B-BL-00286",
+    "B-BL-00298",
+    "B-BL-00295",
+    "B-BL-00372"
    ],
-   "model_confidence": 0.8,
+   "model_confidence": 0.85,
    "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
-    "support": 6,
+    "support": 11,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 6
+    "supported_by": 11,
+    "conflict_ids": []
    },
-   "confidence": 0.875,
-   "precedent_count": 6,
+   "confidence": 0.923,
+   "precedent_count": 11,
    "executable_if_approved": true,
    "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0003"
+   "origin_of_change": "interview B-COR-0009"
   },
   {
-   "id": "B-R-012",
-   "text": "Send a customer wire marked PREPAY above 400,000 to the controller.",
+   "id": "B-R-016",
+   "text": "A sweep interest credit from Commonwealth Trust Bank is booked in full to 7100 interest income at any amount.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
     "direction": "in",
-    "description_regex": "^WIRE IN .*PREPAY",
-    "amount_min": 400000.01
-   },
-   "then": {
-    "action": "escalate",
-    "escalate_to": "controller"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [],
-   "model_confidence": 0.5,
-   "open_question": "No prepayment above 400,000 appears in the trail. Should large prepayments go to the controller or to the AR lead?",
-   "status": "retired",
-   "backtest": {
-    "support": 0,
-    "conflicts": 0,
-    "conflict_examples": [],
-    "supported_by": 0
-   },
-   "confidence": 0.25,
-   "precedent_count": 0
-  },
-  {
-   "id": "B-R-013",
-   "text": "Send a customer wire with no open invoice in 1200 and no signed order form email to the AR lead, and bring any such wire still unidentified at month end to the controller to decide instead of parking it in 1290.",
-   "executable": true,
-   "when": {
-    "item_kind": "bank",
-    "direction": "in",
-    "description_regex": "^WIRE IN"
-   },
-   "then": {
-    "action": "escalate",
-    "escalate_to": "ar_lead"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00037",
-    "B-BL-00295"
-   ],
-   "model_confidence": 0.8,
-   "open_question": null,
-   "status": "approved",
-   "backtest": {
-    "support": 0,
-    "conflicts": 0,
-    "conflict_examples": [],
-    "supported_by": 0
-   },
-   "confidence": 0.25,
-   "precedent_count": 0,
-   "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0004"
-  },
-  {
-   "id": "B-R-014",
-   "text": "Book an INTEREST CREDIT on the Commonwealth Trust Bank sweep account to 7100 interest income, whatever the amount.",
-   "executable": true,
-   "when": {
-    "item_kind": "bank",
-    "direction": "in",
-    "description_regex": "INTEREST CREDIT",
+    "description_regex": "interest credit|sweep interest",
     "counterparty_regex": "commonwealth trust"
    },
    "then": {
@@ -760,33 +915,89 @@
    },
    "origin": "induced",
    "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00125",
-    "B-BL-00248",
-    "B-BL-00372"
-   ],
-   "model_confidence": 0.8,
+   "precedent_ids": [],
+   "model_confidence": 0.9,
    "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
-    "support": 3,
+    "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 3
+    "supported_by": 0,
+    "conflict_ids": []
    },
-   "confidence": 0.8,
-   "precedent_count": 3,
+   "confidence": 0.25,
+   "precedent_count": 0,
    "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0007"
+   "origin_of_change": "interview B-COR-0005"
   },
   {
-   "id": "B-R-015",
-   "text": "Book a wire fee on the Commonwealth Trust Bank fee schedule to 7710 bank charges, whatever the amount.",
+   "id": "B-R-023",
+   "text": "A bank credit from Commonwealth Trust Bank that cannot be identified as sweep interest is not booked to 7100 interest income and goes to the controller.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "commonwealth trust"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "interview B-COR-0008",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 9,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-017",
+   "text": "A customer receipt with no open invoice for that customer in 1200 accounts receivable goes to the AR lead to apply or hold in 1290 unapplied and disputed receipts.",
+   "executable": false,
+   "when": {
+    "direction": "in"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ar_lead"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.8,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "executable_if_approved": true,
+   "repaired_in_round": 2,
+   "bands": {}
+  },
+  {
+   "id": "B-R-018",
+   "text": "A Commonwealth Trust Bank incoming wire fee or account analysis charge is booked in full to 7710 bank charges at any amount.",
+   "executable": true,
+   "when": {
     "direction": "out",
-    "description_regex": "WIRE FEE",
+    "description_regex": "incoming wire fee|account analysis charge",
     "counterparty_regex": "commonwealth trust"
    },
    "then": {
@@ -800,9 +1011,11 @@
     "B-BL-00120",
     "B-BL-00123",
     "B-BL-00122",
+    "B-BL-00124",
     "B-BL-00245",
     "B-BL-00244",
     "B-BL-00246",
+    "B-BL-00247",
     "B-BL-00369",
     "B-BL-00367"
    ],
@@ -810,8 +1023,8 @@
    "open_question": null,
    "status": "approved",
    "backtest": {
-    "support": 9,
-    "conflicts": 3,
+    "support": 11,
+    "conflicts": 4,
     "conflict_examples": [
      {
       "item_id": "B-BL-00243",
@@ -887,43 +1100,7 @@
        ],
        "escalate_to": null
       }
-     }
-    ],
-    "supported_by": 9
-   },
-   "confidence": 0.714,
-   "precedent_count": 9,
-   "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0007",
-   "executable_if_approved": true
-  },
-  {
-   "id": "B-R-016",
-   "text": "Book an ACCOUNT ANALYSIS CHARGE from Commonwealth Trust Bank to 7710 bank charges, whatever the amount.",
-   "executable": true,
-   "when": {
-    "item_kind": "bank",
-    "direction": "out",
-    "description_regex": "ACCOUNT ANALYSIS CHARGE",
-    "counterparty_regex": "commonwealth trust"
-   },
-   "then": {
-    "action": "book",
-    "account": "7710"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00124",
-    "B-BL-00247"
-   ],
-   "model_confidence": 0.75,
-   "open_question": null,
-   "status": "approved",
-   "backtest": {
-    "support": 2,
-    "conflicts": 1,
-    "conflict_examples": [
+     },
      {
       "item_id": "B-BL-00371",
       "observed": {
@@ -950,20 +1127,28 @@
       }
      }
     ],
-    "supported_by": 2
+    "supported_by": 11,
+    "conflict_ids": [
+     "B-BL-00243",
+     "B-BL-00370",
+     "B-BL-00368",
+     "B-BL-00371"
+    ]
    },
-   "confidence": 0.6,
-   "precedent_count": 2,
+   "confidence": 0.706,
+   "precedent_count": 11,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {},
    "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0005",
-   "executable_if_approved": true
+   "origin_of_change": "interview B-COR-0005"
   },
   {
-   "id": "B-R-017",
-   "text": "Send any other Commonwealth Trust Bank entry to the controller, including a MISC DEBIT or any other unexplained debit, whatever the amount.",
+   "id": "B-R-019",
+   "text": "An unexplained bank debit from Commonwealth Trust Bank, such as a MISC DEBIT, goes to the controller.",
    "executable": true,
    "when": {
-    "item_kind": "bank",
+    "direction": "out",
     "counterparty_regex": "commonwealth trust"
    },
    "then": {
@@ -975,157 +1160,49 @@
    "precedent_ids": [
     "B-BL-00249"
    ],
-   "model_confidence": 0.7,
+   "model_confidence": 0.65,
    "open_question": null,
    "status": "approved",
+   "bands": {},
    "backtest": {
     "support": 1,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 1
+    "supported_by": 1,
+    "conflict_ids": []
    },
    "confidence": 0.667,
    "precedent_count": 1,
-   "executable_if_approved": true,
    "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0007"
+   "executable_if_approved": true
   },
   {
-   "id": "B-R-018",
-   "text": "Send any outgoing vendor ACH with no matching AP payment in 2000 to the controller instead of leaving it open.",
-   "executable": true,
+   "id": "B-R-020",
+   "text": "A vendor payment with no matching payment entry in 2000 accounts payable goes to the AP lead.",
+   "executable": false,
    "when": {
-    "item_kind": "bank",
-    "direction": "out",
-    "description_regex": "^ACH OUT"
+    "direction": "out"
    },
    "then": {
     "action": "escalate",
-    "escalate_to": "controller"
+    "escalate_to": "ap_lead"
    },
    "origin": "induced",
    "version_added": 1,
-   "precedent_ids": [
-    "B-BL-00215",
-    "B-BL-00235",
-    "B-BL-00205",
-    "B-BL-00207",
-    "B-BL-00200",
-    "B-BL-00234",
-    "B-BL-00231",
-    "B-BL-00179"
-   ],
+   "precedent_ids": [],
    "model_confidence": 0.55,
-   "open_question": "7 vendor ACH payments (27,995 to 367,694, Corelight, Helix, Ardent, Summit) were left open with no ledger entry and nobody assigned, and the one Helix payment that was resolved went through Dana. Should unmatched vendor payments go to the AP lead or to the controller?",
+   "open_question": "The trail shows no unmatched vendor payments. Should a vendor payment with no entry in 2000 accounts payable go to the AP lead?",
    "status": "proposed",
    "backtest": {
     "support": 0,
     "conflicts": 0,
     "conflict_examples": [],
-    "supported_by": 0
+    "supported_by": 0,
+    "conflict_ids": []
    },
    "confidence": 0.25,
-   "precedent_count": 0
-  },
-  {
-   "id": "B-R-019",
-   "text": "Send a late vendor accrual true-up journal to the controller and keep it open, including after the controller has approved or rejected it, because the controller decides how each one is closed out.",
-   "executable": true,
-   "when": {
-    "item_kind": "ledger",
-    "description_regex": "accrual true-up"
-   },
-   "then": {
-    "action": "escalate",
-    "escalate_to": "controller"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [
-    "B-LE-00267",
-    "B-LE-00400"
-   ],
-   "model_confidence": 0.7,
-   "open_question": null,
-   "status": "approved",
-   "backtest": {
-    "support": 2,
-    "conflicts": 0,
-    "conflict_examples": [],
-    "supported_by": 2
-   },
-   "confidence": 0.75,
-   "precedent_count": 2,
-   "executable_if_approved": true,
-   "human_confirmed": true,
-   "origin_of_change": "interview B-COR-0006"
-  },
-  {
-   "id": "B-R-020",
-   "text": "Carry forward a Paystream gross charges entry in 1250 posted within 5 days of month end; it clears when the payout lands early next month.",
-   "executable": true,
-   "when": {
-    "item_kind": "ledger",
-    "description_regex": "Paystream gross charges",
-    "age_days_max": 5
-   },
-   "then": {
-    "action": "carry_forward"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [
-    "B-LE-00029",
-    "B-LE-00030",
-    "B-LE-00031",
-    "B-LE-00161",
-    "B-LE-00162",
-    "B-LE-00163"
-   ],
-   "model_confidence": 0.85,
-   "open_question": "Paystream entries open at month end were 0 to 2 days old and payouts land 2 to 4 days after the charges. Is 5 days the right cutoff before an open 1250 entry needs investigating?",
-   "status": "approved",
-   "backtest": {
-    "support": 6,
-    "conflicts": 0,
-    "conflict_examples": [],
-    "supported_by": 6
-   },
-   "confidence": 0.875,
-   "precedent_count": 6
-  },
-  {
-   "id": "B-R-021",
-   "text": "Carry forward an AP payment in 2000 posted within 5 days of month end; it clears when the ACH hits the bank next month.",
-   "executable": true,
-   "when": {
-    "item_kind": "ledger",
-    "description_regex": "^AP payment",
-    "age_days_max": 5
-   },
-   "then": {
-    "action": "carry_forward"
-   },
-   "origin": "induced",
-   "version_added": 1,
-   "precedent_ids": [
-    "B-LE-00106",
-    "B-LE-00116",
-    "B-LE-00237",
-    "B-LE-00245",
-    "B-LE-00249"
-   ],
-   "model_confidence": 0.75,
-   "open_question": "Every AP payment open at month end was 1 day old and cleared the next month. How many days can an uncleared AP payment stay open before it goes to the AP lead?",
-   "status": "approved",
-   "backtest": {
-    "support": 5,
-    "conflicts": 0,
-    "conflict_examples": [],
-    "supported_by": 5
-   },
-   "confidence": 0.857,
-   "precedent_count": 5
+   "precedent_count": 0,
+   "repaired_in_round": 2
   }
  ],
  "backtest": {
@@ -1134,18 +1211,219 @@
    "2026-02",
    "2026-03"
   ],
-  "uncovered_items": 0,
-  "uncovered_examples": []
+  "uncovered_items": 3,
+  "uncovered_examples": [
+   "B-BL-00179",
+   "B-LE-00267",
+   "B-LE-00400"
+  ]
  },
+ "findings": [
+  {
+   "finding_id": "F-001",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00002",
+   "date": "2026-01-05",
+   "amount": 48876.63,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260102",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "2,200.68 to 6310, 477.08 to 4000, 62.24 to 6320",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-01-05 as 2,200.68 to 6310, 477.08 to 4000, 62.24 to 6320; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00002",
+    "B-JE-00002",
+    "B-JE-00003",
+    "B-JE-00004"
+   ]
+  },
+  {
+   "finding_id": "F-002",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00023",
+   "date": "2026-01-26",
+   "amount": 41261.28,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260123",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "1,853.83 to 6310, 368.65 to 4000",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-01-26 as 1,853.83 to 6310, 368.65 to 4000; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00023",
+    "B-JE-00040",
+    "B-JE-00041"
+   ]
+  },
+  {
+   "finding_id": "F-003",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00029",
+   "date": "2026-02-02",
+   "amount": 39638.69,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260129",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "1,789.90 to 6310, 380.30 to 4000, 173.91 to 6320",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-02-02 as 1,789.90 to 6310, 380.30 to 4000, 173.91 to 6320; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00029",
+    "B-JE-00051",
+    "B-JE-00052",
+    "B-JE-00053"
+   ]
+  },
+  {
+   "finding_id": "F-004",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00031",
+   "date": "2026-02-02",
+   "amount": 55381.11,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260131",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "2,501.27 to 6310, 788.95 to 4000",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-02-02 as 2,501.27 to 6310, 788.95 to 4000; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00031",
+    "B-JE-00056",
+    "B-JE-00057"
+   ]
+  },
+  {
+   "finding_id": "F-005",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00129",
+   "date": "2026-02-05",
+   "amount": 56088.75,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260203",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "2,531.80 to 6310, 762.29 to 4000",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-02-05 as 2,531.80 to 6310, 762.29 to 4000; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00134",
+    "B-JE-00072",
+    "B-JE-00073"
+   ]
+  },
+  {
+   "finding_id": "F-006",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00154",
+   "date": "2026-03-02",
+   "amount": 52108.62,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260228",
+   "posted_by": [
+    "Dana Whitfield (controller)",
+    "Lena Martin (staff accountant)"
+   ],
+   "what_was_done": "2,320.65 to 6310",
+   "agreeing_cases": 77,
+   "summary": "Dana Whitfield (controller) and Lena Martin (staff accountant) handled this on 2026-03-02 as 2,320.65 to 6310; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00159",
+    "B-JE-00122"
+   ]
+  },
+  {
+   "finding_id": "F-007",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00256",
+   "date": "2026-03-09",
+   "amount": 46743.63,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260306",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "2,101.14 to 6310, 435.84 to 4000",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-03-09 as 2,101.14 to 6310, 435.84 to 4000; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00259",
+    "B-JE-00143",
+    "B-JE-00144"
+   ]
+  },
+  {
+   "finding_id": "F-008",
+   "rule_id": "B-R-004",
+   "rule_text": "Match a Paystream payout to the 1250 Paystream gross charges entry with the same PS-PO reference and, when the Paystream payout report net equals the bank amount, book the report's fees to 6310, refunds to 4090 and chargebacks to 6320.",
+   "item_id": "B-BL-00278",
+   "date": "2026-03-30",
+   "amount": 45026.54,
+   "description": "PAYSTREAM PAYOUT PS-PO-20260328",
+   "posted_by": [
+    "Kofi Osei (staff accountant)"
+   ],
+   "what_was_done": "2,039.52 to 6310, 772.64 to 4000",
+   "agreeing_cases": 77,
+   "summary": "Kofi Osei (staff accountant) handled this on 2026-03-30 as 2,039.52 to 6310, 772.64 to 4000; 77 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "B-LNK-00281",
+    "B-JE-00187",
+    "B-JE-00188"
+   ]
+  },
+  {
+   "finding_id": "F-009",
+   "rule_id": "B-R-014",
+   "rule_text": "A customer receipt that is more than 35.00 and more than 1% short of the open invoices for the same customer in 1200 accounts receivable is a short-pay and goes to the AR lead.",
+   "item_id": "B-BL-00034",
+   "date": "2026-01-26",
+   "amount": 97675.08,
+   "description": "WIRE IN CASTELLAN INSURANCE",
+   "posted_by": [],
+   "what_was_done": "escalate",
+   "agreeing_cases": 0,
+   "summary": "Someone handled this on 2026-01-26 as escalate; 0 comparable items were handled the way the rule describes.",
+   "evidence_ids": []
+  }
+ ],
  "client": "B",
  "track": "main",
  "version": 10,
- "created_at": "2026-09-19T13:51:51",
+ "created_at": "2026-09-19T14:28:13",
  "cause": {
   "type": "interview",
   "correction_id": "B-COR-0009",
-  "rule_id": "B-R-004",
-  "note": "No, we don't have that rule, and there's no standing approval for Skarvik Shipping or any other customer. A wire that's short because of bank charges gets matched with the charge booked to 7710 only when there's evidence for it: either the bank line says LESS CHGS or the remittance advice states the charge. Otherwise the shortfall goes to ar_lead, whatever the amount, and nothing is written off without my approval.",
-  "explanation": "The controller said there's no Skarvik convention and no standing approval for any customer, so I retired B-R-004. I also retired B-R-005: it only makes sense next to B-R-004, and it would catch Skarvik wires ahead of the general wire rules. Without it, Skarvik short-pays still reach the AR lead through B-R-010, whatever the amount. That assumes Skarvik's bank lines start with WIRE IN, which I haven't checked.\n\nB-R-008 used to book any wire that was 15.00 to 35.00 short to 7710 without evidence. It now fires only when the bank line says LESS CHGS. The other kind of evidence the controller accepts, a remittance advice stating the charge, can't be checked by the rule language. So I added a rule the system can't run by itself, placed before B-R-010. It hands those wires to the investigator. When there's no evidence, the wire falls through to B-R-010 and goes to the AR lead.\n\nI kept the approved 15.00 to 35.00 range on both routes because the controller didn't change it. A charge outside that range goes to the AR lead even when there's evidence, which fits \"nothing is written off without my approval.\""
+  "rule_id": "B-R-015",
+  "note": "The evidence decides it, not the amount or the PREPAY label. If a large wire has no invoice, it goes to 2450 customer deposits only when we have a signed order form email for it. If there's no signed order form, it goes to ar_lead.",
+  "explanation": "I changed B-R-015 so the evidence decides, as the controller said. It no longer depends on the PREPAY label or the 400,000.00 cap. Now a customer receipt with no open invoice in 1200 accounts receivable goes to 2450 customer deposits and prepaid commits only when a signed order form email supports it. If there is no signed order form, it goes to the AR lead.\n\nThe rule can't be checked automatically (executable is false) because the rule language can't confirm that a signed order form email exists. The rule now applies to any incoming receipt with no ledger match, so an investigator will check it.\n\nI didn't add a separate rule for receipts with no signed order form. B-R-017 already comes after this rule and sends receipts with no open invoice to the AR lead.\n\nI didn't set a minimum amount for \"large\". The controller said the amount doesn't decide it, so a size limit would go further than what they said.",
+  "patch": {
+   "kind": "ops",
+   "ops": [
+    {
+     "op": "modify",
+     "rule_id": "B-R-015",
+     "executable": false,
+     "text": "A customer receipt of any amount, with or without a PREPAY label, that has no open invoice in 1200 accounts receivable is booked in full to 2450 customer deposits and prepaid commits only when there is a signed order form email for it, and without a signed order form email it goes to the AR lead.",
+     "when": {
+      "direction": "in"
+     },
+     "then": {
+      "action": "book",
+      "account": "2450"
+     }
+    }
+   ],
+   "origin": "interview B-COR-0009"
+  }
  }
 }

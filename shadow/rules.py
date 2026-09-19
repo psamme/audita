@@ -304,6 +304,8 @@ def apply(playbook: dict, item: dict, kind: str, ctx: Ctx, include_proposed: boo
                         and _evaluate(r | {"executable": True}, item, kind, ctx)), None)
             out["escalate_to"] = (far or {}).get("then", {}).get("escalate_to")
         if out:
+            if include_proposed:  # Audit the ordered proposal; live execution still rejects disagreement.
+                return rule, out
             if selected is None:
                 selected = (rule, out)
             elif out != selected[1] and out.get("resolution") != selected[1].get("resolution"):

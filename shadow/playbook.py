@@ -46,7 +46,7 @@ def save(client: str, track: str, pb: dict, cause: dict) -> dict:
 
 def diff(a: dict, b: dict) -> dict:
     ra, rb = {r["id"]: r for r in a["rules"]}, {r["id"]: r for r in b["rules"]}
-    core = lambda r: {k: r.get(k) for k in ("text", "when", "then", "executable", "status", "bands", "valid_from", "human_confirmed", "awaiting_senior", "open_question", "policy_id")}
+    core = lambda r: {k: r.get(k) for k in ("text", "when", "then", "executable", "status", "bands", "valid_from", "human_confirmed", "awaiting_senior", "open_question", "policy_id", "floor_exempt", "below_floor")}
     return {"from": a["version"], "to": b["version"], "cause": b.get("cause"),
             "added": [rb[i] for i in rb if i not in ra], "removed": [ra[i] for i in ra if i not in rb],
             "changed": [{"before": ra[i], "after": rb[i]} for i in rb if i in ra and core(ra[i]) != core(rb[i])]}
@@ -371,7 +371,8 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
             if not upper and band["hi"] is None:
                 band["hi"] = float(rules.get_cond(rule["when"], cond))   # nothing seen on the action side: keep the written line
             distinct = sorted({x[0] for x in known})
-            band["categorical"] = len(known) >= 2 and len(distinct) <= 3 and all(abs(v / 5 - round(v / 5)) < 1e-9 for v in distinct)
+            # amounts on a continuum carry cents; when every case is a whole multiple of 5 it is a schedule of charges, not a range
+            band["categorical"] = len(known) >= 2 and all(abs(v / 5 - round(v / 5)) < 1e-9 for v in distinct)
             bands[cond] = band | {"side": "upper" if upper else "lower", "n_known": len(known), "n_other": len(other),
                                   "written": rules.get_cond(rule["when"], cond), "source": "trail", "beyond": beyond[:5]}
         rule["bands"] = bands
@@ -493,6 +494,8 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
     cause = {"type": "interview", "source": "interview", "correction_id": correction_id, "rule_id": rule_id, "condition": condition,
              "value": value, "note": said[0].upper() + said[1:] + (f" ({res['held']})" if res["held"] else ""), "held": res["held"],
              "band_before": {"lo": res["before"]["lo"], "hi": res["before"]["hi"]}, "band_after": {"lo": band["lo"], "hi": band["hi"]},
+             "replay_check": "not applied: a band answer creates no rule, it only moves how far an existing, already replayed rule reaches, "
+                             "and only a senior role can give one",
              "patch": {"kind": "band", "rule_id": rule_id, "condition": condition, "value": value, "review": review,
                        "limit": limit, "not_amount": not_amount}}
     saved = save(client, track, {k: v for k, v in new.items() if k not in ("version", "created_at", "cause")}, cause)
@@ -510,12 +513,14 @@ REPAIR_SCHEMA = {
 }
 
 
-def _failing(pb: dict) -> list[dict]:
+def _failing(pb: dict, first_round: bool = False) -> list[dict]:
+    """Rules to hand back to the model: those that fail their precedents, and (once) those that pass overall but keep
+    disagreeing with a handful of cases, because a repeated disagreement is often a finer convention the rule missed."""
     out = []
     for r in pb["rules"]:
         bt = r["backtest"]
         n = bt["support"] + bt["conflicts"]
-        if r.get("executable") and (n == 0 or bt["support"] / n < PASS_SHARE):
+        if r.get("executable") and (n == 0 or bt["support"] / n < PASS_SHARE or (first_round and bt["conflicts"] >= 3)):
             out.append(r)
     return out
 
@@ -525,7 +530,7 @@ def repair(con, pb: dict, info: dict, usage: llm.Usage | None = None, max_rounds
     as counterexamples. At most three rounds. What still disagrees afterwards is reported, not absorbed."""
     all_cases = {c["id"]: c for c in cases(con, pb["trained_before"])}
     for round_no in range(1, max_rounds + 1):
-        bad = _failing(pb)
+        bad = _failing(pb, first_round=round_no == 1)
         if not bad:
             return round_no - 1
         ask = [{"id": r["id"], "text": r["text"], "executable": r["executable"], "when": r["when"], "then": r["then"],
@@ -534,7 +539,10 @@ def repair(con, pb: dict, info: dict, usage: llm.Usage | None = None, max_rounds
                 "cases_you_cited": [all_cases[i] for i in r.get("precedent_ids", [])[:4] if i in all_cases]} for r in bad]
         prompt = ("These rules failed when replayed over the client's own history. Each is shown with how often it agreed, the "
                   "cases where it disagreed with what the trail shows, and cases you cited for it. A rule that never fired has "
-                  "conditions that match nothing (wrong regex, wrong candidate method, wrong sign). Fix each rule, make it a "
+                  "conditions that match nothing (wrong regex, wrong candidate method, wrong sign). A rule that mostly agrees but keeps "
+                  "disagreeing in the same way has usually missed a finer convention (for example part of a difference going to a "
+                  "second account, or a document that says how to split it): tighten it so it no longer fires on those cases, and "
+                  "say in open_question what you saw. You cannot add rules here, only fix these. Fix each rule, make it a "
                   "judgement rule (executable false) if the rule language cannot express it, and keep the id. Rule text must stand alone.\n\n"
                   f"Chart of accounts: {json.dumps(info['chart'])}\n\n{json.dumps(ask, indent=1, default=str)}")
         reply = llm.call(INDUCE_SYSTEM, [{"role": "user", "content": prompt}], schema=REPAIR_SCHEMA, max_tokens=16000, usage=usage)

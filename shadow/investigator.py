@@ -291,6 +291,13 @@ def grounded(res: dict, pb: dict, desk: "Desk", roles: list[str]) -> dict:
     """With a playbook in play, an entry is only booked on the client's own authority: an approved rule, or at least
     three past items it can point to. Otherwise the item is escalated, whatever confidence the model reported."""
     approved = {r["id"] for r in pb["rules"] if r["status"] == "approved"}
+    leaned_on = next((r for r in pb["rules"] if r["id"] == res.get("rule_id") and r["status"] != "approved"), None)
+    if leaned_on:       # nothing is booked on the authority of a rule nobody signed off
+        return res | {"action": "escalate", "ledger_ids": [], "adjustments": [], "reason": "thin_precedent",
+                      "escalate_to": (leaned_on.get("then") or {}).get("escalate_to") if (leaned_on.get("then") or {}).get("escalate_to") in roles else (roles[0] if roles else None),
+                      "questions": [q for q in [leaned_on.get("open_question")] if q] + list(res.get("questions") or []),
+                      "proposed": {k: res[k] for k in ("action", "ledger_ids", "adjustments", "rationale")},
+                      "rationale": f"The investigator relied on {leaned_on['id']}, which is {leaned_on['status']}, not signed off. Proposed: {res['rationale']}"}
     known = {c["id"] for c in desk.precedents()}
     cited = [p for p in res["precedent_ids"] if p in known]
     if res.get("rule_id") in approved or len(cited) >= 3:
