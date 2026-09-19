@@ -72,3 +72,7 @@ Not building: a third client, ledger-as-git, self-play, computer-use ERP, multi-
 ## Controller approval preview
 
 See [the build and rehearsal guide](docs/BUILD_CODEX.md) for the no-model, isolated preview demo and safety fixes.
+
+## Judging demo
+
+Run `uv run python demo_stage.py --port 8795` and open `/demo.html?track=stage` for the learned-policy flow. Read [the three-minute script and backup instructions](docs/JUDGING_DEMO.md). It uses saved model induction, shows historical evidence, groups policy questions, and demonstrates approval plus selective undo without model calls on stage.

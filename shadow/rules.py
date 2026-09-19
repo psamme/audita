@@ -293,7 +293,7 @@ def apply(playbook: dict, item: dict, kind: str, ctx: Ctx, include_proposed: boo
         unresolved = rule.get("awaiting_senior") or (rule.get("open_question") and not rule.get("human_confirmed"))
         if (rule.get("status") != "approved" or unresolved) and not include_proposed:
             out = evaluate(rule | {"executable": False}, item, kind, ctx)
-            if out:
+            if out and selected is None:
                 return rule, out
             continue
         out = evaluate(rule, item, kind, ctx)

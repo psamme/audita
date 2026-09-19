@@ -263,3 +263,40 @@ def test_failed_conflict_policy_keeps_conflict_open(sandbox, monkeypatch):
     assert result["held"] == "policy_not_applied"
     events = [json.loads(line) for line in correct.log_path("T", "dev").read_text().splitlines()]
     assert not any(event["type"] == "conflict_resolved" for event in events)
+
+
+def test_explicit_learned_rule_signoff_preview_apply_and_undo(sandbox):
+    con, api = sandbox
+    pb = playbook.load('T', 'dev')
+    pb['rules'][0] |= {'status': 'proposed', 'open_question': 'Is fees the right account?'}
+    playbook.save('T', 'dev', pb, {'type': 'test'})
+    request = payload(confirm_rule=True, effective_from='2026-03-01')
+    report = api.post('/api/playbook/preview-policy', json=request)
+    assert report.status_code == 200, report.text
+    assert report.json()['after']['automatic_bank_items'] == 2
+    assert playbook.load('T', 'dev')['rules'][0]['status'] == 'proposed'
+    applied = api.post('/api/playbook/apply-preview', json={'preview_id': report.json()['preview_id'], 'role': 'controller'})
+    assert applied.status_code == 200, applied.text
+    rule = playbook.load('T', 'dev')['rules'][0]
+    assert rule['human_confirmed'] and rule['valid_from'] == '2026-03-01'
+    assert rule['then']['account'] == 'fees'
+    undone = api.post('/api/retract', json={'client':'T','track':'dev','role':'controller','correction_id':applied.json()['correction_id']})
+    assert undone.status_code == 200, undone.text
+    assert not playbook.load('T','dev')['rules'][0].get('human_confirmed')
+    assert {i['item_id'] for i in undone.json()['reopened']} == {'B1'}
+
+
+def test_policy_signoff_requires_explicit_confirmation_and_senior(sandbox):
+    _, api = sandbox
+    assert api.post('/api/playbook/preview-policy',json=payload()).status_code == 400
+    assert api.post('/api/playbook/preview-policy',json=payload(confirm_rule=True,role='clerk')).status_code == 403
+    assert api.post('/api/playbook/preview-policy',json=payload(confirm_rule=True,effective_from='2026-02-01')).status_code == 400
+
+
+def test_approved_rule_is_not_overridden_by_later_proposed_fallback(sandbox):
+    con, _ = sandbox
+    pb=playbook.load('T','dev')
+    pb['rules'].append({'id':'fallback','status':'proposed','executable':True,'when':{'direction':'out'},
+                        'then':{'action':'escalate','escalate_to':'controller'},'open_question':'Who handles unmatched items?'})
+    result=pipeline.run('T','2026-03','playbook','dev',use_llm=False,persist=False,playbook_override=pb)
+    assert next(i for i in result['items'] if i['item_id']=='B0')['resolution']['action']=='book'

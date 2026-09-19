@@ -54,12 +54,12 @@ def scan(con, period: str) -> dict[str, list[dict]]:
         for b in after:
             if b["period"] == period and not any(a["date"] >= d["date"] and a["date"] <= b["date"] for a in approved):
                 flags.setdefault(b["id"], []).append({
-                    "flag": "bank_change_request_on_file",
+                    "flag": "bank_change_request_on_file", "evidence_ids": [d["id"]],
                     "detail": f"unverified bank change in {d['id']} ({d['date']}) for {b['counterparty']}"})
     for e in memos:
         for b in out_all:
             if b["period"] == period and b["amount"] == e["amount"] and tokens(b["counterparty"]) & tokens(e["counterparty"]) and abs(_days(b["date"], e["date"])) <= 10:
-                flags.setdefault(b["id"], []).append({"flag": "bank_change_request_on_file",
+                flags.setdefault(b["id"], []).append({"flag": "bank_change_request_on_file", "evidence_ids": [e["id"]],
                                                       "detail": f"ledger entry {e['id']} for this payment mentions new bank details: \"{e['memo']}\""})
 
     # 3. the same outgoing payment twice: same payee and amount within ten days, and the business only issued one (soft)

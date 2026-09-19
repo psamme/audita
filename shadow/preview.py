@@ -6,7 +6,7 @@ import secrets
 import time
 
 from grade import same
-from shadow import authority, correct, db, pipeline, playbook, state
+from shadow import authority, correct, db, pipeline, playbook, rules, state
 
 PREVIEWS = {}
 TTL_SECONDS = 900
@@ -33,8 +33,38 @@ def summarize(items):
             "automatic_bank_items": sum(auto(it) for it in bank)}
 
 
+def prepare_policy(con, old, rule_id, condition, limit, role, effective_from=None):
+    """Explicit sign-off of a displayed learned rule and its numeric boundary; no model rewrite."""
+    new = copy.deepcopy(old)
+    rule = next((r for r in new['rules'] if r['id'] == rule_id), None)
+    if not rule or rule.get('status') == 'retired':
+        raise ValueError('No active learned rule')
+    if not rule.get('executable') and not rule.get('executable_if_approved'):
+        raise ValueError('This rule needs a written clarification before it can execute')
+    change = playbook.apply_band_answer(new, rule_id, condition, None, limit=limit)
+    if not change or change['held']:
+        raise ValueError('This rule has no approvable numeric boundary')
+    op = {'op': 'modify', 'rule_id': rule_id, 'text': rule['text'], 'when': rule['when'],
+          'then': rule['then'], 'executable': True}
+    new = correct._apply_ops(copy.deepcopy(old), [op], old['client'], 'explicit policy sign-off')
+    if effective_from:
+        from datetime import date
+        date.fromisoformat(effective_from)
+        if effective_from < old['trained_before'] + '-01':
+            raise ValueError('A new policy must start after the training window')
+        next(r for r in new['rules'] if r['id'] == rule_id)['valid_from'] = effective_from
+    cause = {'type': 'interview', 'rule_id': rule_id, 'by_role': role,
+             'note': 'Approved the displayed rule and stated its boundary.' + (f' New policy effective {effective_from}.' if effective_from else ''),
+             'patch': {'kind': 'ops', 'ops': [op], 'origin': 'explicit policy sign-off'}}
+    correct.validate_patch(con, new, cause)
+    selected = next(r for r in new['rules'] if r['id'] == rule_id)
+    if selected['status'] != 'approved' or not selected.get('human_confirmed'):
+        raise ValueError(selected.get('open_question') or 'Historical replay did not support this approval')
+    return new, cause
+
+
 @state.serialized
-def build(client, track, period, rule_id, condition, role, value=None, review=None, limit=None, not_amount=False):
+def build(client, track, period, rule_id, condition, role, value=None, review=None, limit=None, not_amount=False, approve_rule=False, effective_from=None):
     from datetime import date
     date.fromisoformat(period + "-01")
     old = playbook.load(client, track)
@@ -50,6 +80,9 @@ def build(client, track, period, rule_id, condition, role, value=None, review=No
             raise ValueError("No such rule or band")
         if change["held"]:
             return {"held": change["held"], "preview_id": None, "diff": None}
+        approval_cause = None
+        if approve_rule:
+            new, approval_cause = prepare_policy(con, old, rule_id, condition, limit, role, effective_from)
         args = dict(client=client, period=period, condition="corrected", track=track, use_llm=False,
                     persist=False, con_override=con)
         before = pipeline.run(**args, playbook_override=old)
@@ -74,6 +107,7 @@ def build(client, track, period, rule_id, condition, role, value=None, review=No
         if len(PREVIEWS) >= 100:
             del PREVIEWS[next(iter(PREVIEWS))]
         PREVIEWS[token] = {"expires": time.time() + TTL_SECONDS, "fingerprint": snapshot(con, old),
+                           "approval_cause": approval_cause, "approved_playbook": new if approve_rule else None,
                            "period": period, "resolved_ids": [x["item_id"] for x in changes if x["before"] and x["after"] and x["before"]["action"] == "escalate" and x["after"]["action"] != "escalate"], "args": dict(client=client, track=track, rule_id=rule_id, condition=condition,
                                         value=value, review=review, limit=limit, not_amount=not_amount, role=role)}
         return {"preview_id": token, "client": client, "track": track, "period": period, "version": old["version"],
@@ -100,7 +134,17 @@ def commit(preview_id, role):
         authority.require_senior(con, role)
         if snapshot(con, playbook.load(args["client"], args["track"])) != entry["fingerprint"]:
             raise StalePreview("The policy or supporting data changed. Preview again.")
-        out = correct.answer_band(**args)
+        if entry.get('approval_cause'):
+            cause = copy.deepcopy(entry['approval_cause'])
+            event = correct._log(args['client'], {'type': 'interview', 'rule_id': args['rule_id'],
+                                  'answer': cause['note'], 'by_role': role}, args['track'])
+            cause['correction_id'] = event['correction_id']
+            old = playbook.load(args['client'], args['track'])
+            saved, diff = correct._finish(con, args['client'], args['track'], old,
+                                         copy.deepcopy(entry['approved_playbook']), cause)
+            out = {'correction_id': event['correction_id'], 'new_version': saved['version'], 'diff': diff}
+        else:
+            out = correct.answer_band(**args)
         del PREVIEWS[preview_id]
         if out.get("diff"):
             run_id = f"preview_{args['client']}_{args['track']}_v{out['new_version']}"

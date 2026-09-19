@@ -160,7 +160,7 @@ def _replay_failures(con, pb_new: dict, ops: list[dict], period: str | None) -> 
     return "; ".join(bad) or None
 
 
-def _finish(con, client, track, pb_old, pb_new, cause, period=None):
+def validate_patch(con, pb_new, cause, period=None):
     before = pb_new.get("trained_before") or period
     pb_new["trained_before"] = before
     keep = {r["id"]: (r["status"], r.get("human_confirmed")) for r in pb_new["rules"]}
@@ -189,6 +189,10 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
         touched = {op.get("assigned_id") or op.get("rule_id") for op in cause["patch"]["ops"]}
         cause["patch"]["safety"] = {r["id"]: {k: r.get(k) for k in authority.SAFETY_FIELDS}
                                     for r in pb_new["rules"] if r["id"] in touched}
+
+
+def _finish(con, client, track, pb_old, pb_new, cause, period=None):
+    validate_patch(con, pb_new, cause, period)
     saved = pbmod.save(client, track, {k: v for k, v in pb_new.items() if k not in ("version", "created_at", "cause")}, cause)
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 

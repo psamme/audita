@@ -70,7 +70,7 @@
       } else if (moved.length) {
         rows.push(`<div class="diff-row"><span class="sign"></span><span>${esc(c.after.text)} <span class="cite">${esc(c.after.id)}</span></span></div>`);
       }
-      for (const [key, label] of Object.entries({ status: "Approval", valid_from: "Effective from", human_confirmed: "Human confirmation", awaiting_senior: "Senior review pending", open_question: "Open question" })) {
+      for (const [key, label] of Object.entries({ status: "Approval", valid_from: "Effective from", human_confirmed: "Human confirmation", awaiting_senior: "Senior review pending", open_question: "Open question", floor_exempt: "Historical replay exception", below_floor: "Below execution floor" })) {
         if (JSON.stringify(c.before[key]) !== JSON.stringify(c.after[key])) {
           rows.push(`<div class="diff-row"><span class="sign">↳</span><span>${label}: ${esc(String(c.before[key] ?? "None"))} → ${esc(String(c.after[key] ?? "None"))}</span></div>`);
         }

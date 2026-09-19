@@ -238,6 +238,20 @@ def preview_band(a: BandPreview):
                          limit=a.limit if kind == "limit" else None, not_amount=kind == "not_amount")
 
 
+class PolicyPreview(BandPreview):
+    confirm_rule: bool = False
+    effective_from: str | None = None
+
+
+@app.post("/api/playbook/preview-policy")
+def preview_policy(a: PolicyPreview):
+    _con(a.client).close()
+    if not a.confirm_rule or a.answer != "limit":
+        raise HTTPException(400, "Explicit confirmation of the displayed rule and limit is required")
+    return preview.build(a.client, a.track, a.period, a.rule_id, a.condition, a.role,
+                         limit=a.limit, approve_rule=True, effective_from=a.effective_from)
+
+
 class ApplyPreview(BaseModel):
     preview_id: str
     role: str
@@ -367,6 +381,12 @@ def run_experiment(r: ExperimentRun):
     if r.which == "bank_change":
         return experiment.bank_change(track=r.track, fresh=True)
     return experiment.run(track=r.track, fresh=True, version=r.version)
+
+
+@app.get("/api/stage")
+def stage_report():
+    from shadow.stage import report
+    return report()
 
 
 if (db.ROOT / "ui").exists():

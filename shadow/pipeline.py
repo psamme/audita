@@ -105,7 +105,8 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
     def work(job):
         item, kind, fl, rule = job
         if not use_llm:
-            return item, kind, fl, {"resolution": blank(escalate_to=roles[0] if roles else None, confidence=0.0, reason="fraud_shaped" if any(f["flag"] in investigator.HARD_FLAGS for f in fl) else (rule or {}).get("_defer_reason", "no_rule"),
+            return item, kind, fl, {"resolution": blank(rule_id=(rule or {}).get("id"), precedent_ids=(rule or {}).get("precedent_ids", [])[:6],
+                                                        escalate_to=(rule or {}).get("then", {}).get("escalate_to") or (roles[0] if roles else None), confidence=0.0, reason="fraud_shaped" if any(f["flag"] in investigator.HARD_FLAGS for f in fl) else (rule or {}).get("_defer_reason", "policy_question" if rule and rule.get("open_question") else "thin_precedent" if rule else "no_rule"),
                                                         rationale="Not cleared by the matcher or a playbook rule. Left for review (model tier disabled)."),
                                     "trace": [], "usage": dict(ZERO)}
         return item, kind, fl, investigator.investigate_safely(db.connect(client, readonly=True, path=db_file), info, period, item, kind,
