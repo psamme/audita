@@ -87,3 +87,64 @@ Conditions are `zero_shot`, `playbook`, `corrected`.
   "by_source": { "standard": {accuracy, n}, "blind": {accuracy, n} },
   "scope": "full_month | second_half" }
 ```
+
+## Added 2026-09-19 (bands, findings, questions, unlearning, stale evidence)
+
+GETs never run the pipeline or write anything. Everything that costs model calls or changes the playbook is a POST.
+
+```jsonc
+// Rule additions
+{ "bands": { "amount_max": {                 // one entry per numeric condition that expresses a policy line
+      "side": "upper | lower",
+      "lo": 22.56, "hi": null,               // upper: fires at or below lo, silent at or above hi, ESCALATES in between. hi null = never seen a larger one
+      "lo_precedent": "A-BL-00311", "hi_precedent": null, "n_known": 11, "n_other": 0,
+      "written": 22.56,                      // what the model wrote before the trail was replayed
+      "source": "trail | interview | stated",// interview = moved by a yes/no answer; stated = a person gave the number
+      "beyond": ["A-BL-00402"] } },          // items handled the rule's way beyond hi: reported as findings, never used to widen
+  "valid_from": "2026-04-09" | absent,       // policy change: precedents before this date no longer count toward the bands
+  "awaiting_senior": true | absent,          // taught by a non-senior; proposed until a senior confirms
+  "repaired_in_round": 2 | absent }          // failed its own precedents after induction and was rewritten (max 3 rounds)
+
+// Resolution additions
+{ "reason": "in_band | no_rule | conflicting_precedents | fraud_shaped | thin_precedent | null",   // set on every escalation
+  "questions": ["..."], "proposed": Resolution | null }
+// Item additions: "band": {condition, value, lo, hi, lo_precedent, hi_precedent} on in_band escalations (tier "rule", $0),
+//                 "evidence_fingerprint": {ledger: {id: {amount, date, account, counterparty}}, documents: [ids]}
+// Run summary additions: track, llm, escalated, escalation_reasons: {in_band, no_rule, ...}
+// Trace step kinds: case_file | matcher | rule | tool_call | check | final
+// Playbook version cause.type: induction | correction | interview | retraction | one_off_exception
+// GET /api/playbook/{client} also returns findings: [Finding]
+
+// Finding: a past item that disagrees with a rule the rest of history supports (probable mistake or undocumented exception)
+{ "finding_id": "AF-003", "rule_id": "A-R-002", "rule_text": "...", "item_id": "A-BL-00077", "date": "2026-01-28", "amount": -19.98,
+  "description": "CASH HANDLING FEE", "posted_by": ["Tam Nguyen (part-time clerk)"], "what_was_done": "19.98 to 6120",
+  "agreeing_cases": 11, "summary": "one sentence", "evidence_ids": ["A-JE-00041"] }
+```
+
+| Route | Returns |
+|---|---|
+| `GET /api/playbook/{client}/questions` | `{band_questions: [BandQuestion], open_questions: [{rule_id, rule_text, text, precedent_count}]}` widest band first |
+| `POST /api/playbook/answer-band` | body `{client, rule_id, condition, value, review: bool}`. Instant, no model call. `review: true` ("yes, send one at that value for review") pulls `hi` down to value; `false` pushes `lo` up. Returns `{correction_id, new_version, diff, band, cause: {band_before, band_after, note}}`; the diff shows the band shrinking under `changed[].before.bands / after.bands` |
+| `POST /api/corrections` | now also takes `role` (who is teaching). May return `conflict` instead of a diff (see below). A non-senior role that widens auto-resolution gets a proposed rule with `awaiting_senior` |
+| `POST /api/conflicts/{conflict_id}` | body `{client, outcome: one_off_exception | policy_change | mistake, role}`. one_off: recorded, excluded from precedents, no rule change. policy_change: the rule changes with `valid_from` = the item's date. mistake: correction rejected and logged |
+| `POST /api/retract` | body `{client, correction_id | precedent_id, note}`. Deterministic, no model call. Returns RetractionResult |
+| `GET /api/corrections/{client}` | every input the playbook has received, newest first: `{correction_id, at, type: correction | interview | conflict | conflict_resolved | retraction, ...}`; the list to pick a retraction from |
+| `GET /api/reopened/{client}` | items re-opened by retractions: `{run_id, item_id, reason: "rule_retracted", record, before, after}` |
+| `GET /api/runs/{run_id}/stale` | `{stale: [{item_id, reason: "evidence_changed", record, resolution, changes: [{record, change: edited | deleted, fields: {amount: {was, now}}}]}], posted_after_reconciliation: [ledger entries]}` |
+| `GET /api/curve` | questions-to-trust, per client: `{target_auto_resolve_rate, questions_to_trust, scored_on, per_item_cost_usd, points: [{k, answer_kind: induction | band | open_question | correction, answer, auto_resolve_rate, wrong_matches, wrong_auto, left_for_model_or_human, in_band_escalations, tiers: {matcher, guardrail, rule, investigator}, est_llm_cost_usd}]}`. Development holdout (March), never the hidden month |
+| `POST /api/experiment/run` | body `{which: same_transaction | bank_change, version?}`: the only way to run the demo live. `GET /api/experiment[?version=1]` and `GET /api/experiment/bank-change` are cache-only and return 404 until computed |
+| `GET /api/runs/{id}` and `/queue` | `?grades=true` attaches per-item grades (off by default: it reveals the answer key item by item). `metrics.by_category` is never served |
+
+```jsonc
+// BandQuestion
+{ "question_id": "A-R-002:amount_max", "rule_id": "A-R-002", "condition": "amount_max", "value": 35.0, "lo": 22.56, "hi": null,
+  "relative_width": null, "rule_text": "...", "text": "... If one came in at $35.00, would you want it sent to someone for review?" }
+
+// Conflict (inside the POST /api/corrections response when a correction contradicts a signed-off, well-supported rule)
+{ "correction_id": "A-COR-0007", "rule_id": "A-R-004", "rule_text": "...", "rule_support": 101, "note": "...", "by_role": "bookkeeper",
+  "outcomes": ["one_off_exception", "policy_change", "mistake"] }
+
+// RetractionResult
+{ "retracted": "A-COR-0005", "new_version": 9, "diff": PlaybookDiff /* cause.type = "retraction" */, "rules_changed": ["A-R-021"],
+  "resolutions_checked": 14, "reopened": [{run_id, item_id, reason: "rule_retracted", record, before, after}], "replay_notes": [] }
+```

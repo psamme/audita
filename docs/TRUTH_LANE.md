@@ -90,18 +90,26 @@ Rules for fairness: every trap must be resolvable (or correctly escalatable) fro
 
 Do not tune traps to make the agent look good or bad. Write them, freeze them, and do not change them after you see the first graded run. If you find a genuine error in your key, fix it and tell Sam "key corrected, N items" with no detail.
 
-## 7. The handoff loop
+## 7. Freeze, then reveal (the evaluation protocol)
 
-1. You build month 4. Before sending anything, verify the database carries no answers:
-   `sqlite3 data/A/client.db "SELECT COUNT(*) FROM resolution WHERE period='2026-04'"` must print `0` (same for B). Also check no table or column in `client.db` exposes your `category`, `note`, or `source` values for April. If it does, stop and tell Sam "the sim leaks truth into client.db" so his build session can fix it.
-2. Send Sam `data/A/client.db` and `data/B/client.db` directly (AirDrop, Discord DM). Not through git. Never send `keys/`.
-3. Sam runs the agent in the three conditions (zero-shot, with induced playbook, with playbook after human corrections) and sends you back the run folders from `runs/<run_id>/`.
-4. You grade each: `uv run python grade.py runs/<run_id> --key keys/A_2026-04.json`
-5. You send back the metrics JSON the grader writes, plus category-level counts. That feeds the results chart.
+The protection is ordering, not trust: **the agent code is frozen before month 4 exists anywhere near it, and the hidden test is run once.**
 
-The five numbers we report per condition: resolution accuracy, escalation precision, wrong-match rate, LLM cost per run, share of volume cleared by the deterministic tier.
+1. You write and freeze your traps on your own machine while the agent is still being built. Nobody else sees them.
+2. When Sam's side is done, Sam's control-panel session tags the repo (`git tag freeze-1`) and tells you. After that tag, no change to `shadow/` counts toward the headline numbers.
+3. You `git pull`, `git checkout freeze-1`, run `uv run python -m sim.build`, then your `keys/build_m4.py`. Leak check before anything else: April must have left no answers in the agent-visible database.
+   ```sh
+   for c in A B; do sqlite3 data/$c/client.db "SELECT COUNT(*) FROM reconcile_link WHERE period='2026-04'; SELECT COUNT(*) FROM journal_entry WHERE period='2026-04'; SELECT COUNT(*) FROM approval WHERE period='2026-04';"; done
+   ```
+   Every number must be `0`, and `sqlite3 data/A/client.db .tables` must not list `resolution` (ground truth lives in `truth.db`, which the agent cannot open). If anything is off, stop and tell Sam "the sim leaks truth into client.db" with no detail about your traps.
+4. **You run the headline experiment on your machine**, because the "after human corrections" condition uses a simulated reviewer that needs the key:
+   ```sh
+   uv run python experiments.py          # both clients, all conditions; prints aggregates only
+   ```
+   This needs a model backend: either `ANTHROPIC_API_KEY` in `.env`, or the `claude` CLI logged in (it is used automatically when no key is present). Expect roughly 30 to 60 minutes and real model spend; zero-shot is the expensive condition. It runs: zero-shot, history-only, playbook, and corrected. Corrections are made on April 1 to 15 and every condition is also scored on April 16 to 30, which no human touched.
+5. You send Sam `runs/results.json` plus the category-level counts. Do not send `grades*.json` (item-level key data) or anything under `keys/`.
+6. One run. If something crashes, fix the crash and re-run, but do not let anyone tune the agent against month-4 results. If the agent must change after seeing results, that needs a new tag and you should say so in the failures slide.
 
-For the "after human corrections" condition: corrections are made on a **first slice** of April (the grader takes `--from` / `--to` dates), and the score is reported on the **remaining** days, so the agent is never graded on items it was corrected on. You pick the split date (mid-month is fine) and tell Sam only the date.
+Fallback if your machine cannot run it: after the freeze tag exists, send Sam your two key files and `build_m4.py`, he drops them in `keys/` and runs `experiments.py` without opening them. This is acceptable only because the code is already frozen. Say in the pitch which way it was done.
 
 ## 8. Your other deliverables
 
@@ -111,11 +119,12 @@ For the "after human corrections" condition: corrections are made on a **first s
 
 ## 9. Timeline
 
-- Hour 0 to 1: setup, read the five files, agree the split date with Sam.
-- Hour 1 to 4: write and freeze traps for Client A, build, leak-check, send `client.db`.
-- Hour 4 to 6: same for Client B. BenchRec number in the gaps.
-- From hour 6: grade runs as they arrive, turn results around fast, keep the metrics JSONs organised by condition.
-- Last 2 hours: final graded runs for all three conditions on both clients, failures slide, hand Sam the final numbers.
+- First hour: setup, read the five files, run `sim.build`, skim months 1-3 in `data/A/client.db` so your traps look native.
+- Next 3 hours: write and freeze traps for Client A, then Client B. Build both locally and run the leak check. BenchRec sanity check in the gaps.
+- Then wait for the `freeze-1` tag. When it lands: pull, rebuild month 4 at that tag, run `experiments.py`, send results.
+- Last 2 hours: failures slide, final numbers to Sam.
+
+The threshold-boundary traps matter most. On ordinary exceptions a strong model with no playbook already scores about as well as one with a playbook, so the only place "it learned this client" can show up in the numbers is where the right answer depends on a line the model cannot guess (this client's dollar limits, who gets which escalation, which customer has special terms).
 
 ## 10. Instructions to the teammate's Claude
 
