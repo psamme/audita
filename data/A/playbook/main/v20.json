@@ -1,0 +1,2078 @@
+{
+ "trained_before": "2026-04",
+ "rules": [
+  {
+   "id": "A-R-001",
+   "text": "A QuarterLoop app settlement whose payout ties exactly to the QuarterLoop settlement report is matched, with the report's fees line booked to 6120 Merchant card fees, its refunds line booked to 4100 Laundry sales, and any leftover booked to 6990 Cash over/short and small balances.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "quarter ?loop|qtr ?loop|q-?loop",
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_max": 0
+    }
+   },
+   "then": {
+    "action": "match_adjust",
+    "adjust_from_doc": {
+     "fees": "6120",
+     "refunds": "4100"
+    },
+    "remainder_account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.7,
+   "open_question": "No bank line in the trail matched QuarterLoop by payer name. Does QuarterLoop show up on the bank statement, and under what description?",
+   "status": "retired",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {}
+  },
+  {
+   "id": "A-R-002",
+   "text": "Any QuarterLoop app settlement goes to the owner, Marv, and is never matched or booked by the bookkeeper.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "quarter ?loop|qtr ?loop|q-?loop"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.7,
+   "open_question": null,
+   "status": "retired",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {},
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0012"
+  },
+  {
+   "id": "A-R-003",
+   "text": "A Driftwood Motel customer receipt paid within 7 days of the invoice date that is short by 3% of its invoice in 1200 Accounts receivable is matched and the 3% discount is booked to 4200 Commercial laundry revenue.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "drift ?wood|drftwd",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "diff_pct_min": 2.95,
+    "diff_pct_max": 3.05,
+    "invoice_age_days_max": 7
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "4200"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.65,
+   "open_question": "No bank line in the trail had Driftwood Motel as the payer. Does Driftwood pay under another name, and is the 3% discount for payment within 7 days still in effect?",
+   "status": "retired",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {}
+  },
+  {
+   "id": "A-R-004",
+   "text": "A Driftwood Motel customer receipt that differs from its invoice in 1200 Accounts receivable by anything other than a 3% discount taken within 7 days of the invoice date, or has no matching invoice, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "drift ?wood|drftwd"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.75,
+   "open_question": "No bank line in the trail had Driftwood Motel as the payer. Does Driftwood pay under another name?",
+   "status": "retired",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {}
+  },
+  {
+   "id": "A-R-005",
+   "text": "An incoming ACH credit from Tri-Co Redemption Center for can return money is booked in full to 4990 Misc income at any amount without review.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "tri-?co redemption"
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.8,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {},
+   "human_confirmed": true,
+   "origin_of_change": "correction A-COR-0018"
+  },
+  {
+   "id": "A-R-006",
+   "text": "A TapVend or SpinPay card settlement whose payout is within 15.00 of the net on its processor settlement report is matched to its card sales batch, with the report's fees booked to 6120 Merchant card fees and any remaining difference booked to 6990 Cash over/short and small balances without review.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "tapvend|spinpay",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_max": 15
+    }
+   },
+   "then": {
+    "action": "match_adjust",
+    "adjust_from_doc": {
+     "fees": "6120"
+    },
+    "remainder_account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00001",
+    "A-BL-00002",
+    "A-BL-00003",
+    "A-BL-00004",
+    "A-BL-00005",
+    "A-BL-00006",
+    "A-BL-00007",
+    "A-BL-00009",
+    "A-BL-00010",
+    "A-BL-00011",
+    "A-BL-00012",
+    "A-BL-00014"
+   ],
+   "model_confidence": 0.8,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 166,
+    "conflicts": 4,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00013",
+      "observed": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00013"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 84.75
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "A-BL-00016",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00016"
+       ],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 75.85
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00016"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 75.85
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "A-BL-00040",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00040"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 52.66
+        },
+        {
+         "account": "4000",
+         "amount": 13.49
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00040"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 52.66
+        },
+        {
+         "account": "6990",
+         "amount": 13.49
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "A-BL-00267",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00265"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 88.02
+        },
+        {
+         "account": "4000",
+         "amount": 5.88
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00265"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 88.02
+        },
+        {
+         "account": "6990",
+         "amount": 5.88
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 166,
+    "conflict_ids": [
+     "A-BL-00013",
+     "A-BL-00016",
+     "A-BL-00040",
+     "A-BL-00267"
+    ]
+   },
+   "confidence": 0.971,
+   "precedent_count": 166,
+   "repaired_in_round": 2,
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0006",
+   "bands": {
+    "doc.net_diff_abs_max": {
+     "lo": 15,
+     "hi": 15.01,
+     "side": "upper",
+     "source": "stated",
+     "written": 15,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   }
+  },
+  {
+   "id": "A-R-007",
+   "text": "A TapVend or SpinPay card settlement whose payout falls short of the net on its processor settlement report by more than 15.00 goes to the owner, Marv, who decides where the shortfall is booked.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "tapvend|spinpay",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 15.01
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00256",
+    "A-BL-00470",
+    "A-BL-00491"
+   ],
+   "model_confidence": 0.8,
+   "open_question": null,
+   "status": "approved",
+   "bands": {
+    "doc.net_diff_abs_min": {
+     "lo": 15.0,
+     "hi": 15.01,
+     "side": "lower",
+     "source": "stated",
+     "written": 15.01,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 3,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00008",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00008"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 22.61
+        },
+        {
+         "account": "1300",
+         "amount": 62.82
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     },
+     {
+      "item_id": "A-BL-00043",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00043"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 34.11
+        },
+        {
+         "account": "1300",
+         "amount": 67.41
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     }
+    ],
+    "supported_by": 3,
+    "conflict_ids": [
+     "A-BL-00008",
+     "A-BL-00043"
+    ]
+   },
+   "confidence": 0.571,
+   "precedent_count": 3,
+   "executable_if_approved": true,
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0006"
+  },
+  {
+   "id": "A-R-008",
+   "text": "A TapVend or SpinPay card settlement that is short of its card sales batch by 7.3% or less is matched and the difference is booked to 6120 Merchant card fees.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "tapvend|spinpay",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "diff_pct_max": 7.3
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6120"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.7,
+   "open_question": "Every TapVend and SpinPay shortfall I saw (8.7% to 21.6%) was larger than the processor fee (5.6% to 6.9% of the batch), and each went to Marv. May the bookkeeper book a shortfall of 7.3% or less straight to 6120 without Marv's OK?",
+   "status": "retired",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {}
+  },
+  {
+   "id": "A-R-009",
+   "text": "A TapVend or SpinPay card settlement more than 8.4% short of its card sales batch goes to the owner, who approves booking the processor fee to 6120 Merchant card fees and the rest of the shortfall to 1300 Due from processors and claims.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "tapvend|spinpay",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "diff_pct_min": 8.4
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.7,
+   "open_question": "The owner posted 2 of these himself, and the bookkeeper posted 2 with the memo \"ok'd Marv\" 3 to 7 days later. Is Marv the owner, and must every card shortfall beyond the fee get his approval before it is booked to 1300?",
+   "status": "retired",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {}
+  },
+  {
+   "id": "A-R-010",
+   "text": "A TapVend or SpinPay card settlement that has no card sales batch in the ledger with the same reference, or pays out more than its batch, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "tapvend|spinpay"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.5,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "executable_if_approved": true,
+   "bands": {}
+  },
+  {
+   "id": "A-R-011",
+   "text": "A branch cash deposit that equals the exact total of several route cash collections in 4000 Vending sales is matched to those collections with no adjustment.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 4
+    },
+    "diff_abs_max": 0
+   },
+   "then": {
+    "action": "match"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00089",
+    "A-BL-00102",
+    "A-BL-00316",
+    "A-BL-00511",
+    "A-BL-00515",
+    "A-BL-00517",
+    "A-BL-00526",
+    "A-BL-00545"
+   ],
+   "model_confidence": 0.85,
+   "open_question": null,
+   "status": "approved",
+   "bands": {},
+   "backtest": {
+    "support": 8,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 8,
+    "conflict_ids": []
+   },
+   "confidence": 0.9,
+   "precedent_count": 8
+  },
+  {
+   "id": "A-R-012",
+   "text": "A branch cash deposit that is short of or over one route cash collection in 4000 Vending sales by 20.00 or less is matched and the difference is booked to 6990 Cash over/short and small balances.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "diff_abs_max": 20
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.65,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {
+    "diff_abs_max": {
+     "lo": 0.0,
+     "hi": 16.71,
+     "lo_precedent": null,
+     "hi_precedent": "A-BL-00517",
+     "categorical": false,
+     "side": "upper",
+     "n_known": 0,
+     "n_other": 3,
+     "written": 20,
+     "source": "trail",
+     "beyond": []
+    }
+   },
+   "human_confirmed": true
+  },
+  {
+   "id": "A-R-033",
+   "text": "A branch cash deposit that is short of the total of several route cash collections in 4000 Vending sales on one slip by 20.00 or less, because the bank's recount came up short, is matched to those collections and the shortfall is booked to 6990 Cash over/short and small balances.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 4
+    },
+    "diff_min": 0.01,
+    "diff_max": 20
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6990"
+   },
+   "origin": "correction A-COR-0017",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 16,
+   "bands": {
+    "diff_max": {
+     "lo": 20,
+     "hi": 20.01,
+     "side": "upper",
+     "source": "stated",
+     "written": 20,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 0,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00502",
+      "observed": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "ops_manager"
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00504"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 16.07
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 0,
+    "conflict_ids": [
+     "A-BL-00502"
+    ]
+   },
+   "confidence": 0.333,
+   "precedent_count": 0,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-013",
+   "text": "A branch cash deposit that is more than 20.00 short of its route cash collection in 4000 Vending sales goes to the ops manager.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "diff_min": 20
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ops_manager"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.7,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {
+    "diff_min": {
+     "lo": 31.87,
+     "hi": 20.0,
+     "lo_precedent": "A-BL-00102",
+     "hi_precedent": null,
+     "categorical": false,
+     "side": "lower",
+     "n_known": 0,
+     "n_other": 1,
+     "written": 20,
+     "source": "trail",
+     "beyond": []
+    }
+   },
+   "human_confirmed": true
+  },
+  {
+   "id": "A-R-014",
+   "text": "A branch cash deposit that is more than 20.00 over its route cash collection in 4000 Vending sales goes to the ops manager.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "diff_max": -20
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ops_manager"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00544"
+   ],
+   "model_confidence": 0.45,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 1,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00092",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00096"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 3.21
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "ops_manager"
+      }
+     }
+    ],
+    "supported_by": 1,
+    "conflict_ids": [
+     "A-BL-00092"
+    ]
+   },
+   "confidence": 0.5,
+   "precedent_count": 1,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {},
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0004"
+  },
+  {
+   "id": "A-R-026",
+   "text": "A branch cash deposit under 50.00 that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, is booked in full to 4990 Misc income.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "amount_max": 49.99
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "interview A-COR-0004",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 5,
+   "bands": {
+    "amount_max": {
+     "lo": 49.99,
+     "hi": 50.0,
+     "side": "upper",
+     "source": "stated",
+     "written": 49.99,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-027",
+   "text": "A branch cash deposit of 50.00 or more that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "amount_min": 50
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0004",
+   "precedent_ids": [
+    "A-BL-00070",
+    "A-BL-00098",
+    "A-BL-00510",
+    "A-BL-00537",
+    "A-BL-00540"
+   ],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 5,
+   "bands": {
+    "amount_min": {
+     "lo": 49.99,
+     "hi": 50,
+     "side": "lower",
+     "source": "stated",
+     "written": 50,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 5,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00298",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00298"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 25.28
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     },
+     {
+      "item_id": "A-BL-00504",
+      "observed": {
+       "action": "match",
+       "ledger_ids": [
+        "A-LE-00502",
+        "A-LE-00503",
+        "A-LE-00504"
+       ],
+       "adjustments": [],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     }
+    ],
+    "supported_by": 5,
+    "conflict_ids": [
+     "A-BL-00298",
+     "A-BL-00504"
+    ]
+   },
+   "confidence": 0.667,
+   "precedent_count": 5,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-015",
+   "text": "A mobile deposit of 46.17 or less with no ledger counterpart is booked in full to 4990 Misc income.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "mobile deposit",
+    "amount_max": 46.17
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00221",
+    "A-BL-00223",
+    "A-BL-00222",
+    "A-BL-00436",
+    "A-BL-00435",
+    "A-BL-00434",
+    "A-BL-00638",
+    "A-BL-00639",
+    "A-BL-00640"
+   ],
+   "model_confidence": 0.85,
+   "open_question": null,
+   "status": "approved",
+   "bands": {
+    "amount_max": {
+     "lo": 50,
+     "hi": 50.01,
+     "lo_precedent": "A-BL-00639",
+     "hi_precedent": null,
+     "categorical": false,
+     "side": "upper",
+     "n_known": 7,
+     "n_other": 0,
+     "written": 46.17,
+     "source": "stated",
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 9,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 9,
+    "conflict_ids": []
+   },
+   "confidence": 0.909,
+   "precedent_count": 9
+  },
+  {
+   "id": "A-R-016",
+   "text": "A mobile deposit over 46.17 with no ledger counterpart goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "mobile|remote dep|rdc|e-?dep|mbl dep",
+    "amount_min": 46.17
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.55,
+   "open_question": "No mobile deposit in the trail matched this rule. How do mobile deposits appear on the bank statement, and is there an amount below which the bookkeeper books them without the owner?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "bands": {
+    "amount_min": {
+     "lo": 46.17,
+     "hi": 46.17,
+     "lo_precedent": "A-BL-00639",
+     "hi_precedent": null,
+     "categorical": false,
+     "side": "lower",
+     "n_known": 0,
+     "n_other": 9,
+     "written": 46.17,
+     "source": "trail",
+     "beyond": []
+    }
+   }
+  },
+  {
+   "id": "A-R-029",
+   "text": "A counter deposit under 50.00 with no ledger counterpart is booked in full to 4990 Misc income by the bookkeeper.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "counter dep",
+    "amount_max": 49.99
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "interview A-COR-0007",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 8,
+   "bands": {
+    "amount_max": {
+     "lo": 49.99,
+     "hi": 50.0,
+     "side": "upper",
+     "source": "stated",
+     "written": 49.99,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-017",
+   "text": "A counter deposit of 50.00 or more with no ledger counterpart goes to the controller for review.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "counter dep",
+    "amount_min": 50
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00437",
+    "A-BL-00641"
+   ],
+   "model_confidence": 0.7,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 2,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00224",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "4990",
+         "amount": -667.72
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "controller"
+      }
+     }
+    ],
+    "supported_by": 2,
+    "conflict_ids": [
+     "A-BL-00224"
+    ]
+   },
+   "confidence": 0.6,
+   "precedent_count": 2,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {
+    "amount_min": {
+     "lo": 49.99,
+     "hi": 50,
+     "side": "lower",
+     "source": "stated",
+     "written": 50,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0007"
+  },
+  {
+   "id": "A-R-034",
+   "text": "A Driftwood Motel receipt that is short of its invoice in 1200 Accounts receivable by exactly 3% is matched to that invoice and the 3% weekly payment discount is booked to 4200 Commercial laundry revenue without review.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "driftwood",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_min": 0.01,
+    "diff_pct_min": 2.995,
+    "diff_pct_max": 3.005
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "4200"
+   },
+   "origin": "correction A-COR-0020",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 18,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-018",
+   "text": "A commercial laundry customer receipt that is short of its invoice in 1200 Accounts receivable by 15.00 or less is matched and the shortfall is written off to 6990 Cash over/short and small balances.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "diff_max": 15
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00214",
+    "A-BL-00432",
+    "A-BL-00636"
+   ],
+   "model_confidence": 0.75,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 3,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00217",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "4000",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "A-BL-00423",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00420"
+       ],
+       "adjustments": [
+        {
+         "account": "4000",
+         "amount": 5.7
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00420"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 5.7
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 3,
+    "conflict_ids": [
+     "A-BL-00217",
+     "A-BL-00423"
+    ]
+   },
+   "confidence": 0.571,
+   "precedent_count": 3,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {
+    "diff_max": {
+     "lo": 15,
+     "hi": 15.01,
+     "side": "upper",
+     "source": "stated",
+     "written": 15,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0005"
+  },
+  {
+   "id": "A-R-019",
+   "text": "A commercial laundry customer receipt that is short of its invoice in 1200 Accounts receivable by more than 15.00 goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_min": 15
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00634",
+    "A-BL-00629"
+   ],
+   "model_confidence": 0.8,
+   "open_question": null,
+   "status": "approved",
+   "bands": {
+    "diff_min": {
+     "lo": 14.99,
+     "hi": 15,
+     "side": "lower",
+     "source": "stated",
+     "written": 15,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2,
+    "conflict_ids": []
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true,
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0005"
+  },
+  {
+   "id": "A-R-028",
+   "text": "A commercial laundry customer receipt that pays more than its invoice in 1200 Accounts receivable, by any amount, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_max": -0.01
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0005",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 6,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-035",
+   "text": "A QuarterLoop App Pay settlement whose payout equals the net on its QuarterLoop settlement report is matched to its card sales batch in 4100 Laundry sales, with the report's fees booked to 6120 Merchant card fees and its refunds booked to 4100 Laundry sales, without review.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "counterparty_regex": "quarter ?loop",
+    "candidate": {
+     "by": "ref",
+     "account": "4100",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_max": 0
+    }
+   },
+   "then": {
+    "action": "match_adjust",
+    "adjust_from_doc": {
+     "fees": "6120",
+     "refunds": "4100"
+    }
+   },
+   "origin": "correction A-COR-0021",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 19,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-031",
+   "text": "A customer receipt from a payer name that is not a known commercial laundry customer is never matched to a Driftwood Motel invoice in 1200 Accounts receivable and goes to the owner, Marv.",
+   "executable": false,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0014",
+   "precedent_ids": [
+    "A-BL-00209"
+   ],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 14,
+   "bands": {},
+   "backtest": {
+    "support": 1,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 1,
+    "conflict_ids": []
+   },
+   "confidence": 0.667,
+   "precedent_count": 1
+  },
+  {
+   "id": "A-R-020",
+   "text": "A customer receipt with no open invoice in 1200 Accounts receivable goes to the owner, Marv, at any amount.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "ach credit"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.7,
+   "open_question": null,
+   "status": "approved",
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "executable_if_approved": true,
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0010"
+  },
+  {
+   "id": "A-R-030",
+   "text": "Any incoming bank line that might be a QuarterLoop app settlement, even if it does not name QuarterLoop, and whose payout does not equal the net on its QuarterLoop settlement report goes to the owner, Marv.",
+   "executable": false,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0012",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 12,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "origin_of_change": "correction A-COR-0021"
+  },
+  {
+   "id": "A-R-021",
+   "text": "A First Prairie Bank fee under 25.00, including cash handling fees, service charges, deposit correction fees, coin order fees, account analysis fees and returned item fees, is booked to 6110 Bank fees with no review.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "counterparty_regex": "first prairie",
+    "description_regex": "fee|service charge|returned item|return item|nsf|account analysis",
+    "amount_max": 24.99
+   },
+   "then": {
+    "action": "book",
+    "account": "6110"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00202",
+    "A-BL-00205",
+    "A-BL-00204",
+    "A-BL-00203",
+    "A-BL-00206",
+    "A-BL-00419",
+    "A-BL-00417",
+    "A-BL-00416",
+    "A-BL-00418",
+    "A-BL-00415",
+    "A-BL-00420",
+    "A-BL-00620"
+   ],
+   "model_confidence": 0.85,
+   "open_question": null,
+   "status": "approved",
+   "bands": {
+    "amount_max": {
+     "lo": 24.99,
+     "hi": 25.0,
+     "side": "upper",
+     "source": "stated",
+     "written": 24.99,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 17,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00207",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 19.98
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 19.98
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 17,
+    "conflict_ids": [
+     "A-BL-00207"
+    ]
+   },
+   "confidence": 0.9,
+   "precedent_count": 17,
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0011"
+  },
+  {
+   "id": "A-R-022",
+   "text": "A First Prairie Bank fee or charge of 25.00 or more, including a returned item fee, goes to the owner, Marv.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "counterparty_regex": "first prairie",
+    "amount_min": 25
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00625"
+   ],
+   "model_confidence": 0.6,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 1,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00208",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 35.0
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     },
+     {
+      "item_id": "A-BL-00421",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 35.0
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     }
+    ],
+    "supported_by": 1,
+    "conflict_ids": [
+     "A-BL-00208",
+     "A-BL-00421"
+    ]
+   },
+   "confidence": 0.4,
+   "precedent_count": 1,
+   "executable_if_approved": true,
+   "repaired_in_round": 1,
+   "bands": {
+    "amount_min": {
+     "lo": 24.99,
+     "hi": 25,
+     "side": "lower",
+     "source": "stated",
+     "written": 25,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0011"
+  },
+  {
+   "id": "A-R-032",
+   "text": "A check that clears the bank for exactly the amount of the outstanding check with the same check number in 2000 Accounts payable is matched to that check with no adjustment.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "description_regex": "check|chk",
+    "candidate": {
+     "by": "ref",
+     "account": "2000",
+     "window_days": 90,
+     "max_entries": 1
+    },
+    "diff_abs_max": 0
+   },
+   "then": {
+    "action": "match"
+   },
+   "origin": "correction A-COR-0016",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 15,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-036",
+   "text": "A BevCo Wholesale ACH debit that equals exactly the one payment in 2000 Accounts payable with the same ACH reference is matched to that payment with no adjustment, even when a second BevCo debit of the same amount clears the bank on a later day, and that later debit is reviewed on its own.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "counterparty_regex": "bevco",
+    "description_regex": "ach debit",
+    "candidate": {
+     "by": "ref",
+     "account": "2000",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_abs_max": 0
+   },
+   "then": {
+    "action": "match"
+   },
+   "origin": "correction A-COR-0025",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 20,
+   "bands": {},
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-023",
+   "text": "A vendor payment, location commission or payroll debit with no ledger counterpart goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "description_regex": "payroll|commission|ach debit|check|chk|bill ?pay|wire|vendor|pmt|payment"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.5,
+   "open_question": "No outgoing bank line matched the earlier version of this rule. Which bank descriptions do vendor payments, location commissions and payroll use, and is there an amount below which the bookkeeper handles them without the owner?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3,
+   "executable_if_approved": true,
+   "bands": {}
+  },
+  {
+   "id": "A-R-024",
+   "text": "A ledger entry posted 4 days or less before month end with no bank counterpart yet is carried forward to the next period as a deposit or payment in transit.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger",
+    "age_days_max": 4
+   },
+   "then": {
+    "action": "carry_forward"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-LE-00057",
+    "A-LE-00058",
+    "A-LE-00059",
+    "A-LE-00060",
+    "A-LE-00061",
+    "A-LE-00062",
+    "A-LE-00129",
+    "A-LE-00130",
+    "A-LE-00131",
+    "A-LE-00132",
+    "A-LE-00151",
+    "A-LE-00161"
+   ],
+   "model_confidence": 0.85,
+   "open_question": null,
+   "status": "approved",
+   "bands": {},
+   "backtest": {
+    "support": 29,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 29,
+    "conflict_ids": []
+   },
+   "confidence": 0.968,
+   "precedent_count": 29
+  },
+  {
+   "id": "A-R-025",
+   "text": "A ledger entry dated more than 4 days before month end that has still not cleared the bank at month end goes to the owner.",
+   "executable": false,
+   "when": {
+    "item_kind": "ledger"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.45,
+   "open_question": "No open ledger entry reached this rule, and the 4 day cutoff was a guess. At month end, are uncleared entries dated within the last few days carried forward, and older ones sent to the owner, and where is the day cutoff?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "repaired_in_round": 3
+  }
+ ],
+ "backtest": {
+  "periods": [
+   "2026-01",
+   "2026-02",
+   "2026-03"
+  ],
+  "uncovered_items": 0,
+  "uncovered_examples": []
+ },
+ "findings": [
+  {
+   "finding_id": "F-001",
+   "rule_id": "A-R-021",
+   "rule_text": "A First Prairie Bank cash handling fee, service charge, deposit correction fee or coin order fee of 22.56 or less is booked to 6110 Bank fees.",
+   "item_id": "A-BL-00207",
+   "date": "2026-01-28",
+   "amount": -19.98,
+   "description": "CASH HANDLING FEE",
+   "posted_by": [
+    "Tam Nguyen (part-time clerk)"
+   ],
+   "what_was_done": "19.98 to 6120",
+   "agreeing_cases": 16,
+   "summary": "Tam Nguyen (part-time clerk) handled this on 2026-01-28 as 19.98 to 6120; 16 comparable items were handled the way the rule describes.",
+   "evidence_ids": [
+    "A-JE-00079"
+   ]
+  }
+ ],
+ "client": "A",
+ "track": "main",
+ "version": 20,
+ "created_at": "2026-09-19T15:14:50",
+ "cause": {
+  "type": "correction",
+  "correction_id": "A-COR-0025",
+  "item_id": "A-BL-00882",
+  "note": "BevCo ACH, matches the one pmt on the books (debited again next day, see that one)",
+  "explanation": "The bookkeeper matched the first BevCo Wholesale ACH debit to the one payment recorded in the books, A-LE-00888. It matched on amount, date and ref ACH560477. They said the second debit the next day should be dealt with as its own item. So a possible duplicate later on doesn't stop the first debit from matching when it ties out exactly. No rule covered vendor ACH debits that tie exactly to a payment: A-R-032 only covers checks, and A-R-023 covers debits with no ledger entry. So I'm adding a narrow rule. It covers BevCo Wholesale only, because that's all their note mentioned, and only when the debit ties exactly to one payment in 2000 with the same ref. It goes before A-R-023, which is broader. The rule doesn't cover the second debit. That one still goes through its own review.",
+  "check": "A-R-036 now reproduces the human's resolution on this item",
+  "by_role": null,
+  "patch": {
+   "kind": "ops",
+   "ops": [
+    {
+     "op": "add",
+     "insert_before": "A-R-023",
+     "executable": true,
+     "text": "A BevCo Wholesale ACH debit that equals exactly the one payment in 2000 Accounts payable with the same ACH reference is matched to that payment with no adjustment, even when a second BevCo debit of the same amount clears the bank on a later day, and that later debit is reviewed on its own.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "out",
+      "counterparty_regex": "bevco",
+      "description_regex": "ach debit",
+      "candidate": {
+       "by": "ref",
+       "account": "2000",
+       "window_days": 10,
+       "max_entries": 1
+      },
+      "diff_abs_max": 0
+     },
+     "then": {
+      "action": "match"
+     },
+     "assigned_id": "A-R-036"
+    }
+   ],
+   "origin": "correction A-COR-0025"
+  }
+ }
+}

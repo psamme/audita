@@ -517,8 +517,8 @@
    "version_added": 1,
    "precedent_ids": [],
    "model_confidence": 0.65,
-   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
     "support": 0,
     "conflicts": 0,
@@ -543,7 +543,8 @@
      "source": "trail",
      "beyond": []
     }
-   }
+   },
+   "human_confirmed": true
   },
   {
    "id": "A-R-013",
@@ -569,8 +570,8 @@
    "version_added": 1,
    "precedent_ids": [],
    "model_confidence": 0.7,
-   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
     "support": 0,
     "conflicts": 0,
@@ -581,7 +582,6 @@
    "confidence": 0.25,
    "precedent_count": 0,
    "repaired_in_round": 3,
-   "executable_if_approved": true,
    "bands": {
     "diff_min": {
      "lo": 31.87,
@@ -596,16 +596,24 @@
      "source": "trail",
      "beyond": []
     }
-   }
+   },
+   "human_confirmed": true
   },
   {
    "id": "A-R-014",
-   "text": "A branch cash deposit with no route cash collection in 4000 Vending sales within 20.00 of it, or more than 20.00 over its collection, goes to the ops manager.",
+   "text": "A branch cash deposit that is more than 20.00 over its route cash collection in 4000 Vending sales goes to the ops manager.",
    "executable": true,
    "when": {
     "item_kind": "bank",
     "direction": "in",
-    "description_regex": "^deposit br"
+    "description_regex": "^deposit br",
+    "candidate": {
+     "by": "amount_near",
+     "account": "4000",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "diff_max": -20
    },
    "then": {
     "action": "escalate",
@@ -614,20 +622,14 @@
    "origin": "induced",
    "version_added": 1,
    "precedent_ids": [
-    "A-BL-00070",
-    "A-BL-00098",
-    "A-BL-00502",
-    "A-BL-00510",
-    "A-BL-00537",
-    "A-BL-00540",
     "A-BL-00544"
    ],
    "model_confidence": 0.45,
-   "open_question": "The trail agrees with this 7 times and disagrees 3 times. Is this how you want it handled?",
-   "status": "proposed",
+   "open_question": null,
+   "status": "approved",
    "backtest": {
-    "support": 7,
-    "conflicts": 3,
+    "support": 1,
+    "conflicts": 1,
     "conflict_examples": [
      {
       "item_id": "A-BL-00092",
@@ -650,7 +652,110 @@
        "adjustments": [],
        "escalate_to": "ops_manager"
       }
-     },
+     }
+    ],
+    "supported_by": 1,
+    "conflict_ids": [
+     "A-BL-00092"
+    ]
+   },
+   "confidence": 0.5,
+   "precedent_count": 1,
+   "executable_if_approved": true,
+   "repaired_in_round": 3,
+   "bands": {},
+   "human_confirmed": true,
+   "origin_of_change": "interview A-COR-0004"
+  },
+  {
+   "id": "A-R-026",
+   "text": "A branch cash deposit under 50.00 that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, is booked in full to 4990 Misc income.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "amount_max": 49.99
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "interview A-COR-0004",
+   "precedent_ids": [],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 5,
+   "bands": {
+    "amount_max": {
+     "lo": 49.99,
+     "hi": 50.0,
+     "side": "upper",
+     "source": "stated",
+     "written": 49.99,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0,
+    "conflict_ids": []
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-027",
+   "text": "A branch cash deposit of 50.00 or more that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^deposit br",
+    "amount_min": 50
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "interview A-COR-0004",
+   "precedent_ids": [
+    "A-BL-00070",
+    "A-BL-00098",
+    "A-BL-00502",
+    "A-BL-00510",
+    "A-BL-00537",
+    "A-BL-00540"
+   ],
+   "status": "approved",
+   "human_confirmed": true,
+   "open_question": null,
+   "version_added": 5,
+   "bands": {
+    "amount_min": {
+     "lo": 49.99,
+     "hi": 50,
+     "side": "lower",
+     "source": "stated",
+     "written": 50,
+     "n_known": 0,
+     "n_other": 0,
+     "lo_precedent": null,
+     "hi_precedent": null,
+     "beyond": []
+    }
+   },
+   "backtest": {
+    "support": 6,
+    "conflicts": 2,
+    "conflict_examples": [
      {
       "item_id": "A-BL-00298",
       "observed": {
@@ -670,7 +775,7 @@
        "action": "escalate",
        "ledger_ids": [],
        "adjustments": [],
-       "escalate_to": "ops_manager"
+       "escalate_to": "owner"
       }
      },
      {
@@ -689,22 +794,19 @@
        "action": "escalate",
        "ledger_ids": [],
        "adjustments": [],
-       "escalate_to": "ops_manager"
+       "escalate_to": "owner"
       }
      }
     ],
-    "supported_by": 7,
+    "supported_by": 6,
     "conflict_ids": [
-     "A-BL-00092",
      "A-BL-00298",
      "A-BL-00504"
     ]
    },
-   "confidence": 0.667,
-   "precedent_count": 7,
-   "executable_if_approved": true,
-   "repaired_in_round": 3,
-   "bands": {}
+   "confidence": 0.7,
+   "precedent_count": 6,
+   "executable_if_approved": true
   },
   {
    "id": "A-R-015",
@@ -896,8 +998,37 @@
    "status": "proposed",
    "backtest": {
     "support": 3,
-    "conflicts": 1,
+    "conflicts": 2,
     "conflict_examples": [
+     {
+      "item_id": "A-BL-00217",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "4000",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      }
+     },
      {
       "item_id": "A-BL-00423",
       "observed": {
@@ -930,10 +1061,11 @@
     ],
     "supported_by": 3,
     "conflict_ids": [
+     "A-BL-00217",
      "A-BL-00423"
     ]
    },
-   "confidence": 0.667,
+   "confidence": 0.571,
    "precedent_count": 3,
    "executable_if_approved": true,
    "repaired_in_round": 3,
@@ -1060,6 +1192,7 @@
    "version_added": 1,
    "precedent_ids": [
     "A-BL-00202",
+    "A-BL-00205",
     "A-BL-00204",
     "A-BL-00203",
     "A-BL-00206",
@@ -1069,8 +1202,7 @@
     "A-BL-00418",
     "A-BL-00415",
     "A-BL-00420",
-    "A-BL-00620",
-    "A-BL-00622"
+    "A-BL-00620"
    ],
    "model_confidence": 0.85,
    "open_question": null,
@@ -1091,7 +1223,7 @@
     }
    },
    "backtest": {
-    "support": 16,
+    "support": 17,
     "conflicts": 1,
     "conflict_examples": [
      {
@@ -1120,13 +1252,13 @@
       }
      }
     ],
-    "supported_by": 16,
+    "supported_by": 17,
     "conflict_ids": [
      "A-BL-00207"
     ]
    },
-   "confidence": 0.895,
-   "precedent_count": 16
+   "confidence": 0.9,
+   "precedent_count": 17
   },
   {
    "id": "A-R-022",
@@ -1313,33 +1445,83 @@
  ],
  "client": "A",
  "track": "main",
- "version": 4,
- "created_at": "2026-09-19T14:40:55",
+ "version": 5,
+ "created_at": "2026-09-19T14:41:25",
  "cause": {
   "type": "interview",
-  "source": "interview",
-  "correction_id": "A-COR-0003",
-  "rule_id": "A-R-018",
-  "condition": "diff_abs_max",
-  "value": 89.55,
-  "note": "The limit is $15.00.",
-  "held": null,
-  "band_before": {
-   "lo": 11.87,
-   "hi": 167.23
-  },
-  "band_after": {
-   "lo": 15,
-   "hi": 15.01
-  },
+  "correction_id": "A-COR-0004",
+  "rule_id": "A-R-014",
+  "note": "Mostly, but the $20 applies either way. Short or over, anything up to $20 goes to 6990 with no review, and anything over $20 goes to the ops manager. Before you call a deposit unmatched, check whether it covers several count sheets on one slip, since those are allowed. If it still doesn't match any count sheets, handle it as an unidentified deposit: under $50 goes to 4990, and $50 or more comes to me (Marv, the owner).",
+  "explanation": "Marv agreed with the $20 limit but split A-R-014, which mixed two different cases.\n\n1. **Differences of $20 or less.** Short or over, these go to 6990 with no review. A-R-012 already says this, so I approved it.\n2. **Differences over $20.** Short or over, these go to the ops manager. A-R-013 already handles the short side, so I approved it. I changed A-R-014 to handle the over side only: a deposit more than 20.00 over its collection goes to the ops manager.\n3. **Several count sheets on one slip.** A-R-011 is already approved and already checks this first, so nothing changed.\n4. **Deposits that match no count sheet.** These used to go to the ops manager under A-R-014. Marv says to treat them as unidentified deposits instead. I added two rules for them, placed before the mobile deposit rules:\n   - Under $50: booked in full to 4990 Misc income.\n   - $50 or more: goes to Marv (the owner).\n\nI entered \"under $50\" as a maximum of 49.99.\n\nOpen question: the rule language can't do \"more than $20 either way\" in one condition, so the over and short cases stay as two separate rules.",
   "patch": {
-   "kind": "band",
-   "rule_id": "A-R-018",
-   "condition": "diff_abs_max",
-   "value": 89.55,
-   "review": null,
-   "limit": 15,
-   "not_amount": false
+   "kind": "ops",
+   "ops": [
+    {
+     "op": "approve",
+     "rule_id": "A-R-012"
+    },
+    {
+     "op": "approve",
+     "rule_id": "A-R-013"
+    },
+    {
+     "op": "modify",
+     "rule_id": "A-R-014",
+     "executable": true,
+     "text": "A branch cash deposit that is more than 20.00 over its route cash collection in 4000 Vending sales goes to the ops manager.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "in",
+      "description_regex": "^deposit br",
+      "candidate": {
+       "by": "amount_near",
+       "account": "4000",
+       "window_days": 5,
+       "max_entries": 1
+      },
+      "diff_max": -20
+     },
+     "then": {
+      "action": "escalate",
+      "escalate_to": "ops_manager"
+     }
+    },
+    {
+     "op": "add",
+     "insert_before": "A-R-015",
+     "executable": true,
+     "text": "A branch cash deposit under 50.00 that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, is booked in full to 4990 Misc income.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "in",
+      "description_regex": "^deposit br",
+      "amount_max": 49.99
+     },
+     "then": {
+      "action": "book",
+      "account": "4990"
+     },
+     "assigned_id": "A-R-026"
+    },
+    {
+     "op": "add",
+     "insert_before": "A-R-015",
+     "executable": true,
+     "text": "A branch cash deposit of 50.00 or more that matches no route cash collection in 4000 Vending sales, either alone or as several count sheets on one slip, goes to the owner.",
+     "when": {
+      "item_kind": "bank",
+      "direction": "in",
+      "description_regex": "^deposit br",
+      "amount_min": 50
+     },
+     "then": {
+      "action": "escalate",
+      "escalate_to": "owner"
+     },
+     "assigned_id": "A-R-027"
+    }
+   ],
+   "origin": "interview A-COR-0004"
   }
  }
 }

@@ -34,7 +34,8 @@ def score(run_id: str, key: Path, second_half: bool) -> dict:
     return m
 
 
-def one_client(client: str, skip: set[str], label: str, workers: int) -> dict:
+def one_client(client: str, skip: set[str], label: str, workers: int, smoke: bool = False) -> dict:
+    llm_on, few = not smoke, (1 if smoke else None)
     key = db.ROOT / "keys" / f"{client}_{PERIOD}.json"
     out, human_cost = {"second_half": {}, "full_month": {}}, llm.Usage()
     shutil.rmtree(playbook.pb_dir(client, "main"), ignore_errors=True)
@@ -46,24 +47,25 @@ def one_client(client: str, skip: set[str], label: str, workers: int) -> dict:
 
     if "zero_shot" not in skip:
         rid = f"{client}_{PERIOD}_zero_shot"
-        pipeline.run(client, PERIOD, "zero_shot", run_id=rid, workers=workers, label=label)
+        pipeline.run(client, PERIOD, "zero_shot", run_id=rid, workers=workers, label=label, use_llm=llm_on)
         out["full_month"]["zero_shot"], out["second_half"]["zero_shot"] = score(rid, key, False), score(rid, key, True)
 
     if "history_only" not in skip:
         rid = f"{client}_{PERIOD}_history_only"
-        pipeline.run(client, PERIOD, "cold_start", "no_playbook", run_id=rid, workers=workers, label=label)
+        pipeline.run(client, PERIOD, "cold_start", "no_playbook", run_id=rid, workers=workers, label=label, use_llm=llm_on)
         out["full_month"]["history_only"], out["second_half"]["history_only"] = score(rid, key, False), score(rid, key, True)
 
     rid = f"{client}_{PERIOD}_playbook"
-    pipeline.run(client, PERIOD, "playbook", "main", version=1, run_id=rid, workers=workers, label=label)
+    pipeline.run(client, PERIOD, "playbook", "main", version=1, run_id=rid, workers=workers, label=label, use_llm=llm_on)
     out["full_month"]["playbook"], out["second_half"]["playbook"] = score(rid, key, False), score(rid, key, True)
 
-    answers = reviewer.band_interview(client, "main", usage=human_cost) + reviewer.interview(client, "main", usage=human_cost)
+    answers = reviewer.band_interview(client, "main", usage=human_cost, **({"limit": few} if few else {})) \
+        + reviewer.interview(client, "main", usage=human_cost, **({"limit": few} if few else {}))
     rid_half = f"{client}_{PERIOD}_signed_off_first_half"
-    pipeline.run(client, PERIOD, "corrected", "main", run_id=rid_half, workers=workers, date_to=SPLIT_TO, label=label)
-    fixes = reviewer.review_queue(client, "main", rid_half, key, SPLIT_TO, usage=human_cost)
+    pipeline.run(client, PERIOD, "corrected", "main", run_id=rid_half, workers=workers, date_to=SPLIT_TO, label=label, use_llm=llm_on)
+    fixes = reviewer.review_queue(client, "main", rid_half, key, SPLIT_TO, usage=human_cost, **({"limit": few} if few else {}))
     rid = f"{client}_{PERIOD}_corrected"
-    pipeline.run(client, PERIOD, "corrected", "main", run_id=rid, workers=workers, date_from=SPLIT_FROM, label=label)
+    pipeline.run(client, PERIOD, "corrected", "main", run_id=rid, workers=workers, date_from=SPLIT_FROM, label=label, use_llm=llm_on)
     out["second_half"]["corrected"] = score(rid, key, True)
     res = grade(db.RUNS / rid, key, SPLIT_FROM, None)
     (db.RUNS / rid / "metrics.json").write_text(json.dumps(res["metrics"] | {"by_category": None}, indent=1))
@@ -81,11 +83,12 @@ if __name__ == "__main__":
     ap.add_argument("--skip", nargs="*", default=[])
     ap.add_argument("--label", default="interim", help="'interim' for the agent-built validation set, 'blind' for the teammate's set")
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--smoke", action="store_true", help="cheap end-to-end check: investigator off, one answer of each kind; numbers are meaningless")
     a = ap.parse_args()
     clients = [a.client] if a.client else ["A", "B"]
     with ThreadPoolExecutor(2) as ex:
-        results = dict(zip(clients, ex.map(lambda c: one_client(c, set(a.skip), a.label, a.workers), clients)))
-    path = db.RUNS / "results.json"
+        results = dict(zip(clients, ex.map(lambda c: one_client(c, set(a.skip), a.label, a.workers, a.smoke), clients)))
+    path = db.RUNS / ("results_smoke.json" if a.smoke else "results.json")
     merged = json.loads(path.read_text()) if path.exists() else {"period": PERIOD, "clients": {}, "full_month": {}, "detail": {}}
     for c, r in results.items():
         merged["clients"].setdefault(c, {}).update({k: v | {"scope": "second_half"} for k, v in r["second_half"].items()})
