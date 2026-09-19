@@ -213,7 +213,7 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
             break
         messages += [{"role": "assistant", "content": reply.text},
                      {"role": "user", "content": f"Checked by code: {verdict}. Fix the patch (conditions, order or amounts) so the corrected item comes out the human's way."}]
-    if not patch["ops"]:
+    if not patch["ops"] or not ok:
         return {"correction_id": entry["correction_id"], "diff": None, "new_version": pb_old.get("version", 0),
                 "explanation": patch["explanation"], "check": verdict}
     cause = {"type": "correction", "correction_id": entry["correction_id"], "item_id": item["item_id"], "note": note,
