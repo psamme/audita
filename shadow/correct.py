@@ -293,6 +293,8 @@ def resolve_conflict(client: str, track: str, conflict_id: str, outcome: str, ro
     if outcome == "policy_change":
         result |= correct(client, track, item, conflict["human"], conflict["note"], conflict.get("run_id", ""), usage, role=role,
                           force=True, valid_from=item["record"]["date"])
+        if not result.get("diff"):
+            return result | {"held": "policy_not_applied"}
     elif outcome == "one_off_exception":     # recorded, never becomes a precedent
         pb = pbmod.load(client, track)
         pb["excluded_precedents"] = sorted(set(pb.get("excluded_precedents") or []) | {item["item_id"]})

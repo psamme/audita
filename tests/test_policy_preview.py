@@ -253,3 +253,13 @@ def test_partial_rerun_still_sees_other_ledger_claimants(sandbox):
                           persist=False, playbook_override=pb)
     assert [it["item_id"] for it in result["items"]] == ["X"]
     assert result["items"][0]["resolution"]["action"] == "escalate"
+
+
+def test_failed_conflict_policy_keeps_conflict_open(sandbox, monkeypatch):
+    entry = correct._log("T", {"type": "conflict", "item": {"record": {"date": "2026-03-10"}},
+                               "human": {}, "note": "New policy"}, "dev")
+    monkeypatch.setattr(correct, "correct", lambda *a, **kw: {"diff": None, "check": "Does not reproduce correction"})
+    result = correct.resolve_conflict("T", "dev", entry["correction_id"], "policy_change", role="controller")
+    assert result["held"] == "policy_not_applied"
+    events = [json.loads(line) for line in correct.log_path("T", "dev").read_text().splitlines()]
+    assert not any(event["type"] == "conflict_resolved" for event in events)

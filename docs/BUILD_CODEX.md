@@ -40,6 +40,8 @@ This uses only the existing two client concepts in an isolated directory. Polici
 
 ## Verification and limits
 
+The completed suite passes 80 tests with no expected failures. Rejected corrections stay visible in the review queue, and a failed policy-change validation leaves its conflict open.
+
 Run `uv run python -m sim.build` before the full suite if the normal development databases are absent, then `uv run pytest -q`. The new safety and preview tests also work independently without simulator data. Model calls are forbidden by their fixtures. Browser rehearsal covered preview, apply, updated sentence/band, deterministic rerun and undo with a reopened item. JavaScript syntax and git whitespace checks pass.
 
 Use one loopback server worker. Roles are explicit local caller assertions, not authenticated identities. Preview tokens and mutation serialization are process-local. Conservative matching and overlap checks may reduce coverage; no new accuracy claim is made. The paid investigator SDK path and blind April evaluation were not run. Legacy evidence snapshots cannot prove changes they never recorded.
