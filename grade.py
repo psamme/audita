@@ -9,6 +9,7 @@ Amounts are compared to the cent (tolerance 0.011 to absorb float rounding).
 """
 import argparse
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -49,8 +50,8 @@ def grade_item(pred: dict | None, key: dict) -> dict:
             "wrong_match": pred["action"] in MATCHY and not correct and not ledger_ok,
             "wrong_auto": pred["action"] != "escalate" and not correct,
             "missing": False, "key_action": key["action"],
-            "routed": pred["action"] == "escalate" and key["action"] == "escalate"
-                      and pred.get("escalate_to") == key.get("escalate_to")}
+            "routed": pred["action"] == "escalate" and any(k["action"] == "escalate" and pred.get("escalate_to") == k.get("escalate_to")
+                                                           for k in accepted)}
 
 
 def ratio(a, b):
@@ -114,10 +115,11 @@ def grade(run_dir: Path, key_path: Path, date_from: str | None = None, date_to: 
                          "cost_usd": usage.get("cost_usd", 0.0), "llm_calls": usage.get("llm_calls", 0)})
     unkeyed = []
     for item_id, it in items.items():
-        when = it["record"]["date"]
-        if item_id in key or (date_from and when < date_from) or (date_to and when > date_to):
+        when = (it.get("record") or {}).get("date") or ""      # no key date exists for these
+        if item_id in key or (when and ((date_from and when < date_from) or (date_to and when > date_to))):
             continue
-        unkeyed.append({"pred_action": it["resolution"]["action"], "cost_usd": it["usage"].get("cost_usd", 0.0), "llm_calls": it["usage"].get("llm_calls", 0)})
+        usage = it.get("usage") or {}
+        unkeyed.append({"pred_action": it["resolution"]["action"], "cost_usd": usage.get("cost_usd", 0.0), "llm_calls": usage.get("llm_calls", 0)})
     out = summarize(rows, unkeyed)
     out["scope"] = "full_month" if not (date_from or date_to) else f"{date_from or ''}..{date_to or ''}"
     out["by_source"] = {s: {"n": len(rs), "accuracy": ratio(sum(r["correct"] for r in rs), len(rs))}
@@ -143,6 +145,8 @@ if __name__ == "__main__":
     (a.run_dir / f"metrics{suffix}.json").write_text(json.dumps(result["metrics"], indent=1))
     (a.run_dir / f"grades{suffix}.json").write_text(json.dumps(result["items"]))
     shown = dict(result["metrics"])
+    lead = ("wrong_match_of_matched", "wrong_auto_of_auto", "accuracy_exceptions", "escalation_precision", "review_load", "cost_usd")
+    print("  ".join(f"{k}={shown[k]}" for k in lead), file=sys.stderr)     # the numbers to read first
     if a.quiet:
         shown.pop("by_category")
     print(json.dumps(shown, indent=1))

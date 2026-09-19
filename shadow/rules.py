@@ -36,6 +36,25 @@ from shadow import db
 from shadow.matcher import days_between, period_end, tokens
 
 
+_num, _str = {"type": "number"}, {"type": "string"}
+WHEN_SCHEMA = {"type": "object", "additionalProperties": False, "properties": {
+    "item_kind": {"type": "string", "enum": ["bank", "ledger"]}, "direction": {"type": "string", "enum": ["in", "out"]},
+    "description_regex": _str, "counterparty_regex": _str, "amount_min": _num, "amount_max": _num,
+    "candidate": {"type": "object", "additionalProperties": False, "required": ["by"], "properties": {
+        "by": {"type": "string", "enum": ["ref", "ref_in_description", "counterparty", "amount_near"]},
+        "window_days": _num, "account": _str, "max_entries": _num}},
+    "diff_min": _num, "diff_max": _num, "diff_abs_max": _num, "diff_pct_min": _num, "diff_pct_max": _num,
+    "invoice_age_days_max": _num, "invoice_age_days_min": _num,
+    "doc": {"type": "object", "additionalProperties": False, "required": ["type"], "properties": {
+        "type": _str, "net_diff_abs_min": _num, "net_diff_abs_max": _num}},
+    "age_days_max": _num, "posted_after_close": {"type": "boolean"}}}
+THEN_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["action"], "properties": {
+    "action": {"type": "string", "enum": ["match", "match_adjust", "book", "escalate", "carry_forward"]},
+    "account": _str, "remainder_account": _str, "escalate_to": _str,
+    # document meta field -> account; the field names belong to the client's documents, so this one stays open
+    "adjust_from_doc": {"type": "object", "additionalProperties": _str}}}
+
+
 class Ctx:
     def __init__(self, con, period: str, ledger_open: list[dict], used: set[str]):
         self.con, self.period, self.used = con, period, used

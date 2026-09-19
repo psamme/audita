@@ -133,7 +133,7 @@ RULE_SCHEMA = {
         "required": ["text", "executable", "when", "then", "evidence_ids", "confidence", "open_question"],
         "properties": {
             "text": {"type": "string"}, "executable": {"type": "boolean"},
-            "when": {"type": "object"}, "then": {"type": "object"},
+            "when": rules.WHEN_SCHEMA, "then": rules.THEN_SCHEMA,
             "evidence_ids": {"type": "array", "items": {"type": "string"}},
             "confidence": {"type": "number"},
             "open_question": {"type": ["string", "null"]}}}}},
@@ -428,7 +428,7 @@ REPAIR_SCHEMA = {
     "properties": {"rules": {"type": "array", "items": {
         "type": "object", "additionalProperties": False, "required": ["id", "text", "executable", "when", "then", "open_question"],
         "properties": {"id": {"type": "string"}, "text": {"type": "string"}, "executable": {"type": "boolean"},
-                       "when": {"type": "object"}, "then": {"type": "object"}, "open_question": {"type": ["string", "null"]}}}}},
+                       "when": rules.WHEN_SCHEMA, "then": rules.THEN_SCHEMA, "open_question": {"type": ["string", "null"]}}}}},
 }
 
 

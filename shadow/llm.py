@@ -165,7 +165,16 @@ def call(system: str, messages: list, tools: list | None = None, schema: dict | 
          max_tokens: int = 16000, model: str | None = None, usage: Usage | None = None) -> Reply:
     """One model turn. With `schema`, reply.text is JSON matching it. With `tools`, read reply.tool_calls."""
     fn = _sdk_call if backend() == "sdk" else _cli_call
-    reply = fn(system, messages, tools, schema, max_tokens, model or MODEL)
-    if usage:
-        usage.add(reply.usage)
+    for attempt in range(3):
+        reply = fn(system, messages, tools, schema, max_tokens, model or MODEL)
+        if usage:
+            usage.add(reply.usage)
+        if not schema:
+            return reply
+        try:                       # callers json.loads(reply.text); make sure that cannot blow up on them
+            json.loads(reply.text)
+            return reply
+        except json.JSONDecodeError:
+            if attempt == 2:
+                raise RuntimeError(f"model did not return valid JSON for the requested schema (stop_reason={reply.stop_reason})")
     return reply

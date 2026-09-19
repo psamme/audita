@@ -4,6 +4,8 @@
     uv run python experiments.py --client A --skip zero_shot
 
 1. zero_shot   frontier model with tools, no playbook, no history                      (full month)
+1b. history_only  same model with tools AND the client's ERP trail, but no playbook: separates the value of the
+               playbook from the value of simply being able to look things up                           (full month)
 2. playbook    playbook induced from months 1-3, only back-test-trusted rules active   (full month)
 3. corrected   after human input: the controller answers the playbook's open questions, then a reviewer works
                the escalation queue for April 1-15. Scored on April 16-30 only, which the humans never touched.
@@ -46,6 +48,11 @@ def one_client(client: str, skip: set[str], label: str, workers: int) -> dict:
         rid = f"{client}_{PERIOD}_zero_shot"
         pipeline.run(client, PERIOD, "zero_shot", run_id=rid, workers=workers, label=label)
         out["full_month"]["zero_shot"], out["second_half"]["zero_shot"] = score(rid, key, False), score(rid, key, True)
+
+    if "history_only" not in skip:
+        rid = f"{client}_{PERIOD}_history_only"
+        pipeline.run(client, PERIOD, "cold_start", "no_playbook", run_id=rid, workers=workers, label=label)
+        out["full_month"]["history_only"], out["second_half"]["history_only"] = score(rid, key, False), score(rid, key, True)
 
     rid = f"{client}_{PERIOD}_playbook"
     pipeline.run(client, PERIOD, "playbook", "main", version=1, run_id=rid, workers=workers, label=label)

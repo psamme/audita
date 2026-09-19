@@ -17,7 +17,7 @@ PATCH_SCHEMA = {
         "properties": {"op": {"type": "string", "enum": ["add", "modify", "retire", "approve"]},
                        "rule_id": {"type": ["string", "null"]}, "insert_before": {"type": ["string", "null"]},
                        "text": {"type": "string"}, "executable": {"type": "boolean"},
-                       "when": {"type": "object"}, "then": {"type": "object"}}}}},
+                       "when": rules.WHEN_SCHEMA, "then": rules.THEN_SCHEMA}}}},
 }
 
 SYSTEM = """You maintain a client's reconciliation playbook. Someone at the client has just told you something: either \
