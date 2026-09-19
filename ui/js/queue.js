@@ -2,7 +2,7 @@
    and the correction form. A correction POSTs /api/corrections (10 to 25 s, one
    model call) and comes back as a playbook diff plus the items it now clears. */
 (async function () {
-  const { get, usd, cost, day, esc, role, cap, period, outcome, verdict, cite, reasoning, ruleBlock, diffBlock } = SO;
+  const { get, usd, cost, day, esc, role, cap, period, reasonPill, bandBar, outcome, verdict, cite, reasoning, ruleBlock, diffBlock } = SO;
   const view = document.getElementById("view"), summary = document.getElementById("summary"), runSel = document.getElementById("run");
   let clients = {}, run = null, queue = [], current = null, resultHtml = "";
   // Grades come from the answer key. They stay off screen unless the presenter asks (?grades=1),
@@ -122,7 +122,8 @@
         <div class="panel-head"><div><h3>${esc(text(it.record))}</h3><span class="sub faint">${cite(run.client, it.item_id)} · ${day(it.record.date)} · ${esc(it.record.counterparty || "")}</span></div>
           <div class="amt2 num">${usd(it.record.amount)}</div></div>
         <div class="panel-body verdict">
-          <div class="rule-top"><p class="line">${esc(verdict(res, c.chart))}</p><span class="state ${o.cls}">${esc(o.text)}</span></div>
+          <div class="rule-top"><p class="line">${esc(verdict(res, c.chart))}</p><span class="runrow"><span class="state ${o.cls}">${esc(o.text)}</span>${reasonPill(res)}</span></div>
+          ${it.band ? `<div class="rule-text"><span class="label">Between what history shows handled this way and what it shows handled another way</span>${bandBar({ side: it.band.side || "upper", lo: it.band.lo, hi: it.band.hi, lo_precedent: it.band.lo_precedent, hi_precedent: it.band.hi_precedent }, { client: run.client, value: it.band.value })}</div>` : ""}
           ${flags}${reasoning(res)}${proposed}${it.rule ? ruleBlock(it.rule) : res.rule_id ? `<div class="faint small">Cites playbook rule <span class="cite">${esc(res.rule_id)}</span></div>` : ""}
           <div class="meta-row"><span>Tier <span class="tier">${esc(it.tier)}</span></span><span>Cost ${cost(it.usage.cost_usd)}</span><span>${it.usage.llm_calls} model call${it.usage.llm_calls === 1 ? "" : "s"}</span><span>Confidence ${Number(res.confidence).toFixed(2)}</span></div>
           ${graded}
@@ -150,7 +151,7 @@
     const runs = await get("/api/runs");
     run = runs.find((r) => r.run_id === runId);
     if (!run) throw new Error("That run is not on the server any more. Pick another one.");
-    queue = await get(`/api/runs/${runId}/queue`);
+    queue = await get(`/api/runs/${runId}/queue` + (showGrades ? "?grades=true" : ""));
     current = queue[0] || null;
     const t = run.tiers, free = t.matcher + t.guardrail + t.rule;
     summary.innerHTML = `<span><b class="num">${run.n_items}</b> items</span><span><b class="num">${free}</b> cleared by code at $0.00</span><span><b class="num">${t.investigator}</b> worked by the investigator</span><span><b class="num">${queue.length}</b> sent to a person</span><span>Run cost <b class="num">${cost(run.cost_usd)}</b></span>${run.label ? `<span class="state state-proposed">${esc(cap(run.label))}</span>` : ""}`;

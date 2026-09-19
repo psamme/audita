@@ -4,7 +4,9 @@ strict  : predicted set == labelled set (what the labels literally say)
 pair    : predicted set is a non-empty subset of the labelled set (every ledger
           record we attached really belongs to that bank line's match group,
           but the group may contain more)
-Headline numbers use strict.
+Both are always reported, by name: precision_pair / match_rate_pair and precision_strict / match_rate_strict.
+The 99.8% operating point was chosen on pair-level precision; strict precision is lower because production staff
+bulk-matched interchangeable same-amount lines under one label, which no one-to-one matcher can reproduce.
 """
 
 

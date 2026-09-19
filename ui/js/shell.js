@@ -9,7 +9,9 @@
   const nav = document.querySelector(".nav");
   if (nav) nav.innerHTML = NAV.map(([href, label]) => `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
 
-  let stone = matchMedia("(prefers-color-scheme: dark)").matches ? "nero" : "statuario";
+  // Sam picked the white stone (Statuario, medium veining, whole page) as the look. Dark stays a toggle,
+  // but the OS theme no longer decides, so the demo opens the same way on any machine.
+  let stone = "statuario";
   try { stone = localStorage.getItem("so-stone") || stone; } catch (e) {}
 
   function paint() {

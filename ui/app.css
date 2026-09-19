@@ -165,3 +165,12 @@ main:not(.compact) .lede { background: var(--surface); border: 1px solid var(--l
 .rule-text.graded { border: 1px dashed var(--line-strong); background: transparent; }
 .qlayout { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); }
 @media (max-width: 900px) { .qlayout { grid-template-columns: minmax(0, 1fr); } }
+.panel.empty { padding: var(--s-6) var(--s-5); display: grid; gap: var(--s-3); justify-items: start; }
+
+/* Playbook: the one loud thing is the yes or no */
+.ask-q { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; max-width: 32ch; text-wrap: pretty; }
+.panel.ask .btn { height: 48px; padding: 0 24px; }
+.band-wrap { display: grid; gap: 2px; max-width: 640px; margin-top: var(--s-2); }
+.input-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); }
+.input-row > div { display: grid; gap: var(--s-2); }
+.charts .wide { grid-column: 1 / -1; }

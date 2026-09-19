@@ -13,6 +13,7 @@ from datetime import datetime
 from shadow import db, guardrails, history, llm, matcher, rules
 
 APPROVE_MIN_SUPPORT = 3
+ROUTINE_DAYS = 3          # handled within this many days by whoever usually does it counts as routine handling
 CONFLICT_SHARE = 0.12   # tolerated disagreement with a noisy trail before a rule loses auto-approval
 
 
@@ -346,6 +347,8 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
                     if v is None:
                         continue
                     if same(out["resolution"], o["outcome"]):
+                        if (o["lag_days"] or 0) > ROUTINE_DAYS:
+                            continue      # booked the usual way but only after days of waiting: probably asked about, so it proves nothing
                         seen.append((round(v, 2), True, b["id"]))
                     elif o["outcome"]["action"] != action:      # same action to another account is noise, not a line
                         seen.append((round(v, 2), False, b["id"]))

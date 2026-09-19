@@ -272,6 +272,36 @@
 
     <section class="wrap section">
       <div class="section-head">
+        <div class="label">New · the playbook's one loud moment</div>
+        <h2>A threshold is a band, not a number</h2>
+        <p>The rule acts on its own up to the largest case history shows. It stays out from the smallest case handled another way. In between it asks, and one yes or no from the controller narrows the band on screen. Example data.</p>
+      </div>
+      <div class="panel"><div class="panel-body stack">
+        <div class="label">One question · 4 bands still open, widest first</div>
+        <h2 style="font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; max-width: 32ch;">I saw no bank fee over $22.56. If one came in at $35.00, would you want it sent to someone for review?</h2>
+        <div class="band" style="max-width: 760px;">
+          <div class="band-track">
+            <span class="band-seg acts" style="left: 0%; width: 38%"></span>
+            <span class="band-seg asks open" id="demoAsk" style="left: 38%; width: 62%"></span>
+            <span class="band-mark" style="left: 59%"><i></i><b class="num">$35.00</b></span>
+          </div>
+          <div class="band-ends">
+            <span class="band-end" style="left: 38%"><b class="num">$22.56</b><span class="cite">A-BL-00311</span></span>
+            <span class="band-end far" id="demoFar"><b>No larger one seen</b></span>
+            <span class="band-end" id="demoHi" style="left: 59%" hidden><b class="num">$35.00</b><span class="cite">A-COR-0002</span></span>
+          </div>
+          <div class="legend"><span><i class="band-key acts"></i>Acts on its own, $0.00</span><span><i class="band-key asks"></i>Asks a person</span><span><i class="band-key out"></i>Stays out</span></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" id="demoYes">Yes, send it to a person</button>
+          <button class="btn btn-secondary" id="demoReset">Reset</button>
+          <span class="note" id="demoNote">Instant. No model call.</span>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="wrap section">
+      <div class="section-head">
         <div class="label">Foundations</div>
         <h2>Ink on stone</h2>
         <p>One typeface, one weight change, nine neutrals. Green and red exist only inside diffs and grades.</p>
@@ -329,7 +359,7 @@
     const t = root.getAttribute("data-theme");
     return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
   };
-  const state = { stone: osDark() ? "nero" : "statuario", veining: "0.75", marble: "ground", seed: 11 };
+  const state = { stone: "statuario", veining: "0.75", marble: "ground", seed: 11 };   // Sam's pick, 2026-09-19
   try { Object.assign(state, JSON.parse(localStorage.getItem("so-design") || "{}")); } catch (e) {}
 
   let queued = 0;
@@ -357,6 +387,9 @@
     state.seed = 1 + Math.floor(Math.random() * 998);
     apply();
   });
+  const ask = document.getElementById("demoAsk"), far = document.getElementById("demoFar"), hi = document.getElementById("demoHi"), dn = document.getElementById("demoNote");
+  document.getElementById("demoYes").addEventListener("click", () => { ask.style.width = "21%"; ask.classList.remove("open"); far.hidden = true; hi.hidden = false; dn.textContent = "Recorded. The playbook is now version 5."; });
+  document.getElementById("demoReset").addEventListener("click", () => { ask.style.width = "62%"; ask.classList.add("open"); far.hidden = false; hi.hidden = true; dn.textContent = "Instant. No model call."; });
   let rt = 0;
   addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(repaint, 200); });
   apply();

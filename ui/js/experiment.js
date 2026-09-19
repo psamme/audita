@@ -28,7 +28,7 @@
       <article class="panel side">
         <div class="panel-head">
           <div><h3>${esc(client.name)}</h3><span class="sub">${esc((client.blurb || "").split(". ")[0].replace(/\.$/, ""))}</span></div>
-          <span class="state ${o.cls}">${esc(o.text)}</span>
+          <span class="runrow"><span class="state ${o.cls}">${esc(o.text)}</span>${SO.reasonPill(res)}</span>
         </div>
         <div class="panel-body verdict">
           <p class="line">${esc(verdict(res, chart))}</p>
@@ -51,13 +51,47 @@
       </article>`;
   }
 
-  // "" is the latest playbook (after the controller's answers and corrections); "1" is as induced
-  let version = "";
+  // GETs are cache-only on the server: a 404 means "not run yet", which is an empty state
+  // with a Run button, never a reason to show fixtures. Only an unreachable server does that.
+  // "" is the latest playbook (after the controller's answers and corrections); "1" is as induced.
+  let version = "", busy = false, clients = [];
   const route = () => "/api/experiment" + (version ? "?version=" + version : "");
+  const runBody = (which) => SO.body({ which, version: version ? Number(version) : null });
 
-  function render(clients, exp, live) {
+  async function fetchCached(path) {
+    let res;
+    try { res = await fetch(path, { headers: { accept: "application/json" } }); } catch (e) { return { down: true }; }
+    if (res.status === 404) return { empty: true };
+    if (!res.ok) return { failed: res.status };
+    return { data: await res.json() };
+  }
+
+  function controls(note) {
+    const off = SO.usedFixture ? "disabled" : "";
+    return `<div class="runrow">
+      <div class="seg" id="pbver" aria-label="Playbook version">
+        <button data-v="1" aria-pressed="${version === "1"}" ${off}>As induced</button>
+        <button data-v="" aria-pressed="${version === ""}" ${off}>After sign-off</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="fresh" ${off}>Run it live</button>
+      <span class="note" id="freshNote">${esc(note)}</span>
+    </div>`;
+  }
+
+  function wire() {
+    document.getElementById("fresh").addEventListener("click", () => runLive("same_transaction"));
+    document.querySelectorAll("#pbver button").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.v === version || busy) return;
+      version = b.dataset.v;
+      show();
+    }));
+  }
+
+  function render(exp, live) {
     const byId = Object.fromEntries(clients.map((c) => [c.id, c]));
     const t = exp.transaction;
+    const note = SO.usedFixture ? "Saved example. Start the server to switch playbook versions or run it live."
+      : live ? "This is a live run, finished just now." : "Showing the last saved run. A live run takes about 15 seconds and makes real model calls.";
     view.innerHTML = `
       <div class="screen">
         <div class="panel txn">
@@ -69,82 +103,88 @@
           </dl>
         </div>
         <div class="split">${side(byId.A, exp.results.A)}${side(byId.B, exp.results.B)}</div>
-        <div class="runrow">
-          <div class="seg" id="pbver" aria-label="Playbook version">
-            <button data-v="1" aria-pressed="${version === "1"}" ${SO.usedFixture ? "disabled" : ""}>As induced</button>
-            <button data-v="" aria-pressed="${version === ""}" ${SO.usedFixture ? "disabled" : ""}>After sign-off</button>
-          </div>
-          <button class="btn btn-secondary btn-sm" id="fresh" ${SO.usedFixture ? "disabled" : ""}>Run it live</button>
-          <span class="note" id="freshNote">${SO.usedFixture ? "Saved example. Start the server to switch playbook versions or run it live."
-            : live ? "This is a live run, finished just now." : "Showing the last saved run. A live run takes about 15 seconds and makes real model calls."}</span>
-        </div>
+        ${controls(note)}
         <div id="control"></div>
       </div>`;
-    document.getElementById("fresh").addEventListener("click", () => runFresh(clients));
-    control(clients);
-    document.querySelectorAll("#pbver button").forEach((b) => b.addEventListener("click", async () => {
-      if (b.dataset.v === version || busy) return;
-      const previous = version;
-      version = b.dataset.v;
-      // an uncached version can start a live run on the server, so this waits like one
-      const done = working("Loading that playbook version.");
-      try {
-        const res = await fetch(route());
-        if (!res.ok) throw new Error(String(res.status));
-        done(); render(clients, await res.json());
-      } catch (err) {
-        version = previous; done();
-        document.getElementById("freshNote").textContent = "That playbook version has no saved run yet.";
-      }
-    }));
+    wire();
+    control();
+  }
+
+  function renderEmpty(message) {
+    view.innerHTML = `<div class="screen">
+      <div class="panel empty"><h3>${esc(message)}</h3><p class="muted">Both agents will work the same bank line, one per client. About 15 seconds, real model calls.</p></div>
+      ${controls("Nothing saved for this playbook version yet.")}
+      <div id="control"></div></div>`;
+    wire();
+    control();
+  }
+
+  async function show() {
+    const r = await fetchCached(route());
+    if (r.data) return render(r.data);
+    if (r.empty) return renderEmpty(version ? "The as-induced playbook has not been run on this payment yet." : "This payment has not been run yet.");
+    if (r.down && !version) return render(await get("/api/experiment"));   // server unreachable: saved example, with the banner
+    view.innerHTML = `<div class="panel error">The server answered with an error${r.failed ? " (" + r.failed + ")" : ""}. Reload once it is back.</div>`;
   }
 
   // Demo step 4: the amount ties exactly, so a matcher alone would clear it.
   // Code stops it because the payee account changed; no model gets a vote.
-  async function control(clients) {
+  async function control(item) {
     const box = document.getElementById("control");
-    try {
-      const res = await fetch("/api/experiment/bank-change");
-      if (!res.ok) return;
-      const data = await res.json(), item = data.item || data, rec = item.record;
-      const b = clients.find((c) => c.id === "B");
-      box.innerHTML = `<div class="control-head"><div class="label">A control the model cannot talk its way past</div>
-          <h2>The amount ties exactly. It still stops.</h2></div>
-        <div class="panel txn"><div><span class="label">Bank line · ${day(rec.date)}</span><div class="desc">${esc(rec.description)}</div></div>
-          <dl class="kv num"><dt>Paid out</dt><dd class="amt">${usd(Math.abs(rec.amount))}</dd><dt>Open payable</dt><dd>${usd(Math.abs(rec.amount))}</dd><dt>Difference</dt><dd>$0.00</dd></dl></div>
-        ${side(b, item)}`;
-      if (location.hash === "#control") box.scrollIntoView();
-    } catch (e) { /* server not running: the split screen stands on its own */ }
+    if (!box || SO.usedFixture) return;
+    const head = `<div class="control-head"><div class="label">A control the model cannot talk its way past</div><h2>The amount ties exactly. It still stops.</h2></div>`;
+    if (!item) {
+      const r = await fetchCached("/api/experiment/bank-change");
+      if (r.empty) {
+        box.innerHTML = `${head}<div class="panel empty"><h3>The vendor bank change has not been run yet.</h3>
+          <div class="runrow"><button class="btn btn-secondary btn-sm" id="runControl">Run it</button><span class="note" id="controlNote">About 15 seconds, one model call.</span></div></div>`;
+        document.getElementById("runControl").addEventListener("click", () => runLive("bank_change"));
+        return;
+      }
+      if (!r.data) return;
+      item = r.data.item || r.data;
+    }
+    const rec = item.record, b = clients.find((c) => c.id === "B");
+    box.innerHTML = `${head}
+      <div class="panel txn"><div><span class="label">Bank line · ${day(rec.date)}</span><div class="desc">${esc(rec.description)}</div></div>
+        <dl class="kv num"><dt>Paid out</dt><dd class="amt">${usd(Math.abs(rec.amount))}</dd><dt>Open payable</dt><dd>${usd(Math.abs(rec.amount))}</dd><dt>Difference</dt><dd>$0.00</dd></dl></div>
+      ${side(b, item)}`;
+    if (location.hash === "#control") box.scrollIntoView();
   }
 
-  // one pending state for anything that may run the agents: ticker on, controls off
-  let busy = false;
-  function working(message) {
+  // one pending state for anything that runs the agents: ticker on, controls off
+  function working(noteId, message) {
     busy = true;
-    const note = document.getElementById("freshNote"), started = Date.now();
-    const controls = document.querySelectorAll("#fresh, #pbver button");
-    controls.forEach((c) => { c.disabled = true; });
-    const tick = setInterval(() => { note.textContent = `${message} ${Math.round((Date.now() - started) / 1000)}s`; }, 500);
+    const note = document.getElementById(noteId), started = Date.now();
+    const buttons = document.querySelectorAll("#fresh, #pbver button, #runControl");
+    buttons.forEach((c) => { c.disabled = true; });
     note.textContent = message;
-    return () => { busy = false; clearInterval(tick); controls.forEach((c) => { c.disabled = false; }); };
+    const tick = setInterval(() => { note.textContent = `${message} ${Math.round((Date.now() - started) / 1000)}s`; }, 500);
+    return (failure) => {
+      busy = false; clearInterval(tick);
+      buttons.forEach((c) => { c.disabled = false; });
+      if (failure) note.textContent = failure;
+    };
   }
 
-  async function runFresh(clients) {
+  async function runLive(which) {
     if (busy) return;
-    const done = working("Both agents are working the same bank line.");
+    const same = which === "same_transaction";
+    const done = working(same ? "freshNote" : "controlNote", same ? "Both agents are working the same bank line." : "The agent is working the payment.");
     try {
-      const res = await fetch(route() + (version ? "&" : "?") + "fresh=true");
+      const res = await fetch("/api/experiment/run", { method: "POST", headers: { "content-type": "application/json" }, body: runBody(which) });
       if (!res.ok) throw new Error(String(res.status));
-      done(); render(clients, await res.json(), true);
-    } catch (e) {
+      const data = await res.json();
       done();
-      document.getElementById("freshNote").textContent = "The live run did not finish. The saved run is still shown.";
+      if (same) render(data, true); else control(data.item || data);
+    } catch (e) {
+      done("The live run did not finish. What was on screen before is unchanged.");
     }
   }
 
   try {
-    const [clients, exp] = await Promise.all([get("/api/clients"), get("/api/experiment")]);
-    render(clients, exp);
+    clients = await get("/api/clients");
+    await show();
   } catch (e) {
     view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`;
   }

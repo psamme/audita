@@ -102,5 +102,80 @@
     openRecord(a.dataset.rec);
   });
 
-  Object.assign(SO, { role, cap, period, outcome, verdict, splitRationale, leadAndRest, cite, reasoning, ruleBlock, diffBlock, openRecord });
+  // Why it stopped. Set on every escalation by the pipeline.
+  const REASON = { in_band: "Inside the unknown band", no_rule: "No rule covers this", conflicting_precedents: "History disagrees with itself",
+    fraud_shaped: "Shaped like fraud", thin_precedent: "Too few past cases" };
+  const reasonPill = (res) => (res && res.reason && REASON[res.reason] ? `<span class="state">${esc(REASON[res.reason])}</span>` : "");
+
+  // A threshold is a band, not a number: the rule acts on its own up to `lo` (the largest case history
+  // shows handled that way), stays out from `hi` (the smallest case handled another way), and asks a
+  // person in between. Each end cites the past item that put it there. side "lower" mirrors it.
+  function bandBar(band, opts) {
+    opts = opts || {};
+    const money = (v) => usd(Math.abs(v));
+    const open = band.hi == null, upper = band.side !== "lower";
+    const marks = [band.lo, band.hi, opts.value].filter((v) => v != null).map(Math.abs);
+    const max = opts.max || Math.max(...marks) * (open ? 1.7 : 1.25) || 1;
+    const pos = (v) => Math.min(100, (Math.abs(v) / max) * 100);
+    const lo = pos(band.lo), hi = open ? 100 : pos(band.hi);
+    const a = upper ? lo : 100 - hi, b = upper ? hi : 100 - lo;          // band start and end, left to right
+    const at = (v) => (upper ? pos(v) : 100 - pos(v));
+    const c = opts.client;
+    return `<div class="band" data-max="${max}">
+      <div class="band-track">
+        <span class="band-seg acts" style="left: ${upper ? 0 : b}%; width: ${upper ? a : 100 - b}%"></span>
+        <span class="band-seg asks ${open ? "open" : ""}" style="left: ${a}%; width: ${b - a}%"></span>
+        ${opts.value != null ? `<span class="band-mark" style="left: ${at(opts.value)}%"><i></i><b class="num">${money(opts.value)}</b></span>` : ""}
+      </div>
+      <div class="band-ends">
+        <span class="band-end" style="left: ${upper ? a : b}%"><b class="num">${money(band.lo)}</b>${band.lo_precedent && c ? cite(c, band.lo_precedent) : ""}</span>
+        ${open ? `<span class="band-end far"><b>No ${upper ? "larger" : "smaller"} one seen</b></span>`
+               : `<span class="band-end" style="left: ${upper ? b : a}%"><b class="num">${money(band.hi)}</b>${band.hi_precedent && c ? cite(c, band.hi_precedent) : ""}</span>`}
+      </div>
+      <div class="legend"><span><i class="band-key acts"></i>Acts on its own, $0.00</span><span><i class="band-key asks"></i>Asks a person</span><span><i class="band-key out"></i>Stays out</span></div>
+    </div>`;
+  }
+
+  // Questions-to-trust: one client, one line. x is answers given (ordered), y is the share of items
+  // resolved without a model or a person. Stepped, because each answer is a discrete event.
+  function curveChart(c, id) {
+    const pts = (c.points || []).slice().sort((x, y) => x.k - y.k);
+    if (!pts.length) return "";
+    const W = 640, H = 260, L = 44, R = 16, T = 16, Bm = 34, kMax = Math.max(1, pts[pts.length - 1].k);
+    const x = (k) => L + (k / kMax) * (W - L - R), y = (v) => T + (1 - v) * (H - T - Bm);
+    let d = `M ${x(pts[0].k)} ${y(pts[0].auto_resolve_rate)}`;
+    for (let i = 1; i < pts.length; i++) d += ` H ${x(pts[i].k)} V ${y(pts[i].auto_resolve_rate)}`;
+    const target = c.target_auto_resolve_rate, reached = c.questions_to_trust;
+    const ticks = [0, 0.25, 0.5, 0.75, 1];
+    const step = Math.max(1, Math.ceil(kMax / 8));
+    return `<div class="curve" id="${esc(id)}">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of items resolved automatically after each answer">
+        ${ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" class="axis">${Math.round(t * 100)}%</text>`).join("")}
+        ${pts.filter((p) => p.k % step === 0).map((p) => `<text x="${x(p.k)}" y="${H - 12}" text-anchor="middle" class="axis">${p.k}</text>`).join("")}
+        ${target != null ? `<line x1="${L}" x2="${W - R}" y1="${y(target)}" y2="${y(target)}" class="target"/><text x="${L + 6}" y="${y(target) - 6}" text-anchor="start" class="axis">Trust line ${Math.round(target * 100)}%</text>` : ""}
+        <path d="${d}" class="line" fill="none"/>
+        ${pts.map((p, i) => `<circle cx="${x(p.k)}" cy="${y(p.auto_resolve_rate)}" r="${p.k === reached ? 6 : 4}" class="dot ${p.k === reached ? "reached" : ""}" data-i="${i}"/>`).join("")}
+        ${pts.map((p, i) => `<rect x="${x(p.k) - 14}" y="${T}" width="28" height="${H - T - Bm}" fill="transparent" class="hit" data-i="${i}"/>`).join("")}
+      </svg>
+      <div class="curve-x axis-label">Answers given by a person</div>
+      <div class="tip" hidden></div>
+    </div>`;
+  }
+  function wireCurve(id, c) {
+    const root = document.getElementById(id); if (!root) return;
+    const pts = (c.points || []).slice().sort((x, y) => x.k - y.k), tip = root.querySelector(".tip");
+    const KIND = { induction: "Induced from the trail", band: "Yes or no on a band", open_question: "An answered question", correction: "A queue correction" };
+    root.querySelectorAll(".hit").forEach((h) => {
+      h.addEventListener("mouseenter", () => {
+        const p = pts[+h.dataset.i];
+        tip.innerHTML = `<b>After ${p.k} answer${p.k === 1 ? "" : "s"}</b><span>${esc(KIND[p.answer_kind] || "")}${p.answer ? ": " + esc(String(p.answer).slice(0, 120)) : ""}</span>
+          <span class="num">${(p.auto_resolve_rate * 100).toFixed(1)}% resolved on its own · ${p.wrong_matches} wrong match${p.wrong_matches === 1 ? "" : "es"} · ${p.left_for_model_or_human} left over${p.est_llm_cost_usd != null ? " · est. " + usd(p.est_llm_cost_usd) : ""}</span>`;
+        tip.hidden = false;
+        tip.style.left = Math.min(70, Math.max(0, (+h.getAttribute("x") / 640) * 100 - 10)) + "%";
+      });
+      h.addEventListener("mouseleave", () => { tip.hidden = true; });
+    });
+  }
+
+  Object.assign(SO, { reasonPill, bandBar, curveChart, wireCurve, role, cap, period, outcome, verdict, splitRationale, leadAndRest, cite, reasoning, ruleBlock, diffBlock, openRecord });
 })();

@@ -261,6 +261,9 @@ def main():
         "notes": notes,
     }
     RESULTS.parent.mkdir(exist_ok=True)
+    results |= {"precision_pair": results["precision"], "match_rate_pair": results["match_rate"],
+                "baseline_precision_pair": results["baseline_precision"], "baseline_match_rate_pair": results["baseline_match_rate"],
+                "metric_note": "precision/match_rate are pair level; *_strict require the predicted set to equal the labelled set. Quote both."}
     RESULTS.write_text(json.dumps(results, indent=2))
     print(f"   wrote {RESULTS}")
 
