@@ -234,3 +234,11 @@ pre.doc {
 }
 .tip b { font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .band-seg, .band-mark, .band-end { transition: none; } }
+.band-seg.acts.right { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.band-seg.asks.open-left { -webkit-mask-image: linear-gradient(270deg, #000 55%, transparent); mask-image: linear-gradient(270deg, #000 55%, transparent); }
+.band-end.at-start { transform: none; justify-items: start; }
+.band-end.at-end { transform: translateX(-100%); justify-items: end; }
+.band-end.far-left { left: 0; right: auto; justify-items: start; }
+.diff-band { min-width: 0; padding-right: var(--s-4); }
+.diff-row .band { padding-top: 8px; }
+.diff-del .band { opacity: 0.6; }

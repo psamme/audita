@@ -123,7 +123,7 @@
           <div class="amt2 num">${usd(it.record.amount)}</div></div>
         <div class="panel-body verdict">
           <div class="rule-top"><p class="line">${esc(verdict(res, c.chart))}</p><span class="runrow"><span class="state ${o.cls}">${esc(o.text)}</span>${reasonPill(res)}</span></div>
-          ${it.band ? `<div class="rule-text"><span class="label">Between what history shows handled this way and what it shows handled another way</span>${bandBar({ side: it.band.side || "upper", lo: it.band.lo, hi: it.band.hi, lo_precedent: it.band.lo_precedent, hi_precedent: it.band.hi_precedent }, { client: run.client, value: it.band.value })}</div>` : ""}
+          ${it.band ? `<div class="rule-text"><span class="label">Between what history shows handled this way and what it shows handled another way</span>${bandBar({ side: it.band.side || "upper" /* items made before the field existed */, lo: it.band.lo, hi: it.band.hi, lo_precedent: it.band.lo_precedent, hi_precedent: it.band.hi_precedent }, { client: run.client, value: it.band.value })}</div>` : ""}
           ${flags}${reasoning(res)}${proposed}${it.rule ? ruleBlock(it.rule) : res.rule_id ? `<div class="faint small">Cites playbook rule <span class="cite">${esc(res.rule_id)}</span></div>` : ""}
           <div class="meta-row"><span>Tier <span class="tier">${esc(it.tier)}</span></span><span>Cost ${cost(it.usage.cost_usd)}</span><span>${it.usage.llm_calls} model call${it.usage.llm_calls === 1 ? "" : "s"}</span><span>Confidence ${Number(res.confidence).toFixed(2)}</span></div>
           ${graded}

@@ -42,10 +42,29 @@ Rule language:
 when (bank items""" + rules.__doc__.split("when (bank items", 1)[1]
 
 
+def _summary(e: dict) -> str:
+    """One line a person can read in a list of everything the playbook was ever told."""
+    t = e.get("type")
+    if t == "correction":
+        return f"Corrected {e.get('item_id')}: {e.get('note')}"
+    if t == "interview" and "condition" in e:
+        return f"Asked about {e['value']:,.2f} on {e['rule_id']}: " + ("send for review" if e["review"] else "handle the usual way")
+    if t == "interview":
+        return f"Answered {e.get('rule_id')}: {e.get('answer')}"
+    if t == "conflict":
+        return f"Conflict with {e.get('rule_id')} raised by {e.get('by_role') or 'a reviewer'}: {e.get('note')}"
+    if t == "conflict_resolved":
+        return f"Conflict {e.get('conflict_id')} settled as {e.get('outcome')}"
+    if t == "retraction":
+        return f"Retracted {e.get('retracted')}" + (f": {e['note']}" if e.get("note") else "")
+    return t or ""
+
+
 def _log(client: str, entry: dict) -> dict:
     path = db.DATA / client / "corrections.jsonl"
     n = len(path.read_text().splitlines()) if path.exists() else 0
     entry = {"correction_id": f"{client}-COR-{n + 1:04d}", "at": datetime.now().isoformat(timespec="seconds")} | entry
+    entry["summary"] = _summary(entry)
     with path.open("a") as f:
         f.write(json.dumps(entry, default=str) + "\n")
     return entry

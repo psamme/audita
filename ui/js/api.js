@@ -4,18 +4,20 @@
   const FIXTURES = { "/api/clients": "fixtures/clients.json", "/api/experiment": "fixtures/experiment.json" };
   let usedFixture = false;
 
-  // Rehearsal: ?track=dev makes both POST paths (and playbook reads) use the dev track, so a
+  // Rehearsal: ?track=dev (or any named non-main track) makes both POST paths (and playbook reads) use the dev track, so a
   // practice run never writes the main playbook. Off by default; ?track=main turns it off.
   // It survives navigation within the tab and is always announced by a banner.
   let track = "";
   try {
     const p = new URLSearchParams(location.search).get("track");
-    if (p) sessionStorage.setItem("so-track", p === "dev" ? "dev" : "");
-    track = sessionStorage.getItem("so-track") || "";
-  } catch (e) { track = new URLSearchParams(location.search).get("track") === "dev" ? "dev" : ""; }
-  const rehearsal = track === "dev";
-  const withTrack = (path) => (rehearsal ? path + (path.includes("?") ? "&" : "?") + "track=dev" : path);
-  const body = (obj) => JSON.stringify(rehearsal ? { ...obj, track: "dev" } : obj);
+    const clean = (v) => (v && v !== "main" && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : "");
+    if (p) sessionStorage.setItem("so-track", clean(p));
+    track = clean(sessionStorage.getItem("so-track"));
+  } catch (e) { const v = new URLSearchParams(location.search).get("track"); track = v && v !== "main" && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : ""; }
+  // any track other than main is a rehearsal: "dev" for practice, or a named one such as "curve"
+  const rehearsal = track !== "";
+  const withTrack = (path) => (rehearsal ? path + (path.includes("?") ? "&" : "?") + "track=" + track : path);
+  const body = (obj) => JSON.stringify(rehearsal ? { ...obj, track } : obj);
 
   function banner(id, html) {
     if (document.getElementById(id)) return;
@@ -23,7 +25,7 @@
     el.id = id; el.className = "banner"; el.setAttribute("role", "status"); el.innerHTML = html;
     document.body.prepend(el);
   }
-  if (rehearsal) banner("banner-rehearsal", `<b>REHEARSAL (dev track)</b><span>Corrections and answers here do not touch the main playbook.</span><a href="?track=main">Turn off</a>`);
+  if (rehearsal) banner("banner-rehearsal", `<b>REHEARSAL (${track} track)</b><span>Corrections and answers here do not touch the main playbook.</span><a href="?track=main">Turn off</a>`);
 
   async function get(path) {
     try {

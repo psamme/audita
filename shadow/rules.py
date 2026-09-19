@@ -173,7 +173,7 @@ def evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
         if side == "upper" and b["hi"] is not None and v >= b["hi"] - 1e-9 or side == "lower" and b["lo"] is not None and v <= b["lo"] + 1e-9:
             return None
         if side == "upper" and v > b["lo"] + 1e-9 or side == "lower" and v < b["hi"] - 1e-9:
-            return {"in_band": {"condition": cond, "value": round(v, 2), "lo": b["lo"], "hi": b["hi"],
+            return {"in_band": {"condition": cond, "side": side, "value": round(v, 2), "lo": b["lo"], "hi": b["hi"],
                                 "lo_precedent": b.get("lo_precedent"), "hi_precedent": b.get("hi_precedent")},
                     "evidence_ids": out["evidence_ids"], "would": out["resolution"]}
     return out

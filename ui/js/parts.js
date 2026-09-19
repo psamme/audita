@@ -58,13 +58,24 @@
     </div>`;
   }
 
-  function diffBlock(diff) {
+  function diffBlock(diff, opts) {
     if (!diff) return `<p class="muted">The playbook did not change.</p>`;
     const rows = [];
     for (const r of diff.removed || []) rows.push(`<div class="diff-row diff-del"><span class="sign">−</span><span class="txt">${esc(r.text)} <span class="cite">${esc(r.id)}</span></span></div>`);
     for (const c of diff.changed || []) {
-      rows.push(`<div class="diff-row diff-del"><span class="sign">−</span><span class="txt">${esc(c.before.text)}</span></div>`);
-      rows.push(`<div class="diff-row diff-add"><span class="sign">+</span><span>${esc(c.after.text)} <span class="cite">${esc(c.after.id)}</span></span></div>`);
+      const moved = Object.keys(c.after.bands || {}).filter((k) => JSON.stringify((c.before.bands || {})[k]) !== JSON.stringify(c.after.bands[k]));
+      if (c.before.text !== c.after.text) {
+        rows.push(`<div class="diff-row diff-del"><span class="sign">−</span><span class="txt">${esc(c.before.text)}</span></div>`);
+        rows.push(`<div class="diff-row diff-add"><span class="sign">+</span><span>${esc(c.after.text)} <span class="cite">${esc(c.after.id)}</span></span></div>`);
+      } else if (moved.length) {
+        rows.push(`<div class="diff-row"><span class="sign"></span><span>${esc(c.after.text)} <span class="cite">${esc(c.after.id)}</span></span></div>`);
+      }
+      for (const k of moved) {
+        const before = (c.before.bands || {})[k], after = c.after.bands[k];
+        const max = Math.max(...[before && before.lo, before && before.hi, after.lo, after.hi].filter((v) => v != null).map(Math.abs)) * 1.5;
+        if (before) rows.push(`<div class="diff-row diff-del"><span class="sign">−</span><div class="diff-band">${bandBar(before, { max, client: opts && opts.client })}</div></div>`);
+        rows.push(`<div class="diff-row diff-add"><span class="sign">+</span><div class="diff-band">${bandBar(after, { max, client: opts && opts.client })}</div></div>`);
+      }
     }
     for (const r of diff.added || []) rows.push(`<div class="diff-row diff-add"><span class="sign">+</span><span>${esc(r.text)} <span class="cite">${esc(r.id)}</span></span></div>`);
     return rows.length ? `<div class="diff">${rows.join("")}</div>` : `<p class="muted">The playbook did not change.</p>`;
@@ -113,26 +124,30 @@
   function bandBar(band, opts) {
     opts = opts || {};
     const money = (v) => usd(Math.abs(v));
-    const open = band.hi == null, upper = band.side !== "lower";
+    const upper = band.side !== "lower";
+    // upper: acts from zero up to lo, asks up to hi (open ended when hi is unknown)
+    // lower: stays out up to lo, asks up to hi, acts from hi upward (open at the left when lo is unknown)
+    const open = upper ? band.hi == null : band.lo == null;
+    // a person stated the number: lo and hi are a cent apart, so there is a line and nothing left to ask
+    const closed = band.lo != null && band.hi != null && Math.abs(band.hi - band.lo) <= Math.max(0.011, Math.abs(band.lo) * 0.001);
     const marks = [band.lo, band.hi, opts.value].filter((v) => v != null).map(Math.abs);
-    const max = opts.max || Math.max(...marks) * (open ? 1.7 : 1.25) || 1;
+    const max = opts.max || Math.max(...marks) * (upper && (open || closed) ? 1.7 : 1.25) || 1;
     const pos = (v) => Math.min(100, (Math.abs(v) / max) * 100);
-    const lo = pos(band.lo), hi = open ? 100 : pos(band.hi);
-    const a = upper ? lo : 100 - hi, b = upper ? hi : 100 - lo;          // band start and end, left to right
-    const at = (v) => (upper ? pos(v) : 100 - pos(v));
+    const lo = band.lo == null ? 0 : pos(band.lo), hi = band.hi == null ? 100 : pos(band.hi);
     const c = opts.client;
+    const end = (at, value, precedent) => `<span class="band-end ${at < 8 ? "at-start" : at > 92 ? "at-end" : ""}" style="left: ${at}%"><b class="num">${money(value)}</b>${precedent && c ? cite(c, precedent) : ""}</span>`;
     return `<div class="band" data-max="${max}">
       <div class="band-track">
-        <span class="band-seg acts" style="left: ${upper ? 0 : b}%; width: ${upper ? a : 100 - b}%"></span>
-        <span class="band-seg asks ${open ? "open" : ""}" style="left: ${a}%; width: ${b - a}%"></span>
-        ${opts.value != null ? `<span class="band-mark" style="left: ${at(opts.value)}%"><i></i><b class="num">${money(opts.value)}</b></span>` : ""}
+        <span class="band-seg acts ${upper ? "" : "right"}" style="left: ${upper ? 0 : hi}%; width: ${upper ? lo : 100 - hi}%"></span>
+        ${closed ? "" : `<span class="band-seg asks ${open ? (upper ? "open" : "open-left") : ""}" style="left: ${lo}%; width: ${hi - lo}%"></span>`}
+        ${opts.value != null ? `<span class="band-mark" style="left: ${pos(opts.value)}%"><i></i><b class="num">${money(opts.value)}</b></span>` : ""}
       </div>
       <div class="band-ends">
-        <span class="band-end" style="left: ${upper ? a : b}%"><b class="num">${money(band.lo)}</b>${band.lo_precedent && c ? cite(c, band.lo_precedent) : ""}</span>
-        ${open ? `<span class="band-end far"><b>No ${upper ? "larger" : "smaller"} one seen</b></span>`
-               : `<span class="band-end" style="left: ${upper ? b : a}%"><b class="num">${money(band.hi)}</b>${band.hi_precedent && c ? cite(c, band.hi_precedent) : ""}</span>`}
+        ${band.lo != null ? end(lo, band.lo, band.lo_precedent) : ""}
+        ${closed || band.hi == null ? "" : end(hi, band.hi, band.hi_precedent)}
+        ${open && !closed ? `<span class="band-end far ${upper ? "" : "far-left"}"><b>No ${upper ? "larger" : "smaller"} one seen</b></span>` : ""}
       </div>
-      <div class="legend"><span><i class="band-key acts"></i>Acts on its own, $0.00</span><span><i class="band-key asks"></i>Asks a person</span><span><i class="band-key out"></i>Stays out</span></div>
+      <div class="legend"><span><i class="band-key acts"></i>Rule applies, $0.00</span>${closed ? "" : `<span><i class="band-key asks"></i>Asks a person</span>`}<span><i class="band-key out"></i>Rule does not apply</span></div>
     </div>`;
   }
 

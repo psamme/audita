@@ -25,9 +25,10 @@
     </div>${ids ? `<div class="cites">${ids}${more}</div>` : ""}${bands(r)}`;
   }
 
-  const COND = { amount_max: "Amount", amount_min: "Amount", diff_max: "Difference", diff_pct_max: "Difference, % of invoice", days_max: "Days" };
+  // condition keys look like amount_max, diff_min, doc.net_diff_abs_max: name the quantity, not the key
+  const condLabel = (k) => (/pct/.test(k) ? "Difference, % of invoice" : /diff/.test(k) ? "Difference" : /amount/.test(k) ? "Amount" : /day/.test(k) ? "Days" : cap(k.replace(/[._]/g, " ")));
   function bands(r) {
-    return Object.entries(r.bands || {}).map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(COND[cond] || cap(cond.replace(/_/g, " ")))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
+    return Object.entries(r.bands || {}).map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
   }
 
   // The stage moment: one yes or no, the band narrows, the playbook has a new version. No model call.
@@ -37,7 +38,7 @@
     const rule = pb.rules.find((r) => r.id === q.rule_id), b = (rule && rule.bands && rule.bands[q.condition]) || { side: "upper", lo: q.lo, hi: q.hi };
     return `<section class="panel ask"><div class="panel-body stack">
       <div class="label">One question · ${bandQs.length} band${bandQs.length === 1 ? "" : "s"} still open, widest first</div>
-      <h2 class="ask-q">${esc(q.text)}</h2>
+      <h2 class="ask-q">${esc(q.text.startsWith(q.rule_text) ? q.text.slice(q.rule_text.length).trim() : q.text)}</h2>
       <div id="askBand">${bandBar(b, { client, value: q.value })}</div>
       <div class="runrow">
         <button class="btn btn-primary" data-review="true">Yes, send it to a person</button>
@@ -61,7 +62,7 @@
       document.getElementById("askBand").innerHTML = bandBar(r.band, { client, value: q.value, max: Number(max) });
       note.textContent = `Recorded. The playbook is now version ${r.new_version}.`;
       bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${review ? "yes" : "no"} at ${usd(q.value)}</h3><span class="mono faint">${esc(r.correction_id || "")}</span></div>
-        <div class="panel-body stack"><p class="muted">${esc((r.cause && r.cause.note) || "")}</p>${diffBlock(r.diff)}</div></section>`;
+        <div class="panel-body stack"><p class="muted">${esc((r.cause && r.cause.note) || "")}</p>${diffBlock(r.diff, { client })}</div></section>`;
       setTimeout(() => load().catch(fail), 1600);
     } catch (e) {
       note.textContent = "The answer did not go through. Check that the server is running and try again.";
@@ -80,10 +81,12 @@
   const INPUT = { correction: "Correction", interview: "Answer", band: "Yes or no", conflict: "Conflict raised", conflict_resolved: "Conflict settled", retraction: "Undo" };
   function inputsBlock() {
     if (!inputs.length && !undoResult) return "";
+    // an undone input is not flagged on its own entry: the retraction entries name what they undid
+    const undone = new Set(inputs.filter((c) => c.type === "retraction").map((c) => c.retracted));
     return `${undoResult}<section class="panel"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
-      ${inputs.map((c) => `<div class="rule-row input-row"><div><p>${esc(c.note || c.answer || c.text || c.summary || INPUT[c.type] || c.type)}</p>
-        <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${c.retracted ? `<span class="state state-carry">Undone</span>` : ""}</div></div>
-        ${["correction", "interview", "band"].includes(c.type) && !c.retracted ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
+      ${inputs.map((c) => `<div class="rule-row input-row"><div><p>${esc(c.summary || c.note || c.answer || INPUT[c.type] || c.type)}</p>
+        <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${undone.has(c.correction_id) ? `<span class="state state-carry">Undone</span>` : ""}</div></div>
+        ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
   }
 
   async function undo(btn) {
@@ -96,7 +99,7 @@
       undoResult = `<section class="panel"><div class="panel-body stack">
         <div class="label">${esc(r.retracted)} undone · playbook version ${esc(r.new_version)}</div>
         <h2 class="ask-q"><span class="num">${r.resolutions_checked}</span> past item${r.resolutions_checked === 1 ? "" : "s"} checked, <span class="num">${re.length}</span> re-opened</h2>
-        ${diffBlock(r.diff)}
+        ${diffBlock(r.diff, { client })}
         ${re.length ? `<div class="table-wrap"><table class="grid tight"><tbody>${re.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td class="wrap">${esc((x.record || {}).description || (x.record || {}).memo || "")}</td><td class="r">${x.record ? usd(x.record.amount) : ""}</td><td class="wrap">Rule withdrawn, back in the queue</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Nothing already resolved depended on it.</p>`}
       </div></section>`;
       await load();
@@ -128,7 +131,7 @@
     if (v.version <= 1) { box.innerHTML = `<p class="muted">Version 1 is the playbook as induced. Nothing to compare it with.</p>`; return; }
     try {
       const d = await get(SO.withTrack(`/api/playbook/${client}/diff?from=${v.version - 1}&to=${v.version}`));
-      box.innerHTML = `${d.cause && d.cause.note ? `<p class="muted">"${esc(d.cause.note)}"</p>` : ""}${diffBlock(d)}`;
+      box.innerHTML = `${d.cause && d.cause.note ? `<p class="muted">"${esc(d.cause.note)}"</p>` : ""}${diffBlock(d, { client })}`;
     } catch (e) { box.innerHTML = `<p class="muted">That comparison is not available.</p>`; }
   }
 
@@ -166,7 +169,7 @@
         if (!res.ok) throw new Error(String(res.status));
         const r = await res.json();
         note.textContent = "Done.";
-        out.innerHTML = `<div class="stack"><p>${esc(r.explanation || "")}</p>${diffBlock(r.diff)}<div class="runrow"><button class="btn btn-secondary btn-sm" id="reload">Show playbook version ${esc(r.new_version)}</button></div></div>`;
+        out.innerHTML = `<div class="stack"><p>${esc(r.explanation || "")}</p>${diffBlock(r.diff, { client })}<div class="runrow"><button class="btn btn-secondary btn-sm" id="reload">Show playbook version ${esc(r.new_version)}</button></div></div>`;
         document.getElementById("reload").addEventListener("click", () => { openId = null; load(); });
       } catch (err) {
         note.textContent = "The answer did not go through. Nothing was changed. Check that the server is running and try again.";

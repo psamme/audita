@@ -174,3 +174,12 @@ main:not(.compact) .lede { background: var(--surface); border: 1px solid var(--l
 .input-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); }
 .input-row > div { display: grid; gap: var(--s-2); }
 .charts .wide { grid-column: 1 / -1; }
+
+/* Stage pass: at 1280x720 the payoff has to be on the first screen, so working screens
+   keep their heading to one compact row */
+main.compact { padding-block: var(--s-3) var(--s-7); }
+main.compact .lede-row { padding-block: var(--s-3); align-items: center; }
+main.compact .lede { gap: 2px; }
+main.compact .lede h2 { font-size: var(--t-xl); }
+main.compact .summary { padding-block: 10px; }
+.bar { padding-block: var(--s-3); }

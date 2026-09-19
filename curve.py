@@ -57,6 +57,7 @@ def one(client: str, target: float) -> dict:
     clean = [p for p in points if p["wrong_matches"] == 0 and (p["auto_resolve_rate"] or 0) >= target]
     return {"client": client, "target_auto_resolve_rate": target, "questions_to_trust": clean[0]["k"] if clean else None,
             "scored_on": f"{HALF_FROM}..end of {PERIOD} (development holdout)", "corrections_from": f"{PERIOD}-01..{HALF_TO}",
+            "metric_note": "auto_resolve_rate = share of scored exceptions the $0 tiers got right (resolved as the truth says, or escalated when the truth says escalate); wrong_auto = silent wrong resolutions",
             "cost_note": "model cost is estimated: items left after the $0 tiers times the measured cost per investigated item",
             "per_item_cost_usd": round(per_item, 4), "learning_cost_usd": usage.as_dict()["cost_usd"], "points": points}
 
