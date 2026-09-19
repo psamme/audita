@@ -120,7 +120,8 @@ def _rerun_open(client: str, track: str, cause_id: str, run_id: str | None = Non
     Returns the items that are no longer escalated. The re-run is a run of its own, so a later undo finds
     these resolutions in its blast radius and re-opens them."""
     if run_id is None:      # the newest base run of this client on this track
-        base = [r for r in runs() if r["client"] == client and (r.get("track") or TRACK) == track and "__after_" not in r["run_id"]]
+        base = [r for r in runs() if r["client"] == client and (r.get("track") or TRACK) == track
+                and "__after_" not in r["run_id"] and not r["run_id"].startswith("blast_")]    # not a re-run, not an undo's re-check
         if not base:
             return []
         run_id = base[0]["run_id"]

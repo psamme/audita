@@ -81,9 +81,13 @@
       }
       const applied = r.diff != null;
       note.textContent = applied ? `Recorded. The playbook is now version ${r.new_version}.` : "Recorded, not applied.";
+      // The card holds its answered state (band closed, item cleared) until the presenter moves on.
+      document.querySelector(".ask .answers").innerHTML = `${SO.reranBlock(r.reran, client, true)}
+        ${r.held ? `<p class="held"><span class="state state-carry">Recorded, not applied</span> ${esc(SO.cap(r.held))}</p>` : ""}
+        <button class="btn ${r.reran && r.reran.length ? "btn-secondary" : "btn-primary"}" id="nextQ">${bandQs.length > 1 ? "Next question" : "Show the playbook"}</button>`;
+      document.getElementById("nextQ").addEventListener("click", () => load().catch(fail));
       bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${esc(said)}</h3><span class="runrow">${applied ? "" : `<span class="state state-carry">Recorded, not applied</span>`}<span class="mono faint">${esc(r.correction_id || "")}</span></span></div>
-        <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}</div></section>`;
-      setTimeout(() => load().catch(fail), applied && r.band ? 1600 : 0);
+        <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}${SO.reranBlock(r.reran, client)}</div></section>`;
     } catch (e) {
       note.textContent = "The answer did not go through. Check that the server is running and try again.";
       controls.forEach((c) => { c.disabled = false; });
@@ -196,7 +200,7 @@
         if (!res.ok) throw new Error(String(res.status));
         const r = await res.json();
         note.textContent = "Done.";
-        out.innerHTML = `<div class="stack"><p>${esc(r.explanation || "")}</p>${diffBlock(r.diff, { client })}<div class="runrow"><button class="btn btn-secondary btn-sm" id="reload">Show playbook version ${esc(r.new_version)}</button></div></div>`;
+        out.innerHTML = `<div class="stack"><p>${esc(r.explanation || "")}</p>${diffBlock(r.diff, { client })}${SO.reranBlock(r.reran, client)}<div class="runrow"><button class="btn btn-secondary btn-sm" id="reload">Show playbook version ${esc(r.new_version)}</button></div></div>`;
         document.getElementById("reload").addEventListener("click", () => { openId = null; load(); });
       } catch (err) {
         note.textContent = "The answer did not go through. Nothing was changed. Check that the server is running and try again.";

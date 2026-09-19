@@ -105,8 +105,7 @@
         <p>${esc(r.explanation || "")}</p>
         ${diffBlock(r.diff)}
         ${r.check ? `<div class="rule-text"><span class="label">Checked by code, not by the model</span><div>${esc(cap(r.check))}</div></div>` : ""}
-        ${reran.length ? `<div><div class="label">Now cleared by the new rule, at $0.00</div>
-          <div class="table-wrap"><table class="grid tight"><tbody>${reran.map((x) => `<tr><td>${cite(run.client, x.item_id)}</td><td class="wrap">${esc(text(x.record))}</td><td class="r">${usd(x.record.amount)}</td><td>${esc(outcome(x.resolution).text)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
+        ${SO.reranBlock(reran, run.client)}
       </div></div>`;
     paint();
   }

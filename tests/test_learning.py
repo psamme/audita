@@ -74,6 +74,25 @@ def test_retraction_is_a_clean_inverse(fee_playbook):
     assert core(playbook.load("A", TRACK)) == before and out["rules_changed"] == ["A-R-001"]
 
 
+def test_the_stage_beat_answer_clears_an_item_and_undo_reopens_it(fee_playbook):
+    """State a limit -> an escalated fee clears at $0 -> undo -> exactly that item re-opens."""
+    con, pb = fee_playbook
+    base = pipeline.run("A", "2026-03", "playbook", TRACK, use_llm=False, run_id="t_beat")
+    items = [json.loads(l) for l in (db.RUNS / "t_beat" / "resolutions.jsonl").read_text().splitlines()]
+    fees = [i for i in items if i["record"].get("counterparty") == "First Prairie Bank"]
+    big = [i for i in fees if i["resolution"]["action"] == "escalate"]
+    assert big, "the March holdout has a bank fee above what the client was seen to book unreviewed"
+    ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=500.0)
+    pipeline.run("A", "2026-03", "corrected", TRACK, use_llm=False, only={i["item_id"] for i in big}, run_id=f"t_beat__after_{ans['correction_id']}")
+    cleared = [json.loads(l) for l in (db.RUNS / f"t_beat__after_{ans['correction_id']}" / "resolutions.jsonl").read_text().splitlines()]
+    assert all(c["resolution"]["action"] == "book" and c["resolution"]["rule_id"] == "A-R-001" for c in cleared)
+    out = unlearn.retract("A", TRACK, correction_id=ans["correction_id"])
+    assert out["resolutions_checked"] == len(fees)
+    assert sorted(r["item_id"] for r in out["reopened"]) == sorted(i["item_id"] for i in big)
+    for p in list(db.RUNS.glob("t_beat*")) + list(db.RUNS.glob(f"blast_A_{TRACK}_*")):
+        shutil.rmtree(p)
+
+
 def test_held_answers_are_logged_as_held_and_cannot_be_retracted(fee_playbook):
     held = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=90.0, role="bookkeeper")
     log = [json.loads(l) for l in correct.log_path("A", TRACK).read_text().splitlines()]

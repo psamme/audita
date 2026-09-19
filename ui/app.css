@@ -188,3 +188,7 @@ main.compact .summary { padding-block: 10px; }
 .limit .money { display: inline-flex; align-items: center; gap: 6px; }
 .limit .input { width: 8.5ch; height: 48px; font-size: var(--t-lg); text-align: right; box-sizing: content-box; padding-block: 0; }
 .panel.ask .btn-ghost { text-decoration: underline; text-underline-offset: 3px; }
+.payoff { display: grid; gap: 6px; flex: 1 1 100%; min-width: 0; }
+.payoff-head { font-size: var(--t-xl); font-weight: 500; letter-spacing: -0.02em; }
+table.grid.tight.big td { font-size: var(--t-md); padding-block: 12px; }
+.held { flex: 1 1 100%; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; }

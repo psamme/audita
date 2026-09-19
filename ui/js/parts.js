@@ -113,6 +113,15 @@
     openRecord(a.dataset.rec);
   });
 
+  // The payoff after teaching: items that were waiting on a person and now resolve under the new playbook, free.
+  function reranBlock(items, client, big) {
+    if (!items || !items.length) return "";
+    const text = (rec) => rec.description || rec.memo || rec.id;
+    return `<div class="payoff"><div class="${big ? "payoff-head" : "label"}">Now cleared, at $0.00</div>
+      <div class="table-wrap"><table class="grid tight ${big ? "big" : ""}"><tbody>${items.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td class="wrap">${esc(text(x.record))}</td><td class="r">${usd(x.record.amount)}</td>
+        <td class="wrap">${esc(verdict(x.resolution, {}))}${x.resolution.rule_id ? ` <span class="cite">${esc(x.resolution.rule_id)}</span>` : ""}</td></tr>`).join("")}</tbody></table></div></div>`;
+  }
+
   // Why it stopped. Set on every escalation by the pipeline.
   const REASON = { in_band: "Inside the unknown band", no_rule: "No rule covers this", conflicting_precedents: "History disagrees with itself",
     fraud_shaped: "Shaped like fraud", thin_precedent: "Too few past cases" };
@@ -205,5 +214,5 @@
     });
   }
 
-  Object.assign(SO, { reasonPill, bandBar, curveChart, wireCurve, role, cap, period, outcome, verdict, splitRationale, leadAndRest, cite, reasoning, ruleBlock, diffBlock, openRecord });
+  Object.assign(SO, { reranBlock, reasonPill, bandBar, curveChart, wireCurve, role, cap, period, outcome, verdict, splitRationale, leadAndRest, cite, reasoning, ruleBlock, diffBlock, openRecord });
 })();

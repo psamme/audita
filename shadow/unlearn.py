@@ -90,26 +90,33 @@ def retract(client: str, track: str, correction_id: str | None = None, precedent
 
 
 def blast_radius(client: str, track: str, rule_ids: set[str], precedent_id: str | None, version: int) -> dict:
-    """Re-run, at the $0 tiers, every past resolution that cited a changed rule or the retracted precedent."""
+    """Re-run, at the $0 tiers, every past resolution that cited a changed rule or the retracted precedent.
+
+    Looks at every run on the track, including the partial re-runs made right after an answer or a correction
+    ("<run>__after_<id>"), and keeps the newest resolution of each item: that is the one currently standing.
+    An item re-opens when the playbook, without the retracted input, no longer resolves it the same way."""
+    standing: dict[tuple, dict] = {}
+    metas = sorted((json.loads(p.read_text()) for p in db.RUNS.glob("*/run.json")), key=lambda m: (m["created_at"], m["run_id"]))   # "<run>__after_<id>" sorts after its base run within the same second
+    for meta in metas:
+        if meta["client"] != client or meta.get("track") != track or meta["run_id"].startswith("blast_"):
+            continue
+        for line in (db.RUNS / meta["run_id"] / "resolutions.jsonl").read_text().splitlines():
+            it = json.loads(line)
+            standing[(meta["period"], it["item_id"])] = it | {"run_id": meta["run_id"]}
+    touched = {k: it for k, it in standing.items() if it["resolution"]["action"] != "escalate" and
+               (it["resolution"].get("rule_id") in rule_ids or precedent_id in (it["resolution"].get("precedent_ids") or []))}
     checked, reopened = 0, []
-    for run_json in sorted(db.RUNS.glob("*/run.json")):
-        meta = json.loads(run_json.read_text())
-        if meta["client"] != client or meta.get("track") != track or "__" in meta["run_id"] or meta["run_id"].startswith("blast_"):
-            continue
-        items = [json.loads(l) for l in (run_json.parent / "resolutions.jsonl").read_text().splitlines()]
-        touched = {it["item_id"]: it for it in items if it["resolution"]["action"] != "escalate" and
-                   (it["resolution"].get("rule_id") in rule_ids or precedent_id in (it["resolution"].get("precedent_ids") or []))}
-        if not touched:
-            continue
-        rid = f"blast_{meta['run_id']}"
-        pipeline.run(client, meta["period"], "corrected", track, version=version, use_llm=False, only=set(touched), run_id=rid,
+    for period in sorted({p for p, _ in touched}):
+        ids = {i for p, i in touched if p == period}
+        rid = f"blast_{client}_{track}_{period}_v{version}"
+        pipeline.run(client, period, "corrected", track, version=version, use_llm=False, only=ids, run_id=rid,
                      label="blast radius check after a retraction")
         after = {json.loads(l)["item_id"]: json.loads(l) for l in (db.RUNS / rid / "resolutions.jsonl").read_text().splitlines()}
-        for item_id, before in touched.items():
+        for item_id in sorted(ids):
+            before, now = touched[(period, item_id)], after.get(item_id)
             checked += 1
-            now = after.get(item_id)
             if not now or not same(now["resolution"], before["resolution"]):
-                reopened.append({"run_id": meta["run_id"], "item_id": item_id, "reason": "rule_retracted", "record": before["record"],
+                reopened.append({"run_id": before["run_id"], "item_id": item_id, "reason": "rule_retracted", "record": before["record"],
                                  "before": {k: before["resolution"].get(k) for k in ("action", "ledger_ids", "adjustments", "rule_id")},
                                  "after": {k: (now or {}).get("resolution", {}).get(k) for k in ("action", "reason", "rule_id", "rationale")}})
     path = db.DATA / client / ("reopened.jsonl" if track == "main" else f"reopened_{track}.jsonl")
