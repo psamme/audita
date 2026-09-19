@@ -8,7 +8,13 @@
 .steps .done { color: var(--pos); }
 
 .form { display: grid; gap: var(--s-4); max-width: 46rem; }
+/* Fields inside a panel need their own rhythm, or a label reads as belonging to the control
+   above it rather than the one below. */
+.panel-body > * + * { margin-top: var(--s-5); }
+.panel-body > p.faint + *, .panel-body > .note + * { margin-top: var(--s-4); }
 .field { display: grid; gap: var(--s-1); }
+.field .input, .field .select { max-width: 100%; }
+.field.narrow .input { max-width: 10rem; }
 .field > label { font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
 .field .hint { font-size: var(--t-sm); color: var(--ink-3); }
 .field textarea.input { min-height: 6rem; resize: vertical; font-family: var(--mono); font-size: var(--t-sm); }

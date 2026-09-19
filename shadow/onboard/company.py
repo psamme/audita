@@ -80,12 +80,35 @@ def create(client: str, name: str, blurb: str, chart: dict, users: list[dict],
     return summary(client)
 
 
-def set_users(client: str, users: list[dict], reconciler: str | None = None) -> dict:
+def actors(con) -> set[str]:
+    """Everyone the imported history says did something. Seniority is read off the user row a
+    trail entry points at, so dropping one of these quietly changes what the agent can learn."""
+    seen: set[str] = set()
+    for sql, col in (("SELECT DISTINCT reconciled_by c FROM reconcile_link", "c"),
+                     ("SELECT DISTINCT posted_by c FROM journal_entry", "c"),
+                     ("SELECT DISTINCT approver c FROM approval", "c")):
+        seen |= {r[col] for r in db.q(con, sql) if r[col]}
+    return seen
+
+
+def set_users(client: str, users: list[dict], reconciler: str | None = None,
+              force: bool = False) -> dict:
     """Replace the roster. Kept separate so people can be added after the first import."""
     if not exists(client):
         raise ValueError("no such company")
     if not any(u.get("senior") for u in users):
         raise ValueError("at least one person must be marked senior")
+    keeping = {u["id"] for u in users}
+    con = db.connect(client, readonly=True)
+    try:
+        dropped = actors(con) - keeping
+    finally:
+        con.close()
+    if dropped and not force:
+        raise ValueError(
+            f"{', '.join(sorted(dropped))} appear in your imported history but are not on this "
+            "list. Removing them loses the record of who did that work, and with it any seniority "
+            "the agent learned from it. Keep them, or save again to remove them anyway.")
     con = db.connect(client, readonly=False)
     try:
         con.execute("DELETE FROM user")
