@@ -5,7 +5,11 @@ Everything runs from the repo root with `uv run`. No API key is needed on a mach
 back to the local `claude` CLI otherwise. Put a key in `.env` to use the SDK. `SHADOW_MODEL` (default `claude-opus-5`)
 and `SHADOW_EFFORT` (default `medium`) are read from the environment.
 
-## Build order
+## Safe development first
+
+For a free fresh-clone check, run `uv sync`, `uv run python -m sim.build`, then `uv run pytest -q`. Use the March development holdout. Stop before hidden-test scripts and paid experiment commands unless the freeze protocol and model budget authorize them. For the isolated controller preview, follow `docs/BUILD_CODEX.md`.
+
+## Full experiment build order (includes hidden-test and paid steps)
 
 ```bash
 uv run python -m sim.build                 # months 1-3 for both clients: ERP trail, documents, truth.db, March dev key
@@ -54,7 +58,7 @@ the policy file, or imports from `sim` (the demo fixture is the single exception
 
 ## Demo script (3 minutes)
 
-1. `/api/experiment?fresh=true`: the same $4,787.60 receipt against a $4,800.00 invoice at both clients. B sends it to
+1. `POST /api/experiment/run` with `{"which":"same_transaction"}`: the same $4,787.60 receipt against a $4,800.00 invoice at both clients. B sends it to
    the AR lead and cites the small shorts its team never wrote off. A, before sign-off, asks the owner one question
    (its history only shows write-offs up to about $12-14); answer it in the playbook screen and re-run: A now writes
    $12.40 off to 6990 and B still escalates.

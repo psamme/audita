@@ -27,11 +27,14 @@ def fmt(cond: str, x) -> str:
 
 def run(client: str, period: str, condition: str, track: str = "main", version: int | None = None, use_llm: bool = True,
         workers: int = 8, only: set[str] | None = None, run_id: str | None = None, date_from: str | None = None,
-        date_to: str | None = None, label: str = "", db_file=None) -> dict:
-    con = db.connect(client, readonly=True, path=db_file)
+        date_to: str | None = None, label: str = "", db_file=None,
+        playbook_override: dict | None = None, persist: bool = True, con_override=None) -> dict:
+    con = con_override if con_override is not None else db.connect(client, readonly=True, path=db_file)
     info = db.q(con, "SELECT * FROM client")[0]
     pb = None
-    if condition == "cold_start":
+    if playbook_override is not None:
+        pb = playbook_override
+    elif condition == "cold_start":
         pb = pbmod.load(client, track, version) or {"version": 0, "rules": []}
     elif condition != "zero_shot":
         pb = pbmod.load(client, track, version)
@@ -63,9 +66,14 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
             fl = flags.get(item["id"], [])
             rule, out = (None, None) if fl else planned.get(item["id"], (None, None))
             if not rule or out.get("defer"):
-                queue.append((item, kind, fl, rule))
+                if rule and out and out.get("reason"):
+                    rule = rule | {"_defer_reason": out["reason"]}
+                if in_scope(item):
+                    queue.append((item, kind, fl, rule))
                 continue
             if out.get("in_band"):
+                if not in_scope(item):
+                    continue
                 b = out["in_band"]
                 known = f"up to {fmt(b['condition'], b['lo'])}" if b["lo"] else "never"
                 far = f"from {fmt(b['condition'], b['hi'])} it was handled differently" if b["hi"] is not None else "nothing larger has ever come up"
@@ -83,6 +91,8 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
                 continue
             res = out["resolution"]
             ctx.used.update(res["ledger_ids"])
+            if not in_scope(item):
+                continue
             items[item["id"]] = {
                 "item_id": item["id"], "item_kind": kind, "record": item, "tier": "rule", "usage": dict(ZERO),
                 "resolution": blank(**res, rule_id=rule["id"], precedent_ids=rule.get("precedent_ids", [])[:6],
@@ -90,12 +100,13 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
                 "trace": [{"step": 1, "kind": "matcher", "label": "no unique exact match", "input": {}, "output": "left for the playbook", "ids": []},
                           {"step": 2, "kind": "rule", "label": rule["id"], "input": rule["when"], "output": rule["text"], "ids": out["evidence_ids"]}]}
 
-    rule_tier([("bank", b) for b in bank if b["id"] not in matched and in_scope(b)])
+    rule_tier([("bank", b) for b in bank if b["id"] not in matched])
 
     def work(job):
         item, kind, fl, rule = job
         if not use_llm:
-            return item, kind, fl, {"resolution": blank(escalate_to=roles[0] if roles else None, confidence=0.0, reason="no_rule",
+            return item, kind, fl, {"resolution": blank(rule_id=(rule or {}).get("id"), precedent_ids=(rule or {}).get("precedent_ids", [])[:6],
+                                                        escalate_to=(rule or {}).get("then", {}).get("escalate_to") or (roles[0] if roles else None), confidence=0.0, reason="fraud_shaped" if any(f["flag"] in investigator.HARD_FLAGS for f in fl) else (rule or {}).get("_defer_reason", "policy_question" if rule and rule.get("open_question") else "thin_precedent" if rule else "no_rule"),
                                                         rationale="Not cleared by the matcher or a playbook rule. Left for review (model tier disabled)."),
                                     "trace": [], "usage": dict(ZERO)}
         return item, kind, fl, investigator.investigate_safely(db.connect(client, readonly=True, path=db_file), info, period, item, kind,
@@ -118,27 +129,32 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
     drain()
     # ledger entries of this period that nothing cleared
     rule_tier([("ledger", e) for e in db.q(con, "SELECT * FROM ledger_entry WHERE period=? ORDER BY date, id", period)
-               if e["id"] in by_id and e["id"] not in ctx.used and in_scope(e)])
+               if e["id"] in by_id and e["id"] not in ctx.used])
     drain()
 
     run_id = run_id or f"{client}_{period}_{condition}_{datetime.now():%m%d-%H%M%S}"
     out_dir = db.RUNS / run_id
-    out_dir.mkdir(parents=True, exist_ok=True)
+    if persist:
+        out_dir.mkdir(parents=True, exist_ok=True)
     ordered = sorted(items.values(), key=lambda it: (it["record"]["date"], it["item_id"]))
     for it in ordered:
-        it["evidence_fingerprint"] = stale.fingerprint(con, it["resolution"])
-    (out_dir / "resolutions.jsonl").write_text("\n".join(json.dumps(it, default=str) for it in ordered))
+        it["evidence_fingerprint"] = stale.fingerprint(con, it["resolution"], it["record"])
+    if persist:
+        (out_dir / "resolutions.jsonl").write_text("\n".join(json.dumps(it, default=str) for it in ordered))
     tiers = {t: sum(it["tier"] == t for it in ordered) for t in ("matcher", "guardrail", "rule", "investigator")}
     summary = {"run_id": run_id, "client": client, "condition": condition, "period": period, "track": track, "label": label,
                "playbook_version": pb["version"] if pb else None, "created_at": datetime.now().isoformat(timespec="seconds"),
                "n_items": len(ordered), "tiers": tiers, "llm": use_llm,
+               "ledger_snapshot_ids": [e["id"] for e in db.q(con, "SELECT id FROM ledger_entry WHERE period=?", period)],
                "cost_usd": round(sum(it["usage"]["cost_usd"] for it in ordered), 4),
                "llm_calls": sum(it["usage"]["llm_calls"] for it in ordered),
                "escalated": sum(it["resolution"]["action"] == "escalate" for it in ordered),
                "escalation_reasons": {r: sum(it["resolution"]["action"] == "escalate" and it["resolution"].get("reason") == r for it in ordered)
                                       for r in ("in_band", "no_rule", "conflicting_precedents", "fraud_shaped", "thin_precedent")}}
-    (out_dir / "run.json").write_text(json.dumps(summary, indent=1))
-    return summary
+    if persist:
+        (out_dir / "run.json").write_text(json.dumps(summary, indent=1))
+        return summary
+    return summary | {"items": ordered}
 
 
 if __name__ == "__main__":

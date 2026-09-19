@@ -173,3 +173,55 @@ Both answer routes (`POST /api/playbook/answer-band`, `POST /api/playbook/answer
 `POST /api/corrections`: after a diff the open queue of the newest base run on that track is re-run at the $0 tiers as
 run id `<run>__after_<correction_id>`, and `reran` lists the items that are no longer escalated. An undo sees those
 runs: the blast radius keeps the newest standing resolution of every item across all runs on the track.
+
+## Policy approval preview and safety update
+
+The local prototype requires an explicit senior `role` for band answers, interview approvals, conflict settlement, and retractions. `GET /api/clients` adds `senior_roles`. Unknown or omitted roles cannot grant approval. These are role checks, not identity authentication: run on loopback with one server worker; do not expose this prototype as a production approval service.
+
+`POST /api/playbook/preview-band` accepts the same fields as `answer-band`, plus required `period` (`YYYY-MM`). It computes the current and proposed outcomes for the entire period with no model calls. It does not save a playbook, correction log or reconciliation run. Response:
+
+```jsonc
+{
+  "preview_id": "opaque, single-use token", "client": "A", "track": "dev",
+  "period": "2026-03", "version": 1, "expires_in_seconds": 900,
+  "before": {"bank_items": 5, "bank_exceptions": 5, "automatic_exceptions": 1,
+             "needs_review": 4, "automatic_bank_items": 1},
+  "after": {"bank_items": 5, "bank_exceptions": 5, "automatic_exceptions": 2,
+            "needs_review": 3, "automatic_bank_items": 2},
+  "changed_items": [{"item_id": "...", "item_kind": "bank", "record": {},
+                     "before": {}, "after": {}, "before_claimed_by": null, "after_claimed_by": null}],
+  "diff": {}, "llm_calls": 0, "scope_note": "...", "accuracy_note": "..."
+}
+```
+
+The example numbers illustrate the shape only. `bank_exceptions` excludes tier-0 matches. Automatic exceptions include match, match-adjust and book actions, not carry-forward. Ledger items consumed by a bank match are reported with `after: null` and `after_claimed_by`, not silently labelled unaccounted-for. Changed routing counts as a decision change. A held answer returns `held`, `preview_id: null`, `diff: null`.
+
+`POST /api/playbook/apply-preview` takes `{preview_id, role}`. It requires the same role, policy and source-data fingerprint. An expired, already-used or stale preview returns 409 and must be regenerated. Success returns the usual band-answer result plus `reconciliation`, a saved no-model re-run of the previewed period. The run is labelled as a deterministic rehearsal, not an accuracy evaluation. Preview tokens live in memory and expire after 15 minutes; restarting the server invalidates them. Policy mutations are serialized in the single-process server.
+
+`POST /api/playbook/answer` adds `role`. `POST /api/retract` adds `role` and requires exactly one of `correction_id` or `precedent_id`. Repeating a successful retraction returns `already_retracted: true`, unchanged version and zero newly checked/reopened items. Correction validation failures return `diff: null`, unchanged version and a failed `check`. No invalid patch is published.
+
+Band answers reject non-finite amounts and yes/no values outside the current open band. Equal numeric boundaries do not link unrelated policies; automatic paired-boundary movement requires matching explicit `policy_id`. The readable sentence and numeric condition follow the supported boundary. Rule diffs include effective dates, approval state and unresolved questions.
+
+New evidence fingerprints include document content, bank records, link state and journal entries/reversals. New run summaries include `ledger_snapshot_ids`, allowing same-day or backdated additions to be identified without guessing timestamps. Stale changes may be `added`, `edited` or `deleted`. `complete_snapshot` distinguishes new snapshots from legacy runs, whose missing historical evidence cannot be reconstructed.
+
+## Learned-policy judging view
+
+`GET /api/stage` is available when launched with `demo_stage.py`. It reads the sandbox's `stage.json`, reconstructs historical evidence and runs the entire demonstration period through the real deterministic pipeline without writing. Per-client responses include source provenance, original and current rule context, baseline/current bank review counts, candidate policy questions grouped by affected cases, and the latest retractable input. Hypothetical question impact is not an accuracy score.
+
+`POST /api/playbook/preview-policy` accepts the numeric preview fields plus `confirm_rule: true` and optional `effective_from: YYYY-MM-DD`. It explicitly approves the displayed learned rule, including its existing account and conditions, with the stated boundary. No model rewrites the rule. Without a new effective date, historical execution-floor checks still apply. A declared new policy must start after the training window and is recorded as a dated policy change. The response uses the ordinary preview token and `/api/playbook/apply-preview` path, including role, expiry and stale-data checks. Commit stores a replayable patch with approval metadata. Numeric-only `/preview-band` continues to leave unresolved policy approval untouched.
+
+The stage report additionally exposes available senior `roles` for the reviewer selector and `reference_invoice` when a transaction reference exactly identifies an invoice. The review queue uses this to display receipt differences without guessing an invoice match. Queue setup is a client-side walkthrough of the loaded data and role selection; it does not connect an accounting system.
+
+## Optional Jev review suggestions
+
+The stage queue adds Jev reviewer and next-step suggestions through TypeSafe's HTTP API (`jev-latest`). Anthropic induction and investigation remain unchanged. These suggestions never assign a reviewer, alter a policy, or reconcile a transaction.
+
+- `GET /api/jev/status`: `{configured, model, calls_used, calls_limit, confidence_floor}`. No key is returned. Loading or refreshing the queue does not call a model.
+- `POST /api/jev/key`: `{key}` stores a TypeSafe key in the prepared stage workspace's ignored `.typesafe-key`, mode `0600`. Returns `{configured: true, verified: false}`. Alternatively start the server with `TYPESAFE_API_KEY`. The first suggestion verifies access. Key setup and triage reject foreign origins and non-loopback hostnames. This is a local, single-user demo, not account authentication. Resetting the stage sandbox deletes its saved key.
+- `POST /api/jev/triage`: `{client, item_ids: [string], note?: string}`. Accepts up to 12 current unresolved bank transactions and 2,000 characters of optional unverified context. The server reconstructs the case, learned rules, historical evidence, exact-reference invoice, source documents named by the decision or controls, and available company roles. The browser cannot supply authoritative policy or evidence.
+
+The result contains `reviewer` (a real company role, or null), `next_step`, `next_step_text`, `answers` (each model choice, probabilities and confidence), `control_hold`, `evidence_ids`, `policy_version`, `fingerprint`, `elapsed_ms`, `cached`, `model`, `suggestion_only: true` and `confidence_floor`. Source citations describe documents included in the request, not model-generated explanations. Low confidence falls back to manual triage. The 0.65 display threshold is a demo setting, not measured accuracy. A policy-approval suggestion cannot recommend a non-senior role; a bank-change hold enforces independent verification regardless of the model answer; other control flags retain manual triage.
+
+Each uncached request makes one TypeSafe call containing two Choice questions. A single-process limit allows 20 attempts, including failures, and unchanged requests reuse an in-memory cache. Cache keys include the workspace, company, full request evidence, policy and reviewer note. They expire on server restart. Source or policy changes during a call discard its result. Timeouts, malformed responses and provider failures leave reconciliation unchanged; errors do not expose the API key or provider response body. The queue always retains its ordinary deterministic workflow. Unit tests mock the provider; only clicking Get suggestion (or explicitly calling the triage endpoint) spends model tokens.
+
+Official request/response contract: https://docs.typesafe.ai/introduction/quickstart and https://docs.typesafe.ai/primitives/choice.

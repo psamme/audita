@@ -2,6 +2,7 @@
    and the correction form. A correction POSTs /api/corrections (10 to 25 s, one
    model call) and comes back as a playbook diff plus the items it now clears. */
 (async function () {
+  if (SO.track === "stage" || new URLSearchParams(location.search).get("track") === "stage") return;
   const { get, usd, cost, day, esc, role, cap, period, reasonPill, bandBar, outcome, verdict, cite, reasoning, ruleBlock, diffBlock } = SO;
   const view = document.getElementById("view"), summary = document.getElementById("summary"), runSel = document.getElementById("run");
   let clients = {}, run = null, queue = [], current = null, resultHtml = "";
@@ -92,6 +93,7 @@
         if (!res.ok) throw new Error(String(res.status));
         const result = await res.json();
         if (result.conflict) { clearInterval(tick); showConflict(result.conflict, it); return; }
+        if (!result.diff) { showResult(result, it); return; }
         // the corrected item and anything the new rule cleared leave the queue
         const gone = new Set([it.item_id, ...(result.reran || []).map((x) => x.item_id)]);
         queue = queue.filter((x) => !gone.has(x.item_id));
@@ -134,6 +136,11 @@
         body: SO.body({ client: run.client, outcome, role: SENIOR[run.client] }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json();
+      if (r.held) {
+        note.textContent = r.check || "The proposed policy failed validation. The conflict remains open.";
+        buttons.forEach((b) => { b.disabled = false; });
+        return;
+      }
       if (outcome !== "mistake") {
         const gone = new Set([it.item_id, ...(r.reran || []).map((x) => x.item_id)]);
         queue = queue.filter((x) => !gone.has(x.item_id));
@@ -152,7 +159,7 @@
   function showResult(r, corrected) {
     const reran = r.reran || [];
     resultHtml = `<div class="panel result">
-      <div class="panel-head"><h3>${esc(text(corrected.record))} is corrected. ${r.diff ? `The playbook is now version ${esc(r.new_version)}` : "The playbook did not need to change"}.</h3><span class="mono faint">${esc(r.correction_id)}</span></div>
+      <div class="panel-head"><h3>${r.diff ? `${esc(text(corrected.record))} is corrected. The playbook is now version ${esc(r.new_version)}.` : "No policy change was saved. This item remains in review."}</h3><span class="mono faint">${esc(r.correction_id)}</span></div>
       <div class="panel-body stack">
         <p>${esc(r.explanation || "")}</p>
         ${diffBlock(r.diff)}

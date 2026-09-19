@@ -44,5 +44,5 @@
   const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  window.SO = { get, rehearsal, withTrack, body, usd, cost, day, esc, get usedFixture() { return usedFixture; } };
+  window.SO = { get, track, rehearsal, withTrack, body, usd, cost, day, esc, get usedFixture() { return usedFixture; } };
 })();

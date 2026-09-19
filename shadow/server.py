@@ -4,15 +4,31 @@
 """
 import json
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, SecretStr
 
-from shadow import correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
+from shadow import authority, preview, correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
 
 app = FastAPI(title="Shadow Onboarding")
 CLIENTS = ("A", "B")
 TRACK = "main"
+
+
+@app.exception_handler(PermissionError)
+async def permission_error(request, exc):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(preview.StalePreview)
+async def stale_preview(request, exc):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(ValueError)
+async def bad_value(request, exc):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 def _run_dir(run_id: str):
@@ -53,7 +69,9 @@ def clients():
     out = []
     for c in CLIENTS:
         if db.db_path(c).exists():
-            out.append({k: v for k, v in db.q(db.connect(c, readonly=True), "SELECT * FROM client")[0].items() if k != "close_days"})
+            con = db.connect(c, readonly=True)
+            out.append({k: v for k, v in db.q(con, "SELECT * FROM client")[0].items() if k != "close_days"} |
+                       {"senior_roles": [u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT role FROM user WHERE senior=1")]})
     return out
 
 
@@ -130,9 +148,9 @@ def _rerun_open(client: str, track: str, cause_id: str, run_id: str | None = Non
     if not open_ids:
         return []
     rid = f"{run_id}__after_{cause_id}"
-    pipeline.run(client, s["period"], "corrected", track, only=open_ids, run_id=rid, use_llm=False,
+    pipeline.run(client, s["period"], "corrected", track, run_id=rid, use_llm=False,
                  label="re-run of the open queue after the playbook changed (rules only)")
-    return [it for it in _items(rid) if it["resolution"]["action"] != "escalate"]
+    return [it for it in _items(rid) if it["item_id"] in open_ids and it["resolution"]["action"] != "escalate"]
 
 
 class Correction(BaseModel):
@@ -147,6 +165,9 @@ class Correction(BaseModel):
 
 @app.post("/api/corrections")
 def post_correction(c: Correction):
+    meta = _summary(c.run_id)
+    if meta["client"] != c.client or meta.get("track", TRACK) != c.track:
+        raise HTTPException(400, "The run must belong to this client and track")
     item = next((it for it in _items(c.run_id) if it["item_id"] == c.item_id), None)
     if not item:
         raise HTTPException(404, "no such item in that run")
@@ -196,9 +217,49 @@ def post_band_answer(a: BandAnswer):
                                    limit=a.limit if kind == "limit" else None,
                                    not_amount=kind == "not_amount", role=a.role)
     except ValueError as e:      # unknown rule or band
-        raise HTTPException(404, str(e))
+        raise HTTPException(400, str(e))
     reran = _rerun_open(a.client, a.track, result["correction_id"]) if result.get("diff") else []
     return result | {"reran": reran}
+
+
+class BandPreview(BandAnswer):
+    period: str
+
+
+@app.post("/api/playbook/preview-band")
+def preview_band(a: BandPreview):
+    _con(a.client).close()
+    kind = a.answer or {True: "review", False: "usual"}.get(a.review)
+    if kind not in {"limit", "review", "usual", "not_amount"}:
+        raise HTTPException(400, "Choose limit, review, usual or not_amount")
+    return preview.build(a.client, a.track, a.period, a.rule_id, a.condition, a.role,
+                         value=a.value if kind in {"review", "usual"} else None,
+                         review={"review": True, "usual": False}.get(kind),
+                         limit=a.limit if kind == "limit" else None, not_amount=kind == "not_amount")
+
+
+class PolicyPreview(BandPreview):
+    confirm_rule: bool = False
+    effective_from: str | None = None
+
+
+@app.post("/api/playbook/preview-policy")
+def preview_policy(a: PolicyPreview):
+    _con(a.client).close()
+    if not a.confirm_rule or a.answer != "limit":
+        raise HTTPException(400, "Explicit confirmation of the displayed rule and limit is required")
+    return preview.build(a.client, a.track, a.period, a.rule_id, a.condition, a.role,
+                         limit=a.limit, approve_rule=True, effective_from=a.effective_from)
+
+
+class ApplyPreview(BaseModel):
+    preview_id: str
+    role: str
+
+
+@app.post("/api/playbook/apply-preview")
+def apply_preview(a: ApplyPreview):
+    return preview.commit(a.preview_id, a.role)
 
 
 class ConflictOutcome(BaseModel):
@@ -216,6 +277,7 @@ def settle_conflict(conflict_id: str, o: ConflictOutcome):
 
 
 class Retraction(BaseModel):
+    role: str | None = None
     client: str
     correction_id: str | None = None
     precedent_id: str | None = None
@@ -226,6 +288,7 @@ class Retraction(BaseModel):
 @app.post("/api/retract")
 def post_retract(r: Retraction):
     """Undo one input of the playbook. Deterministic: stored patches are replayed, no model call."""
+    authority.require_senior(_con(r.client), r.role)
     try:
         return unlearn.retract(r.client, r.track, r.correction_id, r.precedent_id, r.note)
     except ValueError as e:
@@ -266,6 +329,7 @@ def curve():
 
 
 class Answer(BaseModel):
+    role: str | None = None
     client: str
     rule_id: str
     answer: str
@@ -274,7 +338,7 @@ class Answer(BaseModel):
 
 @app.post("/api/playbook/answer")
 def post_answer(a: Answer):
-    result = correct.answer(a.client, a.track, a.rule_id, a.answer)
+    result = correct.answer(a.client, a.track, a.rule_id, a.answer, role=a.role)
     reran = _rerun_open(a.client, a.track, result["correction_id"]) if result.get("diff") else []
     return result | {"reran": reran}
 
@@ -317,6 +381,56 @@ def run_experiment(r: ExperimentRun):
     if r.which == "bank_change":
         return experiment.bank_change(track=r.track, fresh=True)
     return experiment.run(track=r.track, fresh=True, version=r.version)
+
+
+@app.get("/api/stage")
+def stage_report():
+    from shadow.stage import report
+    return report()
+
+
+class JevKey(BaseModel):
+    key: SecretStr
+
+
+class JevReview(BaseModel):
+    client: str
+    item_ids: list[str] = Field(min_length=1, max_length=12)
+    note: str = Field(default='', max_length=2000)
+
+
+def _local_jev_request(request: Request):
+    # This prototype stores a key on the local server, never in browser storage.
+    from urllib.parse import urlsplit
+    host = request.url.hostname
+    if host not in {'127.0.0.1', 'localhost', '::1', 'testserver'}:
+        raise HTTPException(403, 'Jev setup is available only on the local demo server.')
+    origin = request.headers.get('origin')
+    if origin and (urlsplit(origin).netloc != request.url.netloc or urlsplit(origin).scheme != request.url.scheme):
+        raise HTTPException(403, 'Open the local demo to use Jev.')
+
+
+@app.get('/api/jev/status')
+def jev_status():
+    from shadow import jev
+    return jev.status()
+
+
+@app.post('/api/jev/key')
+def jev_key(r: JevKey, request: Request):
+    from shadow import jev
+    _local_jev_request(request)
+    return jev.configure(r.key.get_secret_value())
+
+
+@app.post('/api/jev/triage')
+def jev_triage(r: JevReview, request: Request):
+    from shadow import jev
+    _local_jev_request(request)
+    try:
+        return jev.triage(r.client, r.item_ids, r.note)
+    except jev.Unavailable as exc:
+        raise HTTPException(503, str(exc)) from None
 
 
 if (db.ROOT / "ui").exists():

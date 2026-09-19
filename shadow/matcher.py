@@ -59,14 +59,15 @@ def _evidenced(con, bank: dict, combo) -> bool:
     the bank description, or in one remittance document near the payment date. Entries that merely sum are not enough."""
     refs = [(e["invoice_id"] or e["ref"] or "").lower() for e in combo]
     if not all(e["invoice_id"] for e in combo):
-        return not bank["counterparty"]       # anonymous deposits of non-invoice entries (cash batches) carry no references at all
-    if all(r and r in bank["description"].lower() for r in refs):
+        return False  # a unique sum alone is not evidence of a shared payment
+    mentions = lambda text: all(r and re.search(r"(?<![a-z0-9])" + re.escape(r) + r"(?![a-z0-9])", text.lower()) for r in refs)
+    if mentions(bank["description"]):
         return True
     lo = (date.fromisoformat(bank["date"]) - timedelta(days=10)).isoformat()
     hi = (date.fromisoformat(bank["date"]) + timedelta(days=5)).isoformat()
-    for d in db.q(con, "SELECT * FROM document WHERE date BETWEEN ? AND ? AND type != 'internal_email'", lo, hi):
+    for d in db.q(con, "SELECT * FROM document WHERE date BETWEEN ? AND ? AND type IN ('remittance', 'remittance_email')", lo, hi):
         text = f"{d['subject']} {d['body']}".lower()
-        if all(r and r in text for r in refs):
+        if mentions(text):
             return True
     return False
 
@@ -100,6 +101,7 @@ def run(con, period: str, skip: set[str] = frozenset()) -> tuple[list[dict], set
     # many-to-one: a small set of same-family entries just before the bank date that sums to it, if unique
     matched = {m["bank_id"] for m in matches}
     contested = {eid for eid, bs in claims.items() if len(bs) > 1}
+    batches, batch_claims = {}, {}
     for b in bank:
         if b["id"] in matched or cand[b["id"]]:
             continue
@@ -114,8 +116,14 @@ def run(con, period: str, skip: set[str] = frozenset()) -> tuple[list[dict], set
             for combo in combinations(pool, k):
                 if sum(db.cents(e["amount"]) for e in combo) == target and len({e["account"] for e in combo}) == 1:
                     hits.append(combo)
-        if len(hits) == 1 and _evidenced(con, b, hits[0]):
+        evidenced = [combo for combo in hits if _evidenced(con, b, combo)]
+        batches[b["id"]] = evidenced
+        for combo in evidenced:
+            for e in combo:
+                batch_claims.setdefault(e["id"], set()).add(b["id"])
+    for bid, hits in batches.items():
+        if len(hits) == 1 and all(len(batch_claims[e["id"]]) == 1 for e in hits[0]):
             ids = sorted(e["id"] for e in hits[0])
-            matches.append({"bank_id": b["id"], "ledger_ids": ids, "how": f"{len(ids)} entries sum to the bank amount, unique combination"})
+            matches.append({"bank_id": bid, "ledger_ids": ids, "how": "evidenced batch, mutually unique claim"})
             used.update(ids)
     return matches, used
