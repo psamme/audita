@@ -1,0 +1,50 @@
+[
+ {
+  "object": "balance",
+  "as_of": "2026-01-31",
+  "available": [
+   {
+    "amount": 0,
+    "currency": "usd"
+   }
+  ],
+  "pending": [
+   {
+    "amount": 584498,
+    "currency": "usd"
+   }
+  ]
+ },
+ {
+  "object": "balance",
+  "as_of": "2026-02-28",
+  "available": [
+   {
+    "amount": 0,
+    "currency": "usd"
+   }
+  ],
+  "pending": [
+   {
+    "amount": 773673,
+    "currency": "usd"
+   }
+  ]
+ },
+ {
+  "object": "balance",
+  "as_of": "2026-03-31",
+  "available": [
+   {
+    "amount": 0,
+    "currency": "usd"
+   }
+  ],
+  "pending": [
+   {
+    "amount": 249097,
+    "currency": "usd"
+   }
+  ]
+ }
+]

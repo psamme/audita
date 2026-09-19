@@ -1,0 +1,10 @@
+From: ops@birchfoldmedia.example
+To: ar@kestrelinference.example
+Date: 2026-02-11
+Subject: SLA credit refund RF-1021
+
+Hi,
+
+Following the December outage we agreed a refund of $1,889.00 under the SLA. Reference RF-1021. Please wire it to the account on file.
+
+Thanks

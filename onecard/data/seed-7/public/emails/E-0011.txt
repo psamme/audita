@@ -1,0 +1,12 @@
+From: ap@alderbankhealth.example
+To: ar@kestrelinference.example
+Date: 2026-03-16
+Subject: Remittance advice 6,700.00
+
+Remittance advice
+Payment date: 2026-03-16
+Amount: 6,700.00
+
+  INV-2189   2,613.00
+  INV-2190   4,087.00
+

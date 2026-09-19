@@ -1,0 +1,12 @@
+From: ap@elmsteadbio.example
+To: ar@kestrelinference.example
+Date: 2026-02-05
+Subject: Remittance advice 16,229.96
+
+Remittance advice
+Payment date: 2026-02-05
+Amount: 16,229.96
+
+  INV-2073   9,016.58
+  INV-2074   7,213.38
+
