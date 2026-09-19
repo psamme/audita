@@ -159,14 +159,32 @@ class BandAnswer(BaseModel):
     client: str
     rule_id: str
     condition: str
-    value: float
-    review: bool          # True: "yes, send one at that value for review"; False: "no, handle it the usual way"
+    answer: str | None = None     # "limit" | "review" | "usual" | "not_amount"
+    limit: float | None = None    # required when answer is "limit": the stated limit closes the band in one answer
+    value: float | None = None    # the value that was asked about, for "review" and "usual"
+    review: bool | None = None    # older callers: True is "review", False is "usual"
+    role: str | None = None       # who answered; only a senior role may move a band
     track: str = TRACK
 
 
 @app.post("/api/playbook/answer-band")
 def post_band_answer(a: BandAnswer):
-    return correct.answer_band(a.client, a.track, a.rule_id, a.condition, a.value, a.review)
+    kind = a.answer or {True: "review", False: "usual"}.get(a.review)
+    if kind not in ("limit", "review", "usual", "not_amount"):
+        raise HTTPException(400, "answer must be limit, review, usual or not_amount")
+    if kind == "limit" and (a.limit is None or a.limit < 0):
+        raise HTTPException(400, "answer 'limit' needs a non-negative limit")
+    if kind in ("review", "usual") and a.value is None:
+        raise HTTPException(400, f"answer '{kind}' needs the value that was asked about")
+    _con(a.client).close()
+    try:
+        return correct.answer_band(a.client, a.track, a.rule_id, a.condition,
+                                   value=a.value if kind in ("review", "usual") else None,
+                                   review={"review": True, "usual": False}.get(kind),
+                                   limit=a.limit if kind == "limit" else None,
+                                   not_amount=kind == "not_amount", role=a.role)
+    except ValueError as e:      # unknown rule or band
+        raise HTTPException(404, str(e))
 
 
 class ConflictOutcome(BaseModel):
@@ -200,16 +218,25 @@ def post_retract(r: Retraction):
         raise HTTPException(404, str(e))
 
 
+def _jsonl(path) -> list[dict]:
+    return [json.loads(l) for l in path.read_text().splitlines() if l.strip()][::-1] if path.exists() else []
+
+
 @app.get("/api/corrections/{client}")
-def corrections(client: str):
-    path = db.DATA / client / "corrections.jsonl"
-    return [json.loads(l) for l in path.read_text().splitlines()][::-1] if path.exists() else []
+def corrections(client: str, track: str = TRACK):
+    """Everything this track's playbook was taught, newest first. Non-main tracks keep their own log."""
+    _con(client).close()
+    if not track.isidentifier():
+        raise HTTPException(404, "no such track")
+    return _jsonl(correct.log_path(client, track))
 
 
 @app.get("/api/reopened/{client}")
-def reopened(client: str):
-    path = db.DATA / client / "reopened.jsonl"
-    return [json.loads(l) for l in path.read_text().splitlines()][::-1] if path.exists() else []
+def reopened(client: str, track: str = TRACK):
+    _con(client).close()
+    if not track.isidentifier():
+        raise HTTPException(404, "no such track")
+    return _jsonl(db.DATA / client / ("reopened.jsonl" if track == "main" else f"reopened_{track}.jsonl"))
 
 
 @app.get("/api/runs/{run_id}/stale")
