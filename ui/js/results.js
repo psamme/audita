@@ -48,10 +48,18 @@
   function curveBlock(curve, name) {
     const ids = Object.keys(curve || {}).filter((id) => curve[id] && (curve[id].points || []).length);
     if (!ids.length) return "";
-    return `<section class="panel"><div class="panel-head"><h3>Questions to trust</h3><span class="runrow"><span class="state state-proposed">Development holdout</span><span class="faint small">How many answers from a person before the agent clears the trust line on its own. Scored on March, never the hidden month.</span></span></div>
-      <div class="panel-body charts">${ids.map((id) => { const c = curve[id]; return `<div class="chart"><div class="chart-head"><h3>${esc(name[id] || id)}</h3>
-        <span class="faint small">${c.questions_to_trust != null ? `Crosses ${Math.round(c.target_auto_resolve_rate * 100)}% after ${c.questions_to_trust} answer${c.questions_to_trust === 1 ? "" : "s"}` : `Has not reached ${Math.round((c.target_auto_resolve_rate || 0) * 100)}% yet`}</span></div>
-        ${SO.curveChart(c, "curve-" + id)}</div>`; }).join("")}</div></section>`;
+    const any = curve[ids[0]];
+    return `<section class="panel"><div class="panel-head"><h3>Questions to trust</h3><span class="state state-proposed">Development holdout</span></div>
+      <div class="panel-body stack">
+        <p class="muted" style="max-width: 78ch;">Each step is one answer from a person. The line is the share of exceptions the free tiers, matcher plus playbook rules, got right with no model call: resolved the way the truth says, or escalated when the truth says escalate. Scored on 16 to 31 March, never the hidden month.</p>
+        <div class="charts">${ids.map((id) => { const c = curve[id], pts = c.points, last = pts[pts.length - 1], first = pts[0];
+          const silent = pts.reduce((n, p) => n + (p.wrong_auto || 0), 0);
+          return `<div class="chart"><div class="chart-head"><h3>${esc(name[id] || id)}</h3>
+            <span class="faint small">${c.questions_to_trust != null ? `Crosses the ${Math.round(c.target_auto_resolve_rate * 100)}% trust line after ${c.questions_to_trust} answer${c.questions_to_trust === 1 ? "" : "s"}` : `Reaches ${(Math.max(...pts.map((p) => p.auto_resolve_rate)) * 100).toFixed(1)}%, short of the ${Math.round((c.target_auto_resolve_rate || 0) * 100)}% trust line`}</span></div>
+            ${SO.curveChart(c, "curve-" + id)}
+            <div class="rule-meta"><span>Left for the model or a person: <b class="num">${first.left_for_model_or_human}</b> to <b class="num">${last.left_for_model_or_human}</b></span><span>Silent wrong resolutions at any step: <b class="num">${silent}</b></span>${last.est_llm_cost_usd != null ? `<span>Est. model cost: <b class="num">${usd(first.est_llm_cost_usd)}</b> to <b class="num">${usd(last.est_llm_cost_usd)}</b></span>` : ""}</div></div>`; }).join("")}</div>
+        ${any.cost_note ? `<p class="faint small">${esc(cap(any.cost_note))}. A yes or no that changes nothing means no item in the scoring window fell inside that band.</p>` : ""}
+      </div></section>`;
   }
 
   function benchrec(b) {
@@ -82,7 +90,7 @@
       }
       summary.innerHTML = `<span>${esc(period(m.period))} runs are still in flight. These are the March holdout numbers, not the headline.</span>`;
     }
-    blocks.push(curveBlock(curve, name));
+    blocks.unshift(curveBlock(curve, name));
     if (m.benchrec && m.benchrec.n_bank_lines) blocks.push(benchrec(m.benchrec));
     view.innerHTML = `<div class="stack">${blocks.filter(Boolean).join("") || `<div class="panel error">No graded runs yet.</div>`}</div>`;
     Object.keys(curve || {}).forEach((id) => SO.wireCurve("curve-" + id, curve[id]));

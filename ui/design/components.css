@@ -242,3 +242,5 @@ pre.doc {
 .diff-band { min-width: 0; padding-right: var(--s-4); }
 .diff-row .band { padding-top: 8px; }
 .diff-del .band { opacity: 0.6; }
+.curve .axis.strong { fill: var(--ink); font-weight: 500; font-size: 12px; }
+.rule-meta b { color: var(--ink); font-weight: 500; }

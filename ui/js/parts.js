@@ -164,11 +164,13 @@
     const ticks = [0, 0.25, 0.5, 0.75, 1];
     const step = Math.max(1, Math.ceil(kMax / 8));
     return `<div class="curve" id="${esc(id)}">
-      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of items resolved automatically after each answer">
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of exceptions handled correctly with no model call, after each answer from a person">
         ${ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" class="axis">${Math.round(t * 100)}%</text>`).join("")}
         ${pts.filter((p) => p.k % step === 0).map((p) => `<text x="${x(p.k)}" y="${H - 12}" text-anchor="middle" class="axis">${p.k}</text>`).join("")}
         ${target != null ? `<line x1="${L}" x2="${W - R}" y1="${y(target)}" y2="${y(target)}" class="target"/><text x="${L + 6}" y="${y(target) - 6}" text-anchor="start" class="axis">Trust line ${Math.round(target * 100)}%</text>` : ""}
         <path d="${d}" class="line" fill="none"/>
+        <text x="${x(pts[0].k) + 8}" y="${y(pts[0].auto_resolve_rate) + 18}" text-anchor="start" class="axis strong">${(pts[0].auto_resolve_rate * 100).toFixed(1)}%</text>
+        <text x="${x(pts[pts.length - 1].k)}" y="${y(pts[pts.length - 1].auto_resolve_rate) + 18}" text-anchor="end" class="axis strong">${(pts[pts.length - 1].auto_resolve_rate * 100).toFixed(1)}%</text>
         ${pts.map((p, i) => `<circle cx="${x(p.k)}" cy="${y(p.auto_resolve_rate)}" r="${p.k === reached ? 6 : 4}" class="dot ${p.k === reached ? "reached" : ""}" data-i="${i}"/>`).join("")}
         ${pts.map((p, i) => `<rect x="${x(p.k) - 14}" y="${T}" width="28" height="${H - T - Bm}" fill="transparent" class="hit" data-i="${i}"/>`).join("")}
       </svg>
@@ -184,7 +186,7 @@
       h.addEventListener("mouseenter", () => {
         const p = pts[+h.dataset.i];
         tip.innerHTML = `<b>After ${p.k} answer${p.k === 1 ? "" : "s"}</b><span>${esc(KIND[p.answer_kind] || "")}${p.answer ? ": " + esc(String(p.answer).slice(0, 120)) : ""}</span>
-          <span class="num">${(p.auto_resolve_rate * 100).toFixed(1)}% resolved on its own · ${p.wrong_matches} wrong match${p.wrong_matches === 1 ? "" : "es"} · ${p.left_for_model_or_human} left over${p.est_llm_cost_usd != null ? " · est. " + usd(p.est_llm_cost_usd) : ""}</span>`;
+          <span class="num">${(p.auto_resolve_rate * 100).toFixed(1)}% right at $0.00 · ${p.wrong_auto ?? p.wrong_matches} silent error${(p.wrong_auto ?? p.wrong_matches) === 1 ? "" : "s"} · ${p.left_for_model_or_human} left for the model or a person${p.est_llm_cost_usd != null ? " · est. " + usd(p.est_llm_cost_usd) : ""}</span>`;
         tip.hidden = false;
         tip.style.left = Math.min(70, Math.max(0, (+h.getAttribute("x") / 640) * 100 - 10)) + "%";
       });
