@@ -80,6 +80,8 @@ def tool_specs(with_history: bool) -> list[dict]:
                       "ledger_ids": {"type": "array", "items": s},
                       "adjustments": {"type": "array", "items": {"type": "object", "properties": {"account": s, "amount": num}, "required": ["account", "amount"]}},
                       "escalate_to": s, "rationale": s, "rule_id": s,
+                      "reason": {"type": "string", "enum": ["no_rule", "conflicting_precedents", "fraud_shaped", "thin_precedent"],
+                                 "description": "when escalating: no_rule (nothing in the playbook or history covers it), conflicting_precedents (history or evidence disagrees with itself), fraud_shaped (looks like fraud or error), thin_precedent (fewer than three comparable past items)"},
                       "questions": {"type": "array", "items": s, "description": "when escalating: the specific questions the person needs to answer, one per entry"},
                       "precedent_ids": {"type": "array", "items": s}, "evidence_ids": {"type": "array", "items": s},
                       "confidence": num}}})
@@ -259,9 +261,26 @@ def investigate(con, client_info: dict, period: str, item: dict, kind: str, used
         messages.append({"role": "user", "content": results})
 
     res = finalize(final, complaint, flags, roles)
+    if with_history and res["action"] in ("match_adjust", "book", "carry_forward"):
+        res = grounded(res, pb, desk, roles)
     trace.append({"step": len(trace) + 1, "kind": "final", "label": res["action"], "input": {}, "output": res["rationale"],
                   "ids": res["evidence_ids"]})
     return {"resolution": res, "trace": trace, "usage": usage.as_dict()}
+
+
+def grounded(res: dict, pb: dict, desk: "Desk", roles: list[str]) -> dict:
+    """With a playbook in play, an entry is only booked on the client's own authority: an approved rule, or at least
+    three past items it can point to. Otherwise the item is escalated, whatever confidence the model reported."""
+    approved = {r["id"] for r in pb["rules"] if r["status"] == "approved"}
+    known = {c["id"] for c in desk.precedents()}
+    cited = [p for p in res["precedent_ids"] if p in known]
+    if res.get("rule_id") in approved or len(cited) >= 3:
+        return res
+    reason = "thin_precedent" if cited or res.get("rule_id") else "no_rule"
+    return res | {"action": "escalate", "ledger_ids": [], "adjustments": [], "escalate_to": roles[0] if roles else None,
+                  "reason": reason, "proposed": {k: res[k] for k in ("action", "ledger_ids", "adjustments", "rationale")},
+                  "rationale": f"The investigator would have resolved this, but could cite {len(cited)} comparable past item(s) and no "
+                               f"signed-off rule. Proposed: {res['rationale']}"}
 
 
 def validate(r: dict, item: dict, kind: str, desk: Desk, info: dict) -> str | None:
@@ -296,17 +315,19 @@ def validate(r: dict, item: dict, kind: str, desk: Desk, info: dict) -> str | No
 def finalize(final: dict | None, complaint: str | None, flags: list, roles: list[str]) -> dict:
     base = {"action": "escalate", "ledger_ids": [], "adjustments": [], "escalate_to": roles[0] if roles else None,
             "rationale": "", "rule_id": None, "precedent_ids": [], "evidence_ids": [], "confidence": 0.0, "proposed": None,
-            "questions": []}
+            "questions": [], "reason": "no_rule"}
     if final is None or complaint:
         return base | {"rationale": "The investigator could not produce a valid resolution" + (f" ({complaint})" if complaint else "") + ". Left for review."}
     res = base | {k: final.get(k) or base[k] for k in base if k != "proposed"} | {"action": final["action"], "confidence": float(final.get("confidence") or 0)}
     hard = [f for f in flags if f["flag"] in HARD_FLAGS]
     if res["action"] != "escalate" and hard:
         return res | {"action": "escalate", "ledger_ids": [], "adjustments": [], "proposed": final, "escalate_to": final.get("escalate_to") or base["escalate_to"],
-                      "rationale": f"Control: {hard[0]['detail']}. Held for verification regardless of the match. Investigator's view: {res['rationale']}"}
+                      "reason": "fraud_shaped", "rationale": f"Control: {hard[0]['detail']}. Held for verification regardless of the match. Investigator's view: {res['rationale']}"}
     if res["action"] != "escalate" and res["confidence"] < CONFIDENCE_FLOOR:
         return res | {"action": "escalate", "ledger_ids": [], "adjustments": [], "proposed": final, "escalate_to": final.get("escalate_to") or base["escalate_to"],
                       "rationale": f"Confidence {res['confidence']:.2f} is under the floor. Proposed: {res['rationale']}"}
     if res["action"] != "escalate":
-        res["escalate_to"] = None
+        res["escalate_to"] = res["reason"] = None
+    elif any(f["flag"] in HARD_FLAGS for f in flags):
+        res["reason"] = "fraud_shaped"
     return res

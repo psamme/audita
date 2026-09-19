@@ -49,6 +49,19 @@ def _log(client: str, entry: dict) -> dict:
     return entry
 
 
+def _stated_bands(rule: dict) -> dict:
+    """A threshold a person stated is a closed band: no ignorance left on that condition."""
+    out = {}
+    for cond, (dim, side) in rules.BANDED.items():
+        v = rules.get_cond(rule.get("when") or {}, cond)
+        if v is not None and pbmod._is_policy_line(cond, v, (rule.get("then") or {}).get("action")):
+            out[cond] = {"lo": v, "hi": round(v + 0.01, 2), "side": side, "source": "stated", "written": v, "n_known": 0, "n_other": 0,
+                         "lo_precedent": None, "hi_precedent": None, "beyond": []} if side == "upper" else \
+                        {"lo": round(v - 0.01, 2), "hi": v, "side": side, "source": "stated", "written": v, "n_known": 0, "n_other": 0,
+                         "lo_precedent": None, "hi_precedent": None, "beyond": []}
+    return out
+
+
 def _apply_ops(pb: dict, ops: list[dict], client: str, origin: str) -> dict:
     rs = [dict(r) for r in pb["rules"]]
     nxt = max([int(r["id"].rsplit("-", 1)[1]) for r in rs] + [0]) + 1
@@ -63,10 +76,13 @@ def _apply_ops(pb: dict, ops: list[dict], client: str, origin: str) -> dict:
         elif op["op"] == "modify" and idx is not None:
             rs[idx] |= {k: op[k] for k in ("text", "executable", "when", "then") if k in op}
             rs[idx] |= {"status": "approved", "human_confirmed": True, "open_question": None, "origin_of_change": origin}
+            if "when" in op:
+                rs[idx]["bands"] = _stated_bands(rs[idx])
         elif op["op"] == "add" and "text" in op:
             rule = {"id": f"{client}-R-{nxt:03d}", "text": op["text"], "executable": bool(op.get("executable")),
                     "when": op.get("when") or {}, "then": op.get("then") or {}, "origin": origin, "precedent_ids": [],
                     "status": "approved", "human_confirmed": True, "open_question": None, "version_added": pb.get("version", 0) + 1}
+            rule["bands"] = _stated_bands(rule)
             nxt += 1
             at = next((i for i, r in enumerate(rs) if r["id"] == op.get("insert_before")), len(rs))
             rs.insert(at, rule)

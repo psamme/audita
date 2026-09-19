@@ -176,3 +176,15 @@ pre.doc {
   margin: 0; padding: var(--s-4); background: var(--surface-2); border-radius: var(--r-sm);
   font: 400 var(--t-sm) / 1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
 }
+
+/* Mode banners: rehearsal and fixture data must never be mistaken for a live run */
+.banner {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px var(--s-4);
+  padding: 8px var(--s-4);
+  background: var(--invert); color: var(--invert-ink);
+  font-size: var(--t-sm);
+}
+.banner b { font-weight: 500; letter-spacing: 0.08em; }
+.banner span { opacity: 0.75; }
+.banner a { color: inherit; }

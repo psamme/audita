@@ -11,8 +11,16 @@ TXN = {"date": "2026-05-12", "amount": 4787.60, "description": "ACH CREDIT BRIGH
        "invoice_amount": 4800.00, "difference": 12.40, "counterparty": "Brightwater Group LLC"}
 
 
-def inject(client: str) -> dict:
-    con = sqlite3.connect(db.db_path(client))
+def demo_db(client: str):
+    """The demo never writes to the client's real database: it works on a throwaway copy."""
+    import shutil
+    path = db.db_path(client).with_name("experiment.db")
+    shutil.copy(db.db_path(client), path)
+    return path
+
+
+def inject(client: str, path) -> dict:
+    con = sqlite3.connect(path)
     ids = {"bank_line": f"{client}-BL-EXP01", "ledger_entry": f"{client}-LE-EXP01", "invoice": f"{client}-INV-EXP01"}
     con.execute("INSERT OR REPLACE INTO invoice VALUES (?,?,?,?,?,?,?,?)",
                 (ids["invoice"], TXN["counterparty"], "AR", "2026-04-10", "2026-05-10", TXN["invoice_amount"], "net30", "open"))
@@ -26,10 +34,10 @@ def inject(client: str) -> dict:
     return ids
 
 
-def inject_bank_change() -> dict:
+def inject_bank_change(path) -> dict:
     """Client B demo fixture: a vendor asks by email to change bank details, then a payment goes to the new account.
     The amount ties exactly to the ledger, which is the point: a matcher alone would clear it."""
-    con = sqlite3.connect(db.db_path("B"))
+    con = sqlite3.connect(path)
     ids = {"bank_line": "B-BL-EXP02", "ledger_entry": "B-LE-EXP02", "document": "B-DOC-EXP02"}
     con.execute("INSERT OR REPLACE INTO document VALUES (?,?,?,?,?,?,?)",
                 (ids["document"], "email", "2026-05-06", "accounts@vantage-colo-billing.example", "Change of bank details",

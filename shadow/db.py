@@ -48,8 +48,8 @@ def db_path(client: str) -> Path:
     return DATA / client / "client.db"
 
 
-def connect(client: str, readonly: bool = False) -> sqlite3.Connection:
-    path = db_path(client)
+def connect(client: str, readonly: bool = False, path: Path | None = None) -> sqlite3.Connection:
+    path = path or db_path(client)
     if readonly:
         con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False)
     else:

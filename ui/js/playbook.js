@@ -46,7 +46,7 @@
     const box = document.getElementById("vdiff");
     if (v.version <= 1) { box.innerHTML = `<p class="muted">Version 1 is the playbook as induced. Nothing to compare it with.</p>`; return; }
     try {
-      const d = await get(`/api/playbook/${client}/diff?from=${v.version - 1}&to=${v.version}`);
+      const d = await get(SO.withTrack(`/api/playbook/${client}/diff?from=${v.version - 1}&to=${v.version}`));
       box.innerHTML = `${d.cause && d.cause.note ? `<p class="muted">"${esc(d.cause.note)}"</p>` : ""}${diffBlock(d)}`;
     } catch (e) { box.innerHTML = `<p class="muted">That comparison is not available.</p>`; }
   }
@@ -76,7 +76,7 @@
       btn.disabled = true;
       const t0 = Date.now(), tick = setInterval(() => { note.textContent = `Rewriting the rule and replaying history. ${Math.round((Date.now() - t0) / 1000)}s`; }, 500);
       try {
-        const res = await fetch("/api/playbook/answer", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ client, rule_id: f.dataset.id, answer: ta.value }) });
+        const res = await fetch("/api/playbook/answer", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, rule_id: f.dataset.id, answer: ta.value }) });
         if (!res.ok) throw new Error(String(res.status));
         const r = await res.json();
         note.textContent = "Done.";
@@ -91,7 +91,7 @@
 
   async function load(version) {
     view.innerHTML = `<div class="panel error">Loading the playbook</div>`;
-    pb = await get(`/api/playbook/${client}` + (version ? `?version=${version}` : ""));
+    pb = await get(SO.withTrack(`/api/playbook/${client}` + (version ? `?version=${version}` : "")));
     verSel.innerHTML = pb.versions.slice().reverse().map((v) => `<option value="${v.version}"${v.version === pb.version ? " selected" : ""}>Version ${v.version}</option>`).join("");
     clientSeg.innerHTML = clients.map((c) => `<button data-v="${esc(c.id)}" aria-pressed="${c.id === client}">${esc(c.name)}</button>`).join("");
     clientSeg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { client = b.dataset.v; openId = null; load().catch(fail); }));

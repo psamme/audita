@@ -4,7 +4,7 @@
 """
 import json
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -90,10 +90,11 @@ def get_playbook(client: str, version: int | None = None, track: str = TRACK):
 
 
 @app.get("/api/playbook/{client}/diff")
-def playbook_diff(client: str, to: int, frm: int | None = None, track: str = TRACK):
-    a, b = pbmod.load(client, track, frm or to - 1), pbmod.load(client, track, to)
-    if not a or not b:
+def playbook_diff(client: str, to: int, frm: int | None = Query(None, alias="from"), track: str = TRACK):
+    have = pbmod.versions(client, track)
+    if to not in have or (frm or to - 1) not in have:
         raise HTTPException(404, "no such version")
+    a, b = pbmod.load(client, track, frm or to - 1), pbmod.load(client, track, to)
     return pbmod.diff(a, b)
 
 
@@ -126,6 +127,39 @@ def post_correction(c: Correction):
     return result | {"reran": reran}
 
 
+@app.get("/api/playbook/{client}/questions")
+def questions(client: str, track: str = TRACK):
+    pb = pbmod.load(client, track)
+    if not pb:
+        return {"band_questions": [], "open_questions": []}
+    return {"band_questions": pbmod.band_questions(pb),
+            "open_questions": [{"rule_id": r["id"], "rule_text": r["text"], "text": r["open_question"], "precedent_count": r.get("precedent_count", 0)}
+                               for r in pb["rules"] if r["status"] == "proposed" and r.get("open_question")]}
+
+
+class BandAnswer(BaseModel):
+    client: str
+    rule_id: str
+    condition: str
+    value: float
+    review: bool          # True: "yes, send one at that value for review"; False: "no, handle it the usual way"
+    track: str = TRACK
+
+
+@app.post("/api/playbook/answer-band")
+def post_band_answer(a: BandAnswer):
+    out = pbmod.answer_band(a.client, a.track, a.rule_id, a.condition, a.value, a.review)
+    correct._log(a.client, {"type": "interview", "source": "interview", "rule_id": a.rule_id, "condition": a.condition,
+                            "value": a.value, "review": a.review, "playbook_version": out["new_version"]})
+    return out
+
+
+@app.get("/api/curve")
+def curve():
+    path = db.RUNS / "questions_to_trust.json"
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
 class Answer(BaseModel):
     client: str
     rule_id: str
@@ -148,14 +182,34 @@ def metrics():
     return out
 
 
+def _cached(value):
+    if value is None:
+        raise HTTPException(404, "not computed yet; POST /api/experiment/run")
+    return value
+
+
 @app.get("/api/experiment")
-def get_experiment(fresh: bool = False, version: int | None = None):
-    return experiment.run(fresh=fresh, version=version)
+def get_experiment(version: int | None = None):
+    return _cached(experiment.run(version=version))
 
 
 @app.get("/api/experiment/bank-change")
-def get_bank_change(fresh: bool = False):
-    return experiment.bank_change(fresh=fresh)
+def get_bank_change():
+    return _cached(experiment.bank_change())
+
+
+class ExperimentRun(BaseModel):
+    which: str = "same_transaction"      # or "bank_change"
+    version: int | None = None
+    track: str = TRACK
+
+
+@app.post("/api/experiment/run")
+def run_experiment(r: ExperimentRun):
+    """Live re-run. Costs model calls; works on a throwaway copy of the client database."""
+    if r.which == "bank_change":
+        return experiment.bank_change(track=r.track, fresh=True)
+    return experiment.run(track=r.track, fresh=True, version=r.version)
 
 
 if (db.ROOT / "ui").exists():

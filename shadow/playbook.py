@@ -297,6 +297,15 @@ def _replay(con, before: str):
         yield ctx, bank
 
 
+def _is_policy_line(cond: str, written: float, action: str) -> bool:
+    """Band the conditions that express how far a convention reaches: a dollar limit on a routine handling, or the
+    floor of an escalation. Exactness checks (a difference of zero), rates and sanity bounds stay as written."""
+    dim, side = rules.BANDED[cond]
+    if "pct" in dim or abs(written) <= 0.05:
+        return False
+    return side == "lower" if action == "escalate" else side == "upper"
+
+
 def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
     """Replace each rule's invented thresholds with what the trail supports.
 
@@ -305,6 +314,7 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
     handled the rule's way beyond hi is not evidence for a wider rule; it is reported as a finding.
     Bands a person stated or answered are never recomputed.
     """
+    from grade import same
     observed = observed or {o["item"]["id"]: o for o in history.observe(con, pb["trained_before"])}
     replay = list(_replay(con, pb["trained_before"]))
     for rule in pb["rules"]:
@@ -313,7 +323,8 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
         action = (rule.get("then") or {}).get("action")
         bands = {c: b for c, b in (rule.get("bands") or {}).items() if b.get("source") in ("stated", "interview")}
         for cond in rules.BANDED:
-            if rules.get_cond(rule["when"], cond) is None or cond in bands:
+            written = rules.get_cond(rule["when"], cond)
+            if written is None or cond in bands or not _is_policy_line(cond, written, action):
                 continue
             probe = {"executable": True, "then": rule["then"], "when": rules.relaxed(rule["when"], cond)}
             seen = []
@@ -324,8 +335,12 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
                         continue
                     out = rules._evaluate(probe, b, "bank", ctx)
                     v = out and out.get("values", {}).get(rules.BANDED[cond][0])
-                    if v is not None:
-                        seen.append((round(v, 2), o["outcome"]["action"] == action, b["id"]))
+                    if v is None:
+                        continue
+                    if same(out["resolution"], o["outcome"]):
+                        seen.append((round(v, 2), True, b["id"]))
+                    elif o["outcome"]["action"] != action:      # same action to another account is noise, not a line
+                        seen.append((round(v, 2), False, b["id"]))
             upper = rules.BANDED[cond][1] == "upper"
             other = [x for x in seen if not x[1]]
             edge = (min if upper else max)(other, default=None)

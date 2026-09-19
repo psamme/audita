@@ -14,8 +14,6 @@
 .nav a:hover { color: var(--ink); }
 .nav a[aria-current="page"] { color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 5px 11px; }
 
-.fixture-flag { display: none; }
-:root[data-fixtures="true"] .fixture-flag { display: inline-flex; }
 
 main { padding-block: clamp(32px, 6vw, 72px) var(--s-7); display: grid; gap: var(--s-5); align-content: start; }
 .lede { display: grid; gap: var(--s-3); max-width: 60ch; margin-bottom: var(--s-4); }
