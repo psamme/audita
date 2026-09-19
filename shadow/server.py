@@ -115,6 +115,25 @@ def playbook_diff(client: str, to: int, frm: int | None = Query(None, alias="fro
     return pbmod.diff(a, b)
 
 
+def _rerun_open(client: str, track: str, cause_id: str, run_id: str | None = None, skip: str | None = None) -> list[dict]:
+    """After the playbook changes, give the open queue another go under it: rules only, no model call.
+    Returns the items that are no longer escalated. The re-run is a run of its own, so a later undo finds
+    these resolutions in its blast radius and re-opens them."""
+    if run_id is None:      # the newest base run of this client on this track
+        base = [r for r in runs() if r["client"] == client and (r.get("track") or TRACK) == track and "__after_" not in r["run_id"]]
+        if not base:
+            return []
+        run_id = base[0]["run_id"]
+    s = _summary(run_id)
+    open_ids = {it["item_id"] for it in _items(run_id) if it["resolution"]["action"] == "escalate" and it["item_id"] != skip}
+    if not open_ids:
+        return []
+    rid = f"{run_id}__after_{cause_id}"
+    pipeline.run(client, s["period"], "corrected", track, only=open_ids, run_id=rid, use_llm=False,
+                 label="re-run of the open queue after the playbook changed (rules only)")
+    return [it for it in _items(rid) if it["resolution"]["action"] != "escalate"]
+
+
 class Correction(BaseModel):
     client: str
     run_id: str
@@ -133,15 +152,7 @@ def post_correction(c: Correction):
     human = {"action": c.resolution["action"], "ledger_ids": c.resolution.get("ledger_ids") or [],
              "adjustments": c.resolution.get("adjustments") or [], "escalate_to": c.resolution.get("escalate_to")}
     result = correct.correct(c.client, c.track, item, human, c.note, run_id=c.run_id, role=c.role)
-    reran = []
-    if result["diff"]:   # give every other item still in the queue another go under the new playbook
-        s = _summary(c.run_id)
-        open_ids = {it["item_id"] for it in _items(c.run_id) if it["resolution"]["action"] == "escalate" and it["item_id"] != c.item_id}
-        if open_ids:
-            rid = f"{c.run_id}__after_{result['correction_id']}"
-            pipeline.run(c.client, s["period"], "corrected", c.track, only=open_ids, run_id=rid, use_llm=False,
-                         label="re-run of the open queue after a correction (rules only)")
-            reran = [it for it in _items(rid) if it["resolution"]["action"] != "escalate"]
+    reran = _rerun_open(c.client, c.track, result["correction_id"], run_id=c.run_id, skip=c.item_id) if result["diff"] else []
     return result | {"reran": reran}
 
 
@@ -178,13 +189,15 @@ def post_band_answer(a: BandAnswer):
         raise HTTPException(400, f"answer '{kind}' needs the value that was asked about")
     _con(a.client).close()
     try:
-        return correct.answer_band(a.client, a.track, a.rule_id, a.condition,
+        result = correct.answer_band(a.client, a.track, a.rule_id, a.condition,
                                    value=a.value if kind in ("review", "usual") else None,
                                    review={"review": True, "usual": False}.get(kind),
                                    limit=a.limit if kind == "limit" else None,
                                    not_amount=kind == "not_amount", role=a.role)
     except ValueError as e:      # unknown rule or band
         raise HTTPException(404, str(e))
+    reran = _rerun_open(a.client, a.track, result["correction_id"]) if result.get("diff") else []
+    return result | {"reran": reran}
 
 
 class ConflictOutcome(BaseModel):
@@ -260,7 +273,9 @@ class Answer(BaseModel):
 
 @app.post("/api/playbook/answer")
 def post_answer(a: Answer):
-    return correct.answer(a.client, a.track, a.rule_id, a.answer)
+    result = correct.answer(a.client, a.track, a.rule_id, a.answer)
+    reran = _rerun_open(a.client, a.track, result["correction_id"]) if result.get("diff") else []
+    return result | {"reran": reran}
 
 
 @app.get("/api/metrics")
