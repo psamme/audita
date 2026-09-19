@@ -33,7 +33,7 @@ from datetime import date, timedelta
 from itertools import combinations
 
 from shadow import db
-from shadow.matcher import days_between, period_end, tokens
+from shadow.matcher import days_between, period_end, posted_late, tokens
 
 
 _num, _str = {"type": "number"}, {"type": "string"}
@@ -75,7 +75,8 @@ def _rx(pattern, text):
 
 def _find_candidates(item: dict, spec: dict, when: dict, ctx: Ctx) -> list[list[dict]]:
     window = spec.get("window_days", 10)
-    pool = [e for e in ctx.pool() if -3 <= days_between(item["date"], e["date"]) <= window
+    pool = [e for e in ctx.pool() if not posted_late(e, ctx.close_days)
+            and -3 <= days_between(item["date"], e["date"]) <= window
             and (e["amount"] > 0) == (item["amount"] > 0)]
     by = spec.get("by")
     if by == "ref":
