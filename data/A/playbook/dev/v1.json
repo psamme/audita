@@ -1,0 +1,1130 @@
+{
+ "trained_before": "2026-03",
+ "rules": [
+  {
+   "id": "A-R-001",
+   "text": "A First Prairie Bank RETURNED ITEM FEE is not booked until the owner has approved it; after approval it goes to 6110 Bank fees.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "description_regex": "RETURNED ITEM FEE"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00208",
+    "A-BL-00421"
+   ],
+   "model_confidence": 0.55,
+   "open_question": "I see 2 returned item fees of $35.00. Both were booked to 6110 11 days later, and one memo says \"approved\". Who approves these, you or the ops manager, and is the returned deposit behind them followed up as well?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00208",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 35.0
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     },
+     {
+      "item_id": "A-BL-00421",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 35.0
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     }
+    ],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-002",
+   "text": "First Prairie Bank service charges, cash handling fees, coin order fees and deposit correction fees up to $22.56 are booked to 6110 Bank fees by the bookkeeper.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "counterparty_regex": "FIRST PRAIRIE",
+    "description_regex": "SERVICE CHARGE|CASH HANDLING FEE|COIN ORDER FEE|DEPOSIT CORRECTION FEE",
+    "amount_max": 22.56
+   },
+   "then": {
+    "action": "book",
+    "account": "6110"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00202",
+    "A-BL-00205",
+    "A-BL-00204",
+    "A-BL-00203",
+    "A-BL-00206",
+    "A-BL-00419",
+    "A-BL-00417",
+    "A-BL-00416",
+    "A-BL-00418",
+    "A-BL-00415",
+    "A-BL-00420"
+   ],
+   "model_confidence": 0.85,
+   "open_question": "The part-time clerk once booked a cash handling fee to 6120 Merchant card fees (A-BL-00207). Every other bank fee went to 6110. Can you confirm 6110 is correct, and is there a fee size above which you want to see it first? The largest fee I saw was $22.56.",
+   "status": "approved",
+   "backtest": {
+    "support": 11,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00207",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 19.98
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 19.98
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 11
+   },
+   "confidence": 0.857,
+   "precedent_count": 11
+  },
+  {
+   "id": "A-R-003",
+   "text": "Any other First Prairie Bank charge, or one over $22.56, goes to the owner before it is booked.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "counterparty_regex": "FIRST PRAIRIE"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.5,
+   "open_question": "I saw no bank charge over $22.56, so this ceiling is a guess. What is the largest bank fee the bookkeeper may book without asking?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-004",
+   "text": "A Tapvend or Spinpay settlement whose net equals the processor report net is matched to its card sales batch by batch reference, with the report fees booked to 6120 Merchant card fees.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "(TAPVEND PAYMENTS|SPINPAY MERCHANT) SETTLEMENT",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 0,
+     "net_diff_abs_max": 0.01
+    }
+   },
+   "then": {
+    "action": "match_adjust",
+    "adjust_from_doc": {
+     "fees": "6120"
+    },
+    "remainder_account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00001",
+    "A-BL-00002",
+    "A-BL-00003",
+    "A-BL-00004",
+    "A-BL-00005",
+    "A-BL-00006",
+    "A-BL-00007",
+    "A-BL-00009",
+    "A-BL-00010",
+    "A-BL-00011",
+    "A-BL-00012",
+    "A-BL-00014"
+   ],
+   "model_confidence": 0.85,
+   "open_question": "The bookkeeper booked one Spinpay fee to 6110 Bank fees (A-BL-00016), and you later corrected a Tapvend settlement with the memo \"correct acct\" (A-BL-00013). Everything else went to 6120. Is 6120 always the account for processor fees?",
+   "status": "approved",
+   "backtest": {
+    "support": 101,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00013",
+      "observed": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00013"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 84.75
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "A-BL-00016",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00016"
+       ],
+       "adjustments": [
+        {
+         "account": "6110",
+         "amount": 75.85
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00016"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 75.85
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 101
+   },
+   "confidence": 0.971,
+   "precedent_count": 101
+  },
+  {
+   "id": "A-R-005",
+   "text": "When a Tapvend or Spinpay settlement differs from the processor report net by $10 or less, the report fees go to 6120 and the leftover goes to 6990 Cash over/short.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "(TAPVEND PAYMENTS|SPINPAY MERCHANT) SETTLEMENT",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 0.01,
+     "net_diff_abs_max": 10
+    }
+   },
+   "then": {
+    "action": "match_adjust",
+    "adjust_from_doc": {
+     "fees": "6120"
+    },
+    "remainder_account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00052",
+    "A-BL-00230",
+    "A-BL-00245",
+    "A-BL-00247"
+   ],
+   "model_confidence": 0.65,
+   "open_question": "The bookkeeper booked leftovers of $7.15 to $9.05 to 6990. The part-time clerk booked $5.88 and $13.49 to 4000 instead, and leftovers of $62.82 and up went to you. Is $10 the right limit, and is 6990 the right account rather than 4000?",
+   "status": "proposed",
+   "backtest": {
+    "support": 4,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00267",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00265"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 88.02
+        },
+        {
+         "account": "4000",
+         "amount": 5.88
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00265"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 88.02
+        },
+        {
+         "account": "6990",
+         "amount": 5.88
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 4
+   },
+   "confidence": 0.714,
+   "precedent_count": 4,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-006",
+   "text": "When a Tapvend or Spinpay settlement is short of the processor report net by more than $10, it goes to the owner (Marv), who decides whether the shortfall is a claim on the processor in 1300.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "(TAPVEND PAYMENTS|SPINPAY MERCHANT) SETTLEMENT",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 10
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00256"
+   ],
+   "model_confidence": 0.75,
+   "open_question": "I see 3 short settlements (leftovers of $62.82 to $89.28). Each was emailed to Marv and then booked to 1300 with the memo \"ok'd Marv\" or \"per Marv\", once by the owner. Is Marv the owner, and does every such shortfall need his OK?",
+   "status": "proposed",
+   "backtest": {
+    "support": 1,
+    "conflicts": 3,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00008",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00008"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 22.61
+        },
+        {
+         "account": "1300",
+         "amount": 62.82
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     },
+     {
+      "item_id": "A-BL-00040",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00040"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 52.66
+        },
+        {
+         "account": "4000",
+         "amount": 13.49
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     },
+     {
+      "item_id": "A-BL-00043",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00043"
+       ],
+       "adjustments": [
+        {
+         "account": "6120",
+         "amount": 34.11
+        },
+        {
+         "account": "1300",
+         "amount": 67.41
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     }
+    ],
+    "supported_by": 1
+   },
+   "confidence": 0.333,
+   "precedent_count": 1,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-007",
+   "text": "When no processor report is on file, a Tapvend or Spinpay settlement that is 5.2% to 7.3% short of its card sales batch is matched, with the difference booked to 6120 Merchant card fees.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "(TAPVEND PAYMENTS|SPINPAY MERCHANT) SETTLEMENT",
+    "candidate": {
+     "by": "ref",
+     "window_days": 7,
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "diff_pct_min": 5.2,
+    "diff_pct_max": 7.3
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6120"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00263",
+    "A-BL-00259",
+    "A-BL-00006",
+    "A-BL-00054",
+    "A-BL-00046"
+   ],
+   "model_confidence": 0.6,
+   "open_question": "Fees always ran 5.2% to 7.3% of gross. Without a report, is booking the whole difference as fees in this range acceptable, or must the report always be on file?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-008",
+   "text": "Any other Tapvend or Spinpay settlement goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "(TAPVEND PAYMENTS|SPINPAY MERCHANT) SETTLEMENT"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00008",
+    "A-BL-00043",
+    "A-BL-00256"
+   ],
+   "model_confidence": 0.6,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-009",
+   "text": "A branch deposit slip is matched to the route cash collection entries in 4000 that add up to it exactly.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^DEPOSIT BR \\d+ SLIP",
+    "candidate": {
+     "by": "amount_near",
+     "window_days": 5,
+     "account": "4000",
+     "max_entries": 3
+    },
+    "diff_abs_max": 0
+   },
+   "then": {
+    "action": "match"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00089",
+    "A-BL-00102",
+    "A-BL-00296",
+    "A-BL-00316"
+   ],
+   "model_confidence": 0.85,
+   "open_question": null,
+   "status": "approved",
+   "backtest": {
+    "support": 4,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 4
+   },
+   "confidence": 0.833,
+   "precedent_count": 4
+  },
+  {
+   "id": "A-R-010",
+   "text": "A branch deposit that differs from its route cash collection by up to $25.30 either way is matched, with the difference booked to 6990 Cash over/short.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^DEPOSIT BR \\d+ SLIP",
+    "candidate": {
+     "by": "amount_near",
+     "window_days": 5,
+     "account": "4000",
+     "max_entries": 3
+    },
+    "diff_abs_max": 25.3
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00090",
+    "A-BL-00109",
+    "A-BL-00298",
+    "A-BL-00310",
+    "A-BL-00321"
+   ],
+   "model_confidence": 0.7,
+   "open_question": "Clerks booked cash differences up to $25.28 to 6990 themselves. The ops manager handled differences of $59.34 and $82.61. Where between those amounts should the line sit?",
+   "status": "approved",
+   "backtest": {
+    "support": 5,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 5
+   },
+   "confidence": 0.857,
+   "precedent_count": 5
+  },
+  {
+   "id": "A-R-011",
+   "text": "A branch deposit that is off from its route cash collection by more than $25.30 goes to the ops manager.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^DEPOSIT BR \\d+ SLIP",
+    "candidate": {
+     "by": "amount_near",
+     "window_days": 5,
+     "account": "4000",
+     "max_entries": 3
+    },
+    "diff_abs_max": 999999
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ops_manager"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00070",
+    "A-BL-00098"
+   ],
+   "model_confidence": 0.75,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-012",
+   "text": "A branch deposit with no matching route cash collection entry goes to the ops manager.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^DEPOSIT BR \\d+ SLIP"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ops_manager"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00070",
+    "A-BL-00098"
+   ],
+   "model_confidence": 0.45,
+   "open_question": "I see 4 deposits of $494 to $933 with no count sheet entry, all left open with no one handling them. Should these go to the ops manager to chase the missing count sheets, or just be carried forward?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00092",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00096"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 3.21
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "ops_manager"
+      }
+     },
+     {
+      "item_id": "A-BL-00292",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00291"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 17.0
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "ops_manager"
+      }
+     }
+    ],
+    "supported_by": 2
+   },
+   "confidence": 0.5,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-013",
+   "text": "A MOBILE DEPOSIT of up to $42.94 with no ledger entry is booked to 4990 Misc income by the bookkeeper.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^MOBILE DEPOSIT",
+    "amount_max": 42.94
+   },
+   "then": {
+    "action": "book",
+    "account": "4990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00221",
+    "A-BL-00223",
+    "A-BL-00222",
+    "A-BL-00436",
+    "A-BL-00435",
+    "A-BL-00434"
+   ],
+   "model_confidence": 0.8,
+   "open_question": "All 6 mobile deposits were between $11 and $43 and booked to 4990. What is the most the bookkeeper may book there without asking?",
+   "status": "approved",
+   "backtest": {
+    "support": 6,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 6
+   },
+   "confidence": 0.875,
+   "precedent_count": 6
+  },
+  {
+   "id": "A-R-014",
+   "text": "Any larger mobile deposit, and any COUNTER DEPOSIT with no ledger entry, goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^(MOBILE|COUNTER) DEPOSIT"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00437"
+   ],
+   "model_confidence": 0.5,
+   "open_question": "I see 2 counter deposits, both booked to 4990 4 to 5 days later. You booked the $473.29 one, but the bookkeeper booked the $667.72 one. Do unidentified counter deposits need your review?",
+   "status": "proposed",
+   "backtest": {
+    "support": 1,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00224",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "4990",
+         "amount": -667.72
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "owner"
+      }
+     }
+    ],
+    "supported_by": 1
+   },
+   "confidence": 0.5,
+   "precedent_count": 1,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-015",
+   "text": "A commercial customer ACH receipt that is short of its receivable in 1200 by up to $12.30 is matched, with the short-pay booked to 6990 Cash over/short.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^ACH CREDIT",
+    "candidate": {
+     "by": "counterparty",
+     "window_days": 5,
+     "account": "1200",
+     "max_entries": 1
+    },
+    "diff_min": 0,
+    "diff_max": 12.3
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "6990"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00214",
+    "A-BL-00432"
+   ],
+   "model_confidence": 0.6,
+   "open_question": "The bookkeeper booked short-pays of $3.16 and $9.93 to 6990. The part-time clerk booked $12.28 and $5.70 to 4000 Vending sales. Is 6990 correct, and is about $12 the right limit?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 2,
+    "conflict_examples": [
+     {
+      "item_id": "A-BL-00217",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "4000",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00219"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 12.28
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "A-BL-00423",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00420"
+       ],
+       "adjustments": [
+        {
+         "account": "4000",
+         "amount": 5.7
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "A-LE-00420"
+       ],
+       "adjustments": [
+        {
+         "account": "6990",
+         "amount": 5.7
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 2
+   },
+   "confidence": 0.5,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-016",
+   "text": "A commercial customer ACH receipt that differs from its receivable in 1200 by more than that goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^ACH CREDIT",
+    "candidate": {
+     "by": "counterparty",
+     "window_days": 5,
+     "account": "1200",
+     "max_entries": 1
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00209"
+   ],
+   "model_confidence": 0.7,
+   "open_question": "There is only 1 case: a Harborview short-pay of $356.84 that was emailed to Marv and posted by the owner 6 days later. Do all larger customer short-pays go to you?",
+   "status": "proposed",
+   "backtest": {
+    "support": 1,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 1
+   },
+   "confidence": 0.667,
+   "precedent_count": 1,
+   "executable_if_approved": true
+  },
+  {
+   "id": "A-R-017",
+   "text": "A customer ACH receipt with no open receivable goes to the owner.",
+   "executable": true,
+   "when": {
+    "item_kind": "bank",
+    "direction": "in",
+    "description_regex": "^ACH CREDIT"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00213",
+    "A-BL-00210"
+   ],
+   "model_confidence": 0.45,
+   "open_question": "Receipts from Mesa Grill ($4,244.84) and Elm Street Fitness ($1,084.72) were left open with no ledger entry. Who should resolve unapplied customer receipts?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-018",
+   "text": "An outgoing ACH debit, check or payroll run with no ledger entry (location commissions, supplier debits, payroll) goes to the owner.",
+   "executable": false,
+   "when": {
+    "item_kind": "bank",
+    "direction": "out",
+    "description_regex": "^(ACH DEBIT|CHECK|PAYROLL)"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-BL-00145",
+    "A-BL-00130",
+    "A-BL-00195",
+    "A-BL-00198",
+    "A-BL-00180",
+    "A-BL-00197",
+    "A-BL-00199",
+    "A-BL-00168",
+    "A-BL-00176",
+    "A-BL-00136",
+    "A-BL-00200"
+   ],
+   "model_confidence": 0.45,
+   "open_question": "11 outgoing items were left open with no ledger entry and no sign of who handled them: location commissions, Kessler, Metro Propane, check 4103 and a $21,014.72 payroll run. Who should post these, and are the commissions set by contract?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "A-R-019",
+   "text": "Ledger entries up to 3 days old at month end (route cash collections, card sales batches, vendor checks and ACH payments) are carried forward as in transit.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger",
+    "age_days_max": 3
+   },
+   "then": {
+    "action": "carry_forward"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "A-LE-00057",
+    "A-LE-00058",
+    "A-LE-00059",
+    "A-LE-00060",
+    "A-LE-00061",
+    "A-LE-00062",
+    "A-LE-00129",
+    "A-LE-00130",
+    "A-LE-00131",
+    "A-LE-00132",
+    "A-LE-00151",
+    "A-LE-00161"
+   ],
+   "model_confidence": 0.8,
+   "open_question": "Every open ledger item at month end was 0 to 3 days old and cleared the following month. How old can an item get before someone must look at it?",
+   "status": "approved",
+   "backtest": {
+    "support": 15,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 15
+   },
+   "confidence": 0.941,
+   "precedent_count": 15
+  },
+  {
+   "id": "A-R-020",
+   "text": "A ledger entry more than 3 days old that is still uncleared at month end goes to the owner for review.",
+   "executable": false,
+   "when": {
+    "item_kind": "ledger"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "owner"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.4,
+   "open_question": "There are no stale items in the trail. Who reviews older uncleared checks and collections, you or the ops manager?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  }
+ ],
+ "backtest": {
+  "periods": [
+   "2026-01",
+   "2026-02"
+  ],
+  "uncovered_items": 0,
+  "uncovered_examples": []
+ },
+ "client": "A",
+ "track": "dev",
+ "version": 1,
+ "created_at": "2026-09-19T13:35:09",
+ "cause": {
+  "type": "induction",
+  "before": "2026-03",
+  "clusters": 47
+ }
+}

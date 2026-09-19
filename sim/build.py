@@ -18,7 +18,7 @@ from typing import Callable
 
 from shadow import db
 from sim import client_a, client_b
-from sim.world import HISTORY, TEST, World
+from sim.world import HISTORY, TEST, World, truth_path
 
 MODULES = {"A": client_a, "B": client_b}
 SEEDS = {"A": 11, "B": 23}
@@ -35,7 +35,7 @@ def _generate(w: World, period: str):
 
 def build_history(client_id: str) -> dict:
     mod = MODULES[client_id]
-    w = World(client_id, SEEDS[client_id], HISTORY[-1], meta=(mod.NAME, mod.BLURB, mod.CHART))
+    w = World(client_id, SEEDS[client_id], HISTORY[-1], meta=(mod.NAME, mod.BLURB, mod.CHART), enact_cfg=mod.ENACT)
     for period in HISTORY:
         _generate(w, period)
     return w.finish()
@@ -56,15 +56,15 @@ def export_dev_key(client_id: str, period: str = "2026-03") -> str:
 
     Train on the periods before `period`, grade against what the humans did in `period`.
     """
-    con = sqlite3.connect(db.db_path(client_id).with_name("history.db"))
+    con = sqlite3.connect(truth_path(client_id))
     con.row_factory = sqlite3.Row
     key = {}
-    dates = dict(con.execute("SELECT id, date FROM bank_line UNION ALL SELECT id, date FROM ledger_entry").fetchall())
+    dates = dict(sqlite3.connect(db.db_path(client_id).with_name("history.db")).execute("SELECT id, date FROM bank_line UNION ALL SELECT id, date FROM ledger_entry").fetchall())
     for r in con.execute("SELECT * FROM resolution WHERE period=?", (period,)):
         key[r["item_id"]] = {
             "item_kind": r["item_kind"], "date": dates[r["item_id"]], "action": r["action"], "ledger_ids": json.loads(r["ledger_ids"]),
             "adjustments": json.loads(r["adjustments"]), "escalate_to": r["escalate_to"], "note": r["note"],
-            "category": "easy" if r["by"] == "auto" else "exception", "easy": r["by"] == "auto",
+            "category": r["category"], "easy": r["by"] == "auto",
             "source": "standard", "alternatives": []}
     out = db.RUNS / "dev"
     out.mkdir(parents=True, exist_ok=True)

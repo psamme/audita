@@ -94,9 +94,72 @@ def _diff_ok(diff: float, ledger_total: float, when: dict) -> bool:
     return True
 
 
+BANDED = {  # numeric condition -> (which measured value it bounds, side)
+    "amount_max": ("amount", "upper"), "amount_min": ("amount", "lower"),
+    "diff_max": ("diff", "upper"), "diff_min": ("diff", "lower"), "diff_abs_max": ("diff_abs", "upper"),
+    "diff_pct_max": ("diff_pct", "upper"), "diff_pct_min": ("diff_pct", "lower"),
+    "doc.net_diff_abs_max": ("net_diff_abs", "upper"), "doc.net_diff_abs_min": ("net_diff_abs", "lower"),
+}
+RELAX = 10.0
+
+
+def get_cond(when: dict, cond: str):
+    return (when.get("doc") or {}).get(cond[4:]) if cond.startswith("doc.") else when.get(cond)
+
+
+def with_cond(when: dict, cond: str, value) -> dict:
+    """Copy of `when` with one numeric condition replaced (None removes it)."""
+    w = dict(when)
+    if cond.startswith("doc."):
+        w["doc"] = {k: v for k, v in (when.get("doc") or {}).items() if k != cond[4:]} | ({cond[4:]: value} if value is not None else {})
+    elif value is None:
+        w.pop(cond, None)
+    else:
+        w[cond] = value
+    return w
+
+
+def relaxed(when: dict, cond: str) -> dict:
+    """The rule's scope with one threshold pushed far out, to see what the client did on the other side of it."""
+    const, (dim, side) = get_cond(when, cond), BANDED[cond]
+    if dim == "amount":
+        return with_cond(when, cond, None)
+    return with_cond(when, cond, (abs(const) * RELAX + 50) if side == "upper" else (0 if const >= 0 else const * RELAX - 50))
+
+
 def evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
-    """Returns {"resolution": ..., "trace": ...} when the rule fires, {"defer": True} when a non-executable rule
-    claims the item for the investigator, or None."""
+    """Apply one rule. Thresholds are bands, not constants: for each numeric condition the rule knows `lo`, the
+    furthest value at which the client is known to have taken this action, and `hi`, the nearest value at which it
+    is known to have done something else. The rule fires on the known side, stays silent beyond `hi`, and an item
+    in between is nobody's guess to make: it comes back as {"in_band": ...} and is escalated with both precedents."""
+    bands = rule.get("bands") or {}
+    if not bands or not rule.get("executable"):
+        return _evaluate(rule, item, kind, ctx)
+    when = rule["when"]
+    for cond, b in bands.items():
+        side = BANDED[cond][1]
+        outer = b["hi"] if side == "upper" else b["lo"]
+        when = relaxed(when, cond) if outer is None else with_cond(when, cond, outer)
+    out = _evaluate(rule | {"when": when}, item, kind, ctx)
+    if not out or out.get("defer"):
+        return out
+    for cond, b in bands.items():
+        dim, side = BANDED[cond]
+        v = out["values"].get(dim)
+        if v is None:
+            continue
+        if side == "upper" and b["hi"] is not None and v >= b["hi"] - 1e-9 or side == "lower" and b["lo"] is not None and v <= b["lo"] + 1e-9:
+            return None
+        if side == "upper" and v > b["lo"] + 1e-9 or side == "lower" and v < b["hi"] - 1e-9:
+            return {"in_band": {"condition": cond, "value": round(v, 2), "lo": b["lo"], "hi": b["hi"],
+                                "lo_precedent": b.get("lo_precedent"), "hi_precedent": b.get("hi_precedent")},
+                    "evidence_ids": out["evidence_ids"], "would": out["resolution"]}
+    return out
+
+
+def _evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
+    """Returns {"resolution": ...} when the rule fires, {"defer": True} when a non-executable rule claims the item
+    for the investigator, or None."""
     when, then = rule.get("when") or {}, rule.get("then") or {}
     if when.get("item_kind", "bank") != kind:
         return None
@@ -112,7 +175,7 @@ def evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
     if "amount_max" in when and abs(item["amount"]) > when["amount_max"]:
         return None
 
-    evidence, ledger, diff, doc = [], [], None, None
+    evidence, ledger, diff, doc, net_diff = [], [], None, None, None
     if kind == "ledger":
         age = days_between(ctx.end, item["date"])
         if "age_days_max" in when and age > when["age_days_max"]:
@@ -174,15 +237,53 @@ def evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
         res["escalate_to"] = then.get("escalate_to")
     elif action != "carry_forward":
         return None
-    return {"resolution": res, "evidence_ids": evidence, "diff": diff}
+    total = sum(e["amount"] for e in ledger)
+    values = {"amount": abs(item["amount"]), "diff": diff, "diff_abs": abs(diff) if diff is not None else None,
+              "diff_pct": abs(diff) / abs(total) * 100 if ledger and total else None,
+              "net_diff_abs": abs(net_diff) if net_diff is not None else None}
+    return {"resolution": res, "evidence_ids": evidence, "diff": diff, "values": values}
 
 
-def apply(playbook: dict, item: dict, kind: str, ctx: Ctx) -> tuple[dict | None, dict | None]:
-    """First matching rule wins. Returns (rule, outcome); outcome is None when nothing matched."""
+def apply(playbook: dict, item: dict, kind: str, ctx: Ctx, include_proposed: bool = False) -> tuple[dict | None, dict | None]:
+    """First matching rule wins. Returns (rule, outcome); outcome is None when nothing matched.
+
+    Proposed rules never resolve anything in a live run: a matching proposed rule hands the item to the investigator
+    as guidance, exactly like a judgement rule."""
     for rule in playbook.get("rules", []):
-        if rule.get("status") != "approved":
+        if rule.get("status") == "retired":
+            continue
+        if rule.get("status") != "approved" and not include_proposed:
+            out = evaluate(rule | {"executable": False}, item, kind, ctx)
+            if out:
+                return rule, out
             continue
         out = evaluate(rule, item, kind, ctx)
+        if out and out.get("in_band"):
+            # borrow the addressee from whichever rule covers the far side of the line, if one does
+            later = playbook["rules"][playbook["rules"].index(rule) + 1:]
+            far = next((r for r in later if r.get("status") != "retired" and (r.get("then") or {}).get("action") == "escalate"
+                        and _evaluate(r | {"executable": True}, item, kind, ctx)), None)
+            out["escalate_to"] = (far or {}).get("then", {}).get("escalate_to")
         if out:
             return rule, out
     return None, None
+
+
+def plan(playbook: dict, items: list[tuple[str, dict]], ctx: Ctx, include_proposed: bool = False) -> dict[str, tuple]:
+    """Evaluate every item against the playbook without consuming anything, then abstain wherever two items would
+    claim the same ledger entry. Same principle as the matcher: a claim that is not mutually unique is not made.
+
+    Returns {item_id: (rule, outcome)}; a contested item comes back as a deferral under the rule that claimed it.
+    """
+    out, claims = {}, {}
+    for kind, item in items:
+        rule, res = apply(playbook, item, kind, ctx, include_proposed)
+        out[item["id"]] = (rule, res)
+        for le in ((res or {}).get("resolution") or (res or {}).get("would") or {}).get("ledger_ids", []):
+            claims.setdefault(le, []).append(item["id"])
+    for le, claimants in claims.items():
+        if len(claimants) > 1:
+            for i in claimants:
+                if not (out[i][1] or {}).get("in_band"):
+                    out[i] = (out[i][0], {"defer": True, "contested": le})
+    return out

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shadow Onboarding</title>
+  <title>Review queue · Shadow Onboarding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="design/tokens.css">
@@ -15,10 +15,8 @@
   <div class="page">
     <header class="wrap bar">
       <a class="mark" href="index.html">Shadow Onboarding</a>
-      <nav class="nav" aria-label="Screens">
-      </nav>
-      <div class="row" style="display: flex; gap: 12px; align-items: center;">
-        <span class="state state-proposed fixture-flag">Example data</span>
+      <nav class="nav" aria-label="Screens"></nav>
+      <div style="display: flex; gap: 12px; align-items: center;">
         <div class="seg" id="stone" aria-label="Stone">
           <button data-v="statuario">Light</button>
           <button data-v="nero">Dark</button>
@@ -26,12 +24,18 @@
       </div>
     </header>
 
-    <main class="wrap">
-      <div class="lede">
-        <div class="label">The experiment</div>
-        <h1>One payment. Two finance teams.</h1>
-        <p>Both clients received this exact bank line. Neither was configured. Each answer comes from that client's own history.</p>
+    <main class="wrap compact">
+      <div class="lede-row">
+        <div class="lede">
+          <div class="label">Review queue</div>
+          <h2>What the agent would not decide alone</h2>
+        </div>
+        <div class="ctl">
+          <label class="label" for="run">Run</label>
+          <select id="run" class="select"></select>
+        </div>
       </div>
+      <div id="summary" class="summary"></div>
       <div id="view"></div>
     </main>
   </div>
@@ -40,6 +44,6 @@
   <script src="js/api.js"></script>
   <script src="js/parts.js"></script>
   <script src="js/shell.js"></script>
-  <script src="js/experiment.js"></script>
+  <script src="js/queue.js"></script>
 </body>
 </html>

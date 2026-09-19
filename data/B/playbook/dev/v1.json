@@ -1,0 +1,977 @@
+{
+ "trained_before": "2026-03",
+ "rules": [
+  {
+   "id": "B-R-001",
+   "text": "Any ledger entry posted after the business day 5 close for its own month goes to the controller for review; it is not carried forward automatically.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger",
+    "posted_after_close": true
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-LE-00267"
+   ],
+   "model_confidence": 0.7,
+   "open_question": "I see one case: a Pagewell accrual true-up (JE3874, 15,040.09 to 6600) dated 2026-02-01, posted 2026-02-12, approved by dwhitfield as a 'late entry' and still open. Should every entry posted after close go to you, or only accrual true-ups?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-002",
+   "text": "A Paystream gross charges entry in 1250 that is no more than 2 days old at month end is carried forward to clear against next month's payout.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger",
+    "description_regex": "^Paystream gross charges PS-PO-",
+    "age_days_max": 2
+   },
+   "then": {
+    "action": "carry_forward"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-LE-00029",
+    "B-LE-00030",
+    "B-LE-00031"
+   ],
+   "model_confidence": 0.85,
+   "open_question": "The month-end Paystream charges I saw were 0 to 2 days old and all cleared early the next month. Payouts arrive up to 4 days after the charge. Should the carry-forward limit be 4 days instead of 2?",
+   "status": "approved",
+   "backtest": {
+    "support": 3,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 3
+   },
+   "confidence": 0.8,
+   "precedent_count": 3
+  },
+  {
+   "id": "B-R-003",
+   "text": "An AP payment entry in 2000 that is no more than 2 days old at month end is carried forward as a payment in transit.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger",
+    "description_regex": "^AP payment ",
+    "age_days_max": 2
+   },
+   "then": {
+    "action": "carry_forward"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-LE-00106",
+    "B-LE-00116"
+   ],
+   "model_confidence": 0.75,
+   "open_question": "I see 2 AP payments (Helix, Corelight) posted 2026-01-30 that cleared in February. Is 2 days the right limit for carrying forward outstanding vendor payments, or do you allow longer?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-004",
+   "text": "Any other ledger entry still unmatched at month end goes to the controller.",
+   "executable": true,
+   "when": {
+    "item_kind": "ledger"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-LE-00267"
+   ],
+   "model_confidence": 0.5,
+   "open_question": "None of the aged ledger items I saw were older than 2 days, apart from the late accrual. Who should get older unmatched entries: you, or the AR and AP leads depending on the account?",
+   "status": "proposed",
+   "backtest": {
+    "support": 1,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 1
+   },
+   "confidence": 0.667,
+   "precedent_count": 1,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-005",
+   "text": "A Paystream payout whose Paystream report net does not equal the amount received goes to the controller; the unexplained residual was booked to 1290 only after the controller approved it.",
+   "executable": true,
+   "when": {
+    "counterparty_regex": "paystream",
+    "direction": "in",
+    "candidate": {
+     "by": "ref",
+     "account": "1250",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 0.01
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00014",
+    "B-BL-00142"
+   ],
+   "model_confidence": 0.75,
+   "open_question": "I see 2 payouts where a residual of about 250 was left after fees and chargebacks. Both were booked to 1290 5 to 9 days later with dwhitfield's approval. Does every residual need your approval, or is there a small amount a clerk can post to 1290 directly?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-006",
+   "text": "A Paystream payout that agrees to its Paystream report is matched to the 1250 gross charges entry, with report fees booked to 6310, refunds to 4090 and chargebacks to 6320.",
+   "executable": true,
+   "when": {
+    "counterparty_regex": "paystream",
+    "direction": "in",
+    "candidate": {
+     "by": "ref",
+     "account": "1250",
+     "window_days": 5,
+     "max_entries": 1
+    },
+    "doc": {
+     "type": "processor_report",
+     "net_diff_abs_min": 0,
+     "net_diff_abs_max": 0.01
+    }
+   },
+   "then": {
+    "action": "match_adjust",
+    "adjust_from_doc": {
+     "fees": "6310",
+     "refunds": "4090",
+     "chargebacks": "6320"
+    },
+    "remainder_account": "1290"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00001",
+    "B-BL-00003",
+    "B-BL-00004",
+    "B-BL-00005",
+    "B-BL-00006",
+    "B-BL-00007",
+    "B-BL-00008",
+    "B-BL-00009",
+    "B-BL-00010",
+    "B-BL-00011",
+    "B-BL-00012",
+    "B-BL-00013"
+   ],
+   "model_confidence": 0.85,
+   "open_question": "Refunds went to 4090 on 27 payouts but to 4000 subscription revenue on 5 (for example B-BL-00023, B-BL-00129, B-BL-00002). I have written 4090 as the rule. Were the 4000 postings mistakes that should be reclassified?",
+   "status": "approved",
+   "backtest": {
+    "support": 49,
+    "conflicts": 5,
+    "conflict_examples": [
+     {
+      "item_id": "B-BL-00002",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00002"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 2200.68
+        },
+        {
+         "account": "4000",
+         "amount": 477.08
+        },
+        {
+         "account": "6320",
+         "amount": 62.24
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00002"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 2200.68
+        },
+        {
+         "account": "4090",
+         "amount": 477.08
+        },
+        {
+         "account": "6320",
+         "amount": 62.24
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "B-BL-00023",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00023"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 1853.83
+        },
+        {
+         "account": "4000",
+         "amount": 368.65
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00023"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 1853.83
+        },
+        {
+         "account": "4090",
+         "amount": 368.65
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "B-BL-00029",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00029"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 1789.9
+        },
+        {
+         "account": "4000",
+         "amount": 380.3
+        },
+        {
+         "account": "6320",
+         "amount": 173.91
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00029"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 1789.9
+        },
+        {
+         "account": "4090",
+         "amount": 380.3
+        },
+        {
+         "account": "6320",
+         "amount": 173.91
+        }
+       ],
+       "escalate_to": null
+      }
+     },
+     {
+      "item_id": "B-BL-00031",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00031"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 2501.27
+        },
+        {
+         "account": "4000",
+         "amount": 788.95
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00031"
+       ],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 2501.27
+        },
+        {
+         "account": "4090",
+         "amount": 788.95
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 49
+   },
+   "confidence": 0.893,
+   "precedent_count": 49
+  },
+  {
+   "id": "B-R-007",
+   "text": "A Paystream payout with a matching 1250 charges entry but no Paystream report on file goes to the controller.",
+   "executable": true,
+   "when": {
+    "counterparty_regex": "paystream",
+    "direction": "in",
+    "candidate": {
+     "by": "ref",
+     "account": "1250",
+     "window_days": 5,
+     "max_entries": 1
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00014"
+   ],
+   "model_confidence": 0.55,
+   "open_question": "Every payout I saw had a Paystream report. If a report is missing, should the item wait for the report, or go to you?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-008",
+   "text": "A Paystream payout with no 1250 gross charges entry goes to the controller.",
+   "executable": true,
+   "when": {
+    "counterparty_regex": "paystream",
+    "direction": "in"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [],
+   "model_confidence": 0.5,
+   "open_question": "I did not see any payout without a gross charges entry. Who should investigate one if it happens?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-009",
+   "text": "An incoming wire fee from Commonwealth Trust Bank of up to 30.00 is booked to bank charges 7710.",
+   "executable": true,
+   "when": {
+    "direction": "out",
+    "description_regex": "^INCOMING WIRE FEE",
+    "counterparty_regex": "commonwealth trust",
+    "amount_max": 30
+   },
+   "then": {
+    "action": "book",
+    "account": "7710"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00121",
+    "B-BL-00120",
+    "B-BL-00123",
+    "B-BL-00122",
+    "B-BL-00246"
+   ],
+   "model_confidence": 0.85,
+   "open_question": "One incoming wire fee (B-BL-00243, 15.00) was booked to 6310 instead of 7710. I have treated it as a misposting. Should it be reclassified?",
+   "status": "proposed",
+   "backtest": {
+    "support": 5,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "B-BL-00243",
+      "observed": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "6310",
+         "amount": 15.0
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "book",
+       "ledger_ids": [],
+       "adjustments": [
+        {
+         "account": "7710",
+         "amount": 15.0
+        }
+       ],
+       "escalate_to": null
+      }
+     }
+    ],
+    "supported_by": 5
+   },
+   "confidence": 0.75,
+   "precedent_count": 5,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-010",
+   "text": "The monthly account analysis charge from Commonwealth Trust Bank of up to 234.15 is booked to bank charges 7710.",
+   "executable": true,
+   "when": {
+    "direction": "out",
+    "description_regex": "^ACCOUNT ANALYSIS CHARGE",
+    "counterparty_regex": "commonwealth trust",
+    "amount_max": 234.15
+   },
+   "then": {
+    "action": "book",
+    "account": "7710"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00124",
+    "B-BL-00247"
+   ],
+   "model_confidence": 0.8,
+   "open_question": "I have seen only 2 of these charges, at 219.05 and 234.15. Is there a higher amount a clerk can book without review?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-011",
+   "text": "Sweep account interest from Commonwealth Trust Bank of up to 30,322.44 is booked to interest income 7100.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^INTEREST CREDIT SWEEP",
+    "counterparty_regex": "commonwealth trust",
+    "amount_max": 30322.44
+   },
+   "then": {
+    "action": "book",
+    "account": "7100"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00125",
+    "B-BL-00248"
+   ],
+   "model_confidence": 0.8,
+   "open_question": "I have seen only 2 monthly interest credits, at 27,560 and 30,322. Should larger credits also be booked without review?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-012",
+   "text": "Any other Commonwealth Trust Bank debit or credit, such as a MISC DEBIT or a fee above the usual amounts, goes to the controller.",
+   "executable": true,
+   "when": {
+    "counterparty_regex": "commonwealth trust"
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00249"
+   ],
+   "model_confidence": 0.7,
+   "open_question": "I see one MISC DEBIT of 89.71, booked to 7710 by the controller 7 days later with the note 'pls follow up'. Should every unexplained bank debit go to you, whatever the size?",
+   "status": "proposed",
+   "backtest": {
+    "support": 1,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 1
+   },
+   "confidence": 0.667,
+   "precedent_count": 1,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-013",
+   "text": "A customer wire marked PREPAY of up to 400,000 is booked to customer deposits and prepaid commits 2450.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^WIRE IN .*PREPAY",
+    "amount_max": 400000
+   },
+   "then": {
+    "action": "book",
+    "account": "2450"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00126",
+    "B-BL-00250"
+   ],
+   "model_confidence": 0.75,
+   "open_question": "I see 2 prepayments (Orbis 400,000 and Lumen 150,000), both booked to 2450 the same day by a staff accountant. Do prepayments need a check against the contract, and who should review prepayments above 400,000?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-014",
+   "text": "A customer wire marked PREPAY above 400,000 goes to the controller.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^WIRE IN .*PREPAY",
+    "amount_min": 400000.01
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00126"
+   ],
+   "model_confidence": 0.5,
+   "open_question": "The largest prepayment I saw was 400,000. Who should review a larger one, you or the AR lead?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-015",
+   "text": "A Halcyon Robotics wire that is 2 percent short of a single open invoice in 1200, on invoices up to 138,292.48, is matched and the shortfall booked to sales discounts 4050.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "counterparty_regex": "halcyon robotics",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_pct_min": 1.99,
+    "diff_pct_max": 2.01,
+    "diff_min": 0,
+    "amount_max": 135526.63
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "4050"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00032",
+    "B-BL-00040",
+    "B-BL-00048",
+    "B-BL-00163",
+    "B-BL-00155",
+    "B-BL-00171"
+   ],
+   "model_confidence": 0.8,
+   "open_question": "Halcyon always pays exactly 2 percent short, and the clerk books the difference to 4050 the same day or within 3 days. Is this a contractual early payment discount, and should it apply to payments above 135,527?",
+   "status": "approved",
+   "backtest": {
+    "support": 6,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 6
+   },
+   "confidence": 0.875,
+   "precedent_count": 6
+  },
+  {
+   "id": "B-R-016",
+   "text": "A customer wire that exactly equals the sum of several open invoices in 1200 for the same customer is matched to all of them.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^WIRE IN ",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10
+    },
+    "diff_abs_max": 0
+   },
+   "then": {
+    "action": "match"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00166",
+    "B-BL-00043",
+    "B-BL-00158",
+    "B-BL-00053",
+    "B-BL-00160",
+    "B-BL-00176",
+    "B-BL-00042",
+    "B-BL-00050",
+    "B-BL-00039",
+    "B-BL-00162",
+    "B-BL-00033",
+    "B-BL-00164"
+   ],
+   "model_confidence": 0.85,
+   "open_question": "I could not replay this against any past item. Is this a convention you follow?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-017",
+   "text": "A customer wire that arrives 15.00 to 35.00 short of its invoice in 1200 is matched and the shortfall booked to bank charges 7710 as a deducted wire fee.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^WIRE IN ",
+    "candidate": {
+     "by": "ref_in_description",
+     "account": "1200",
+     "window_days": 10,
+     "max_entries": 1
+    },
+    "diff_min": 15,
+    "diff_max": 35
+   },
+   "then": {
+    "action": "match_adjust",
+    "account": "7710"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00047",
+    "B-BL-00175"
+   ],
+   "model_confidence": 0.65,
+   "open_question": "I see 2 shortfalls of exactly 15.00 and 35.00 booked to 7710 by a clerk, while shortfalls of 2.79 and 12.39 went to Priya. Is the rule 'known wire fee amounts go to 7710, anything else goes to AR', and what is the upper limit?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-018",
+   "text": "Any other customer wire that differs from its open invoices in 1200 goes to the AR lead, who decides whether the short payment stays on the customer's receivable.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^WIRE IN ",
+    "candidate": {
+     "by": "counterparty",
+     "account": "1200",
+     "window_days": 10
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ar_lead"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00034",
+    "B-BL-00174"
+   ],
+   "model_confidence": 0.8,
+   "open_question": "The trail agrees with this 2 times and disagrees 0 times. Is this how you want it handled?",
+   "status": "proposed",
+   "backtest": {
+    "support": 2,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 2
+   },
+   "confidence": 0.75,
+   "precedent_count": 2,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-019",
+   "text": "A customer wire with no open invoice in 1200 to match against goes to the AR lead and stays open until the AR lead identifies it.",
+   "executable": true,
+   "when": {
+    "direction": "in",
+    "description_regex": "^WIRE IN "
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ar_lead"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00037"
+   ],
+   "model_confidence": 0.75,
+   "open_question": "4 unidentified customer wires (97,675 to 218,963) were left open, 2 of them pending with pshah. Should these be parked in 1290 unapplied receipts at month end, or left open in the reconciliation?",
+   "status": "proposed",
+   "backtest": {
+    "support": 1,
+    "conflicts": 1,
+    "conflict_examples": [
+     {
+      "item_id": "B-BL-00156",
+      "observed": {
+       "action": "match_adjust",
+       "ledger_ids": [
+        "B-LE-00165",
+        "B-LE-00166",
+        "B-LE-00167"
+       ],
+       "adjustments": [
+        {
+         "account": "1200",
+         "amount": 12.39
+        }
+       ],
+       "escalate_to": null
+      },
+      "rule_would": {
+       "action": "escalate",
+       "ledger_ids": [],
+       "adjustments": [],
+       "escalate_to": "ar_lead"
+      }
+     }
+    ],
+    "supported_by": 1
+   },
+   "confidence": 0.5,
+   "precedent_count": 1,
+   "executable_if_approved": true
+  },
+  {
+   "id": "B-R-020",
+   "text": "A Helix Annotation Svcs ACH payment matched to an AP payment in 2000 goes to the controller for approval before it is cleared.",
+   "executable": false,
+   "when": {
+    "direction": "out",
+    "counterparty_regex": "helix annotation",
+    "candidate": {
+     "by": "ref",
+     "account": "2000",
+     "window_days": 10,
+     "max_entries": 1
+    }
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "controller"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00179"
+   ],
+   "model_confidence": 0.4,
+   "open_question": "I see one Helix payment of 49,929.29 that matched its AP entry exactly but was cleared by the controller 7 days later with approval 'ok'. Do Helix payments, or vendor payments above a certain size, need your sign-off, or was this a one-off?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  },
+  {
+   "id": "B-R-021",
+   "text": "An outgoing vendor ACH with no AP payment entry in 2000 goes to the AP lead to find or post the payment.",
+   "executable": true,
+   "when": {
+    "direction": "out",
+    "description_regex": "^ACH OUT "
+   },
+   "then": {
+    "action": "escalate",
+    "escalate_to": "ap_lead"
+   },
+   "origin": "induced",
+   "version_added": 1,
+   "precedent_ids": [
+    "B-BL-00215",
+    "B-BL-00235",
+    "B-BL-00205",
+    "B-BL-00207",
+    "B-BL-00200",
+    "B-BL-00234",
+    "B-BL-00231"
+   ],
+   "model_confidence": 0.55,
+   "open_question": "7 vendor ACH payments in February (Corelight, Helix, Ardent Legal, Summit Office Leasing, from 27,995 to 367,694) had no AP entry and were still open with no owner. Should these go to the AP lead, or to you?",
+   "status": "proposed",
+   "backtest": {
+    "support": 0,
+    "conflicts": 0,
+    "conflict_examples": [],
+    "supported_by": 0
+   },
+   "confidence": 0.25,
+   "precedent_count": 0
+  }
+ ],
+ "backtest": {
+  "periods": [
+   "2026-01",
+   "2026-02"
+  ],
+  "uncovered_items": 2,
+  "uncovered_examples": [
+   "B-BL-00245",
+   "B-BL-00244"
+  ]
+ },
+ "client": "B",
+ "track": "dev",
+ "version": 1,
+ "created_at": "2026-09-19T13:34:57",
+ "cause": {
+  "type": "induction",
+  "before": "2026-03",
+  "clusters": 39
+ }
+}

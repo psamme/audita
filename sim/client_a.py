@@ -10,7 +10,7 @@ from sim.world import World, bizdays, month_days, next_biz
 NAME = "Lucky Quarter Holdings"
 BLURB = "Vending routes and coin laundromats across three counties. Bookkeeper reconciles weekly; owner signs off."
 CHART = {
-    "1010": "Operating cash", "1200": "Accounts receivable", "2000": "Accounts payable",
+    "1010": "Operating cash", "1200": "Accounts receivable", "1300": "Due from processors and claims", "2000": "Accounts payable",
     "4000": "Vending sales", "4100": "Laundry sales", "4200": "Commercial laundry revenue",
     "4990": "Misc income", "5000": "Product cost", "6000": "Payroll", "6110": "Bank fees",
     "6120": "Merchant card fees", "6200": "Rent and location commissions", "6300": "Repairs and parts",
@@ -72,7 +72,9 @@ def card_payouts(w: World, period: str):
             else:
                 w.resolve("bank", bl, "escalate", escalate_to="owner",
                           note=f"payout {variance:.2f} under settlement rpt, asked Marv to call processor",
-                          category="card_payout_big_var")
+                          category="card_payout_big_var",
+                          eventual={"action": "match_adjust", "ledger_ids": [le], "adjustments": [
+                              {"account": "6120", "amount": fees}, {"account": "1300", "amount": variance}]})
 
 
 def cash_deposits(w: World, period: str):
@@ -118,7 +120,8 @@ def cash_deposits(w: World, period: str):
             if diff > 10 and k == 1 and shorts[driver] >= P["driver_pattern_shorts"]:
                 w.resolve("bank", bl, "escalate", escalate_to="owner",
                           note=f"{driver} short {diff:.2f} - {shorts[driver]} shorts this month, flagged to Marv",
-                          category="driver_pattern")
+                          category="driver_pattern",
+                          eventual={"action": "match_adjust", "ledger_ids": ids, "adjustments": [{"account": "6990", "amount": diff}]})
             elif abs(diff) <= P["cash_over_short_max"]:
                 w.resolve("bank", bl, "match_adjust", ids, [{"account": "6990", "amount": diff}],
                           note=f"bank recount {'short' if diff > 0 else 'over'} {abs(diff):.2f}, over/short",
@@ -126,7 +129,8 @@ def cash_deposits(w: World, period: str):
             else:
                 w.resolve("bank", bl, "escalate", escalate_to="ops_manager",
                           note=f"deposit {diff:.2f} short vs count, sent to ops to check route bag",
-                          category="cash_big_short")
+                          category="cash_big_short",
+                          eventual={"action": "match_adjust", "ledger_ids": ids, "adjustments": [{"account": "6990", "amount": diff}]})
 
 
 def payables(w: World, period: str):
@@ -168,7 +172,7 @@ def bank_fees(w: World, period: str):
         amt = money(w.rng, max(lo, P["bank_fee_no_review_max"]), hi)
         bl = w.bank(days[-2], -amt, label, "First Prairie Bank")
         w.resolve("bank", bl, "escalate", escalate_to="owner", note=f"{label.lower()} {amt:.2f} - over 25, asked Marv",
-                  category="bank_fee_big")
+                  category="bank_fee_big", eventual={"action": "book", "adjustments": [{"account": "6110", "amount": amt}]})
 
 
 def receivables(w: World, period: str):
@@ -196,7 +200,8 @@ def receivables(w: World, period: str):
                       note=f"short {short:.2f}, w/o per usual", category="ar_small_short")
         else:
             w.resolve("bank", bl, "escalate", escalate_to="owner",
-                      note=f"{cust} short {short:.2f} on {inv}, Marv to call them", category="ar_big_short")
+                      note=f"{cust} short {short:.2f} on {inv}, Marv to call them", category="ar_big_short",
+                      eventual={"action": "match_adjust", "ledger_ids": [le], "adjustments": [{"account": "1200", "amount": short}]})
 
 
 def misc_deposits(w: World, period: str):
@@ -211,7 +216,18 @@ def misc_deposits(w: World, period: str):
         amt = money(w.rng, P["misc_deposit_max"] + 20, 900)
         bl = w.bank(w.rng.choice(days), amt, "COUNTER DEPOSIT", "")
         w.resolve("bank", bl, "escalate", escalate_to="owner", note=f"unknown deposit {amt:.2f}, asked Marv what it is",
-                  category="misc_deposit_big")
+                  category="misc_deposit_big", eventual={"action": "book", "adjustments": [{"account": "4990", "amount": -amt}]})
 
 
 GENERATORS = [card_payouts, cash_deposits, payables, bank_fees, receivables, misc_deposits]
+
+ENACT = {
+    "users": [("preyes", "Pat Reyes", "bookkeeper", 0), ("tnguyen", "Tam Nguyen", "part-time clerk", 0),
+              ("marv", "Marv Kowalski", "owner", 1), ("dee", "Dee Alvarez", "ops manager", 1)],
+    "names": {"preyes": "Pat", "tnguyen": "Tam", "marv": "Marv", "dee": "Dee"},
+    "clerk": "preyes", "sloppy_clerk": "tnguyen", "sloppy_share": 0.25,
+    "confusion": {"6990": "4000", "6110": "6120"},     # Tam nets shorts against sales and mixes up the fee accounts
+    "seniors": {"owner": "marv", "ops_manager": "dee"},
+    "approval_roles": {},                               # no approval workflow here; Marv gets asked in person
+    "email_share": 0.3, "excel_period": "2026-01", "excel_share": 0.12,
+}

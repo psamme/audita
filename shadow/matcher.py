@@ -20,10 +20,8 @@ def period_end(period: str) -> str:
 
 
 def open_ledger(con, period: str) -> list[dict]:
-    """Ledger entries visible in this period that no earlier-period resolution has consumed."""
-    used = set()
-    for r in db.q(con, "SELECT ledger_ids FROM resolution WHERE period < ? AND item_kind='bank'", period):
-        used.update(r["ledger_ids"])
+    """Ledger entries visible in this period that no earlier-period reconcile link has consumed."""
+    used = {r["ledger_id"] for r in db.q(con, "SELECT ledger_id FROM reconcile_link WHERE period < ? AND undone_at IS NULL", period)}
     return [e for e in db.q(con, "SELECT * FROM ledger_entry WHERE period <= ? ORDER BY date, id", period)
             if e["id"] not in used]
 

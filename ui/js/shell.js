@@ -4,6 +4,11 @@
   const canvas = document.getElementById("slab");
   const SEED = 11, VEINING = 0.75;
 
+  const NAV = [["index.html", "Experiment"], ["queue.html", "Review queue"], ["playbook.html", "Playbook"], ["results.html", "Results"]];
+  const here = location.pathname.split("/").pop() || "index.html";
+  const nav = document.querySelector(".nav");
+  if (nav) nav.innerHTML = NAV.map(([href, label]) => `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
+
   let stone = matchMedia("(prefers-color-scheme: dark)").matches ? "nero" : "statuario";
   try { stone = localStorage.getItem("so-stone") || stone; } catch (e) {}
 

@@ -10,7 +10,7 @@ from sim.world import World, bizdays, month_days, next_biz
 NAME = "Meridian AI"
 BLURB = "AI lab with consumer subscriptions and enterprise API contracts. Controller-led finance team, monthly close on business day 5."
 CHART = {
-    "1010": "Operating cash", "1200": "Accounts receivable", "1250": "Paystream clearing", "2000": "Accounts payable",
+    "1010": "Operating cash", "1200": "Accounts receivable", "1250": "Paystream clearing", "1290": "Unapplied and disputed receipts", "2000": "Accounts payable",
     "2450": "Customer deposits and prepaid commits", "4000": "Subscription revenue", "4010": "Enterprise API revenue",
     "4050": "Sales discounts", "4090": "Refunds and credits", "6000": "Payroll", "6310": "Payment processing fees",
     "6320": "Chargeback losses", "6500": "Cloud and compute", "6600": "Software and services",
@@ -54,7 +54,10 @@ def paystream(w: World, period: str):
         if variance:
             w.resolve("bank", bl, "escalate", escalate_to="controller",
                       note=f"payout {variance:.2f} under Paystream report, does not tie - to controller, ticket w/ Paystream",
-                      category="payout_variance")
+                      category="payout_variance",
+                      eventual={"action": "match_adjust", "ledger_ids": [le], "adjustments": [
+                          {"account": a, "amount": v} for a, v in
+                          [("6310", fees), ("4090", refunds), ("6320", chargebacks), ("1290", variance)] if v]})
         else:
             adj = [{"account": a, "amount": v} for a, v in
                    [("6310", fees), ("4090", refunds), ("6320", chargebacks)] if v]
@@ -112,10 +115,12 @@ def enterprise_wires(w: World, period: str):
         elif reason == "small_short":
             w.resolve("bank", bl, "escalate", escalate_to="ar_lead",
                       note=f"short {short:.2f}, no explanation. no w/o without controller approval - AR lead to chase",
-                      category="ar_small_short")
+                      category="ar_small_short",
+                      eventual={"action": "match_adjust", "ledger_ids": les, "adjustments": [{"account": "1200", "amount": short}]})
         else:
             w.resolve("bank", bl, "escalate", escalate_to="ar_lead",
-                      note=f"{cust} short {short:,.2f}, AR lead to confirm dispute/credit memo", category="ar_big_short")
+                      note=f"{cust} short {short:,.2f}, AR lead to confirm dispute/credit memo", category="ar_big_short",
+                      eventual={"action": "match_adjust", "ledger_ids": les, "adjustments": [{"account": "1200", "amount": short}]})
 
 
 def payables(w: World, period: str, changed: dict):
@@ -131,7 +136,7 @@ def payables(w: World, period: str, changed: dict):
         if vendor in changed and changed[vendor] != VENDORS[vendor] and not changed.get(vendor + ":verified"):
             w.resolve("bank", bl, "escalate", escalate_to="controller",
                       note="paid to NEW bank details after change-request email. held for controller call-back verification",
-                      category="vendor_bank_change")
+                      category="vendor_bank_change", eventual={"action": "match", "ledger_ids": [le]})
             changed[vendor + ":verified"] = True  # controller verifies once; later payments are normal
         else:
             w.resolve("bank", bl, "match", [le], easy=True, category="vendor_ach")
@@ -159,7 +164,7 @@ def bank_items(w: World, period: str):
         amt = money(w.rng, 40, 400)
         bl = w.bank(w.rng.choice(days), -amt, "MISC DEBIT", "Commonwealth Trust Bank")
         w.resolve("bank", bl, "escalate", escalate_to="controller", note="unidentified bank debit, not on fee schedule - controller",
-                  category="unknown_debit")
+                  category="unknown_debit", eventual={"action": "book", "adjustments": [{"account": "7710", "amount": amt}]})
 
 
 def prepaid_and_postclose(w: World, period: str):
@@ -178,7 +183,7 @@ def prepaid_and_postclose(w: World, period: str):
                   note="prepaid commit per signed order form - 2450", category="prepaid_commit")
     else:
         w.resolve("bank", bl, "escalate", escalate_to="ar_lead", note="large wire, no invoice or order form on file - AR lead",
-                  category="prepaid_no_form")
+                  category="prepaid_no_form", eventual={"action": "book", "adjustments": [{"account": "2450", "amount": -amt}]})
     # an entry dated in the prior period but posted after that period closed
     y, m = map(int, period.split("-"))
     if m > 1:
@@ -203,3 +208,16 @@ def generate(w: World, period: str):
     payables(w, period, changed)
     bank_items(w, period)
     prepaid_and_postclose(w, period)
+
+
+ENACT = {
+    "users": [("kosei", "Kofi Osei", "staff accountant", 0), ("lmartin", "Lena Martin", "staff accountant", 0),
+              ("pshah", "Priya Shah", "AR lead", 1), ("gtorres", "Gil Torres", "AP lead", 1),
+              ("dwhitfield", "Dana Whitfield", "controller", 1)],
+    "names": {"kosei": "Kofi", "lmartin": "Lena", "pshah": "Priya", "gtorres": "Gil", "dwhitfield": "Dana"},
+    "clerk": "lmartin", "sloppy_clerk": "kosei", "sloppy_share": 0.3,
+    "confusion": {"7710": "6310", "4090": "4000"},     # Kofi books bank charges as processing fees, nets refunds into revenue
+    "seniors": {"controller": "dwhitfield", "ar_lead": "pshah", "ap_lead": "gtorres"},
+    "approval_roles": {"controller": 0.6, "ar_lead": 0.15},
+    "email_share": 0.3, "excel_period": "2026-02", "excel_share": 0.08,
+}

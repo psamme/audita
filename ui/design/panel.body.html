@@ -137,13 +137,27 @@
         <div class="lane">
           <span class="who">samuelevans-25</span>
           <h3>Code build</h3>
-          <p>Owns <span class="mono">shadow/ sim/ benchrec/</span> and the agent. Wrote the UI data contract at <span class="mono">docs/API.md</span>. Server will be FastAPI on port 8787 with <span class="mono">ui/</span> mounted at the root. Nothing live yet.</p>
+          <p>Owns <span class="mono">shadow/ sim/ benchrec/</span> and the agent. Wrote the UI data contract at <span class="mono">docs/API.md</span> and serves it from FastAPI on port 8787 with <span class="mono">ui/</span> mounted at the root. April runs are in flight.</p>
         </div>
         <div class="lane">
           <span class="who">samuelevans-0a</span>
           <h3>Git and planning</h3>
           <p>Owns commits and GitHub. Picks up <span class="mono">ui/</span> as untracked work at each checkpoint.</p>
         </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="section-head">
+        <div class="label">Built</div>
+        <h2>Four screens, running on real agent output</h2>
+        <p>Open these on the machine running the server. Every one reads the live API and falls back to saved fixtures when the server is down.</p>
+      </div>
+      <div class="panel rules">
+        <div><h3>Experiment</h3><p><span class="mono">localhost:8787/</span> The same payment for both clients, a before and after sign-off toggle, a live re-run, and the vendor bank change that code stops even though the amount ties.</p></div>
+        <div><h3>Review queue</h3><p><span class="mono">localhost:8787/queue.html</span> What the agent would not decide alone, the evidence trace, records that open from any citation, and the correction form that returns a playbook diff.</p></div>
+        <div><h3>Playbook</h3><p><span class="mono">localhost:8787/playbook.html</span> Rules as sentences, the questions the agent wants answered, an answer box, and version history.</p></div>
+        <div><h3>Results</h3><p><span class="mono">localhost:8787/results.html</span> Cost, silent errors, accuracy and tier share per condition, plus BenchRec. Labels interim and holdout numbers as such.</p></div>
       </div>
     </section>
 

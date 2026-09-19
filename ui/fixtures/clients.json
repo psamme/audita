@@ -1,6 +1,48 @@
 [
-  {"id": "A", "name": "Lucky Quarter Holdings", "blurb": "Vending routes and coin laundromats across three counties. Bookkeeper reconciles weekly; owner signs off.", "policy_label": "lenient",
-   "chart": {"6110": "Bank fees", "6120": "Merchant card fees", "6990": "Cash over/short and small balances"}},
-  {"id": "B", "name": "Meridian AI", "blurb": "AI lab with consumer subscriptions and enterprise API contracts. Controller-led finance team, monthly close on business day 5.", "policy_label": "strict",
-   "chart": {"1200": "Accounts receivable", "4050": "Sales discounts", "7710": "Bank charges"}}
+ {
+  "id": "A",
+  "name": "Lucky Quarter Holdings",
+  "blurb": "Vending routes and coin laundromats across three counties. Bookkeeper reconciles weekly; owner signs off.",
+  "chart": {
+   "1010": "Operating cash",
+   "1200": "Accounts receivable",
+   "1300": "Due from processors and claims",
+   "2000": "Accounts payable",
+   "4000": "Vending sales",
+   "4100": "Laundry sales",
+   "4200": "Commercial laundry revenue",
+   "4990": "Misc income",
+   "5000": "Product cost",
+   "6000": "Payroll",
+   "6110": "Bank fees",
+   "6120": "Merchant card fees",
+   "6200": "Rent and location commissions",
+   "6300": "Repairs and parts",
+   "6990": "Cash over/short and small balances"
+  }
+ },
+ {
+  "id": "B",
+  "name": "Meridian AI",
+  "blurb": "AI lab with consumer subscriptions and enterprise API contracts. Controller-led finance team, monthly close on business day 5.",
+  "chart": {
+   "1010": "Operating cash",
+   "1200": "Accounts receivable",
+   "1250": "Paystream clearing",
+   "1290": "Unapplied and disputed receipts",
+   "2000": "Accounts payable",
+   "2450": "Customer deposits and prepaid commits",
+   "4000": "Subscription revenue",
+   "4010": "Enterprise API revenue",
+   "4050": "Sales discounts",
+   "4090": "Refunds and credits",
+   "6000": "Payroll",
+   "6310": "Payment processing fees",
+   "6320": "Chargeback losses",
+   "6500": "Cloud and compute",
+   "6600": "Software and services",
+   "7100": "Interest income",
+   "7710": "Bank charges"
+  }
+ }
 ]

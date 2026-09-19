@@ -2,6 +2,7 @@
    no blur, no glow, no gradients. The marble is the only texture. */
 
 *, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
 
 body {
   margin: 0;
@@ -134,7 +135,7 @@ table.grid td.wrap { white-space: normal; min-width: 220px; }
   display: inline-block; font-family: var(--mono); font-size: 0.75rem;
   padding: 1px 7px; border-radius: var(--r-sm);
   background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
-  text-decoration: none;
+  text-decoration: none; white-space: nowrap; flex: none;
 }
 a.cite:hover { color: var(--ink); border-color: var(--line-strong); }
 
@@ -153,3 +154,25 @@ a.cite:hover { color: var(--ink); border-color: var(--line-strong); }
 .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--s-5); font-size: var(--t-sm); margin: 0; }
 .kv dt { color: var(--ink-3); }
 .kv dd { margin: 0; }
+
+/* Form controls */
+.input, .select {
+  width: 100%; min-height: 40px; padding: 9px 12px;
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  font: 400 var(--t-md) / 1.4 var(--font);
+}
+.input.mono { font-family: var(--mono); font-size: var(--t-sm); }
+.input::placeholder { color: var(--ink-3); }
+.input:hover, .select:hover { border-color: var(--ink-2); }
+textarea.input { resize: vertical; }
+
+/* Record dialog */
+dialog.record {
+  width: min(560px, calc(100vw - 32px)); max-height: 80vh; padding: 0; color: var(--ink); overflow: auto;
+}
+dialog.record::backdrop { background: rgba(0, 0, 0, 0.45); }
+pre.doc {
+  margin: 0; padding: var(--s-4); background: var(--surface-2); border-radius: var(--r-sm);
+  font: 400 var(--t-sm) / 1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere;
+}

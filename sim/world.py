@@ -9,12 +9,25 @@ import random
 import shutil
 from datetime import date, timedelta
 
+import sqlite3
+
 from shadow import db
 
 HISTORY = ["2026-01", "2026-02", "2026-03"]
 TEST = "2026-04"
 KEYS = db.ROOT / "keys"
 ACTIONS = {"match", "match_adjust", "book", "escalate", "carry_forward"}
+
+# Ground truth for the history periods. Simulator and grader only; nothing under shadow/ opens this file.
+TRUTH_SCHEMA = """
+CREATE TABLE IF NOT EXISTS resolution (
+  id TEXT PRIMARY KEY, period TEXT, item_kind TEXT, item_id TEXT, by TEXT, action TEXT,
+  ledger_ids JSON, adjustments JSON, escalate_to TEXT, note TEXT, category TEXT);
+"""
+
+
+def truth_path(client_id: str):
+    return db.db_path(client_id).with_name("truth.db")
 
 
 def d(s: str) -> date:
@@ -42,10 +55,12 @@ def next_biz(x: date, lag: int = 0) -> date:
 
 
 class World:
-    def __init__(self, client_id: str, seed: int, last_period: str, meta: tuple | None = None):
+    def __init__(self, client_id: str, seed: int, last_period: str, meta: tuple | None = None, enact_cfg: dict | None = None):
         """meta=(name, blurb, chart) starts a fresh DB; meta=None reopens the history snapshot to append to it."""
         self.client = client_id
         self.rng = random.Random(seed)
+        self.rng_mess = random.Random(seed * 7919 + 1)   # separate stream so mess never shifts the underlying data
+        self.enactor = None
         self.last_period = last_period
         self.key: dict[str, dict] = {}
         self.key_period: str | None = None
@@ -58,11 +73,20 @@ class World:
             self.con = db.connect(client_id)
             self.con.execute("INSERT INTO client VALUES (?,?,?,?,?)", (client_id, meta[0], meta[1], json.dumps(meta[2]), 5))
             self.n = {"BL": 0, "LE": 0, "INV": 0, "DOC": 0, "RES": 0}
+            self.chart = meta[2]
+            truth_path(client_id).unlink(missing_ok=True)
+            self.truth = sqlite3.connect(truth_path(client_id))
+            self.truth.executescript(TRUTH_SCHEMA)
+            if enact_cfg:
+                from sim.enact import Enactor
+                self.enactor = Enactor(self, enact_cfg)
         else:
+            self.truth = sqlite3.connect(truth_path(client_id))   # read-only use: test-period truth goes to the key
             shutil.copy(snap, path)
             self.con = db.connect(client_id)
             saved = json.loads(snap.with_name("sim_state.json").read_text())
             self.n, self.state, carried = saved["n"], saved["state"], saved["deferred"]
+            self.chart = json.loads(self.con.execute("SELECT chart FROM client").fetchone()[0])
             self.key_period = last_period
             for item in carried:  # bank lines the history build scheduled past its cut-off
                 bl = self.bank(d(item["date"]), *item["args"])
@@ -111,13 +135,15 @@ class World:
     # --- truth ---------------------------------------------------------------------------
     def resolve(self, item_kind: str, item_id: str, action: str, ledger_ids=(), adjustments=(),
                 escalate_to: str | None = None, note: str = "", easy: bool = False,
-                category: str = "", alternatives=()):
+                category: str = "", alternatives=(), eventual: dict | None = None):
         """Record the correct handling of one bank line (item_kind='bank') or ledger entry ('ledger').
 
         action: match | match_adjust | book | escalate | carry_forward
         adjustments: [{"account": "6110", "amount": 18.00}], sum == sum(ledger amounts) - bank amount
         alternatives: other acceptable resolutions (dicts with action, ledger_ids, adjustments, escalate_to)
         easy: True when a human never had to think about it (exact one-to-one match)
+        eventual: history only, for escalations: how the item was finally booked once someone senior decided
+                  ({"action", "ledger_ids", "adjustments"}). Shapes the ERP trail; never part of the truth.
         """
         assert action in ACTIONS, action
         ledger_ids = sorted(ledger_ids)
@@ -125,11 +151,13 @@ class World:
         if item_id.startswith("DEFER-"):
             self.deferred[int(item_id[6:])]["resolve"] = dict(
                 action=action, ledger_ids=ledger_ids, adjustments=adjustments, escalate_to=escalate_to, note=note,
-                easy=easy, category=category, alternatives=list(alternatives))
+                easy=easy, category=category, alternatives=list(alternatives), eventual=eventual)
             for le in ledger_ids:
                 self._record("ledger", le, "carry_forward", note="o/s at month end", easy=True, category="outstanding")
             return
         self._record(item_kind, item_id, action, ledger_ids, adjustments, escalate_to, note, easy, category, alternatives)
+        if self.enactor and self._period(item_kind, item_id) != self.key_period:
+            self.enactor.enact(item_kind, item_id, action, ledger_ids, adjustments, escalate_to, easy, eventual)
         if item_kind == "bank" and ledger_ids:
             period = self._period("bank", item_id)
             for le in ledger_ids:
@@ -143,7 +171,7 @@ class World:
 
     def _has_record(self, item_id: str) -> bool:
         return item_id in self.key or bool(
-            self.con.execute("SELECT 1 FROM resolution WHERE item_id=?", (item_id,)).fetchone())
+            self.truth.execute("SELECT 1 FROM resolution WHERE item_id=?", (item_id,)).fetchone())
 
     def _record(self, item_kind, item_id, action, ledger_ids=(), adjustments=(), escalate_to=None, note="",
                 easy=False, category="", alternatives=()):
@@ -157,9 +185,9 @@ class World:
                 "category": category or ("easy" if easy else "exception"), "easy": easy,
                 "source": self.source, "alternatives": list(alternatives)}
         else:
-            self.con.execute("INSERT INTO resolution VALUES (?,?,?,?,?,?,?,?,?,?)",
-                             (self._id("RES"), period, item_kind, item_id, "auto" if easy else "human", action,
-                              json.dumps(list(ledger_ids)), json.dumps(list(adjustments)), escalate_to, note))
+            self.truth.execute("INSERT INTO resolution VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                               (self._id("RES"), period, item_kind, item_id, "auto" if easy else "human", action,
+                                json.dumps(list(ledger_ids)), json.dumps(list(adjustments)), escalate_to, note, category))
 
     # --- common shapes -------------------------------------------------------------------
     def easy_pair(self, on: date, amount: float, description: str, account: str, memo: str,
@@ -174,8 +202,11 @@ class World:
     def finish(self, key_path=None) -> dict:
         self.con.commit()
         counts = {t: self.con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-                  for t in ["bank_line", "ledger_entry", "invoice", "document", "resolution"]}
+                  for t in ["bank_line", "ledger_entry", "invoice", "document", "reconcile_link", "journal_entry", "approval"]}
         self.con.close()
+        if self.truth:
+            self.truth.commit()
+            self.truth.close()
         path = db.db_path(self.client)
         if self.key_period:
             KEYS.mkdir(exist_ok=True)

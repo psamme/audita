@@ -1,6 +1,6 @@
 """Canonical data model. One SQLite file per client holds everything the agent may see.
 
-The month-4 answer key is never stored here; the simulator writes it under keys/.
+Answer keys and ground truth are never stored here; they belong to the simulator and the grader.
 """
 import json
 import sqlite3
@@ -12,9 +12,11 @@ RUNS = ROOT / "runs"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS client (id TEXT PRIMARY KEY, name TEXT, blurb TEXT, chart JSON, close_days INTEGER);
+CREATE TABLE IF NOT EXISTS user (id TEXT PRIMARY KEY, name TEXT, role TEXT, senior INTEGER);
 CREATE TABLE IF NOT EXISTS bank_line (
   id TEXT PRIMARY KEY, period TEXT, date TEXT, amount REAL, description TEXT,
   counterparty TEXT, ref TEXT);
+-- cash-side entries the business posted: expected receipts, payments issued, sales batches
 CREATE TABLE IF NOT EXISTS ledger_entry (
   id TEXT PRIMARY KEY, period TEXT, date TEXT, posted_at TEXT, account TEXT, amount REAL,
   memo TEXT, counterparty TEXT, ref TEXT, invoice_id TEXT);
@@ -23,13 +25,20 @@ CREATE TABLE IF NOT EXISTS invoice (
   terms TEXT, status TEXT);
 CREATE TABLE IF NOT EXISTS document (
   id TEXT PRIMARY KEY, type TEXT, date TEXT, sender TEXT, subject TEXT, body TEXT, meta JSON);
--- Resolutions present in the DB are history only (months 1-3): what the client's humans did.
-CREATE TABLE IF NOT EXISTS resolution (
-  id TEXT PRIMARY KEY, period TEXT, item_kind TEXT, item_id TEXT, by TEXT, action TEXT,
-  ledger_ids JSON, adjustments JSON, escalate_to TEXT, note TEXT);
+-- what the ERP keeps of past reconciliation work: links, adjustment entries, the odd approval. No reasons.
+CREATE TABLE IF NOT EXISTS reconcile_link (
+  id TEXT PRIMARY KEY, period TEXT, bank_id TEXT, ledger_id TEXT, amount REAL,
+  reconciled_by TEXT, reconciled_at TEXT, undone_at TEXT);
+CREATE TABLE IF NOT EXISTS journal_entry (
+  id TEXT PRIMARY KEY, period TEXT, date TEXT, posted_at TEXT, posted_by TEXT, account TEXT, amount REAL,
+  memo TEXT, bank_id TEXT, reverses_id TEXT);
+CREATE TABLE IF NOT EXISTS approval (
+  id TEXT PRIMARY KEY, period TEXT, date TEXT, subject TEXT, subject_id TEXT, requested_by TEXT,
+  approver TEXT, status TEXT, comment TEXT);
 CREATE INDEX IF NOT EXISTS ix_bank_period ON bank_line(period);
 CREATE INDEX IF NOT EXISTS ix_ledger_period ON ledger_entry(period);
-CREATE INDEX IF NOT EXISTS ix_res_item ON resolution(item_id);
+CREATE INDEX IF NOT EXISTS ix_link_bank ON reconcile_link(bank_id);
+CREATE INDEX IF NOT EXISTS ix_je_bank ON journal_entry(bank_id);
 """
 
 JSON_COLS = {"chart", "meta", "ledger_ids", "adjustments"}

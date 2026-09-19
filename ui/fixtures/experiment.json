@@ -1,26 +1,403 @@
 {
-  "_fixture": true,
-  "transaction": {"date": "2026-04-14", "amount": 4987.60, "description": "ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207", "invoice_amount": 5000.00, "difference": 12.40},
-  "results": {
-    "A": {
-      "item_id": "A-BL-00702", "item_kind": "bank",
-      "record": {"id": "A-BL-00702", "date": "2026-04-14", "amount": 4987.60, "description": "ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207", "counterparty": "Northgate Property Mgmt", "ref": "INV 2207"},
-      "tier": "rule",
-      "resolution": {"action": "match_adjust", "ledger_ids": ["A-LE-00933"], "adjustments": [{"account": "6990", "amount": 12.40}], "escalate_to": null,
-        "rationale": "Match the invoice and write off $12.40.", "rule_id": "A-R-004",
-        "precedent_ids": ["A-RES-00112", "A-RES-00187", "A-RES-00240"], "evidence_ids": ["A-LE-00933"], "confidence": 0.97},
-      "rule": {"id": "A-R-004", "status": "approved", "executable": true, "text": "Customer short-pays up to $15.00 are matched and the difference goes to 6990.", "precedent_ids": ["A-RES-00112", "A-RES-00187", "A-RES-00240"], "backtest": {"support": 23, "conflicts": 0}, "origin": "induced", "version_added": 1},
-      "trace": [], "usage": {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cost_usd": 0.0, "llm_calls": 0}, "grade": null
+ "_fixture": true,
+ "transaction": {
+  "date": "2026-05-12",
+  "amount": 4787.6,
+  "description": "ACH CREDIT BRIGHTWATER GROUP LLC",
+  "invoice_amount": 4800.0,
+  "difference": 12.4,
+  "counterparty": "Brightwater Group LLC"
+ },
+ "results": {
+  "A": {
+   "item_id": "A-BL-EXP01",
+   "item_kind": "bank",
+   "record": {
+    "id": "A-BL-EXP01",
+    "period": "2026-05",
+    "date": "2026-05-12",
+    "amount": 4787.6,
+    "description": "ACH CREDIT BRIGHTWATER GROUP LLC",
+    "counterparty": "Brightwater Group LLC",
+    "ref": ""
+   },
+   "tier": "investigator",
+   "control_flags": [],
+   "resolution": {
+    "action": "escalate",
+    "ledger_ids": [],
+    "adjustments": [],
+    "escalate_to": "owner",
+    "rationale": "Brightwater Group LLC ACH credit of $4,787.60 on 2026-05-12 is $12.40 short of the open receivable A-LE-EXP01 ($4,800.00, A-INV-EXP01). That is just over the ~$12.30 short-pay limit in A-R-015. A-R-015 is only a proposed rule, and its history conflicts on both the account (6990 vs 4000) and the limit. So this falls under A-R-016, which sends larger customer short-pays to the owner. There is also a second problem. An identical $4,787.60 Brightwater credit came in on 2026-04-21 (A-BL-00890). It was left open, and April's $4,800 receivable A-LE-00896 (A-INV-00058) is still open too. Questions for the owner: (1) Is the recurring $12.40 short-pay a deduction you accept, for example a bank or processing charge? If so, should it be booked to 6990 or to 4000? (2) Does this May receipt belong to the May invoice A-INV-EXP01 or the April invoice A-INV-00058? Or is it a duplicate of the April payment? Other Brightwater April items (A-BL-00851/A-LE-00864, A-BL-00846/A-LE-00859) also remain open and should be cleared together.",
+    "rule_id": "A-R-016",
+    "precedent_ids": [
+     "A-BL-00890",
+     "A-BL-00851",
+     "A-BL-00846"
+    ],
+    "evidence_ids": [
+     "A-BL-EXP01",
+     "A-LE-EXP01",
+     "A-LE-00896",
+     "A-BL-00890",
+     "A-LE-00859",
+     "A-LE-00864"
+    ],
+    "confidence": 0.8,
+    "proposed": null
+   },
+   "trace": [
+    {
+     "step": 1,
+     "kind": "case_file",
+     "label": "case file assembled (no model call)",
+     "input": {},
+     "output": "7 ledger candidates, 0 documents, 3 similar past items",
+     "ids": [
+      "A-LE-EXP01",
+      "A-LE-00859",
+      "A-LE-00896",
+      "A-LE-00864",
+      "A-LE-00862",
+      "A-LE-00868",
+      "A-LE-00863"
+     ]
     },
-    "B": {
-      "item_id": "B-BL-00977", "item_kind": "bank",
-      "record": {"id": "B-BL-00977", "date": "2026-04-14", "amount": 4987.60, "description": "ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207", "counterparty": "Northgate Property Mgmt", "ref": "INV 2207"},
-      "tier": "investigator",
-      "resolution": {"action": "escalate", "ledger_ids": [], "adjustments": [], "escalate_to": "ar_lead",
-        "rationale": "Hold the match and open an investigation.", "rule_id": "B-R-002",
-        "precedent_ids": ["B-RES-00231", "B-RES-00305"], "evidence_ids": ["B-DOC-00088", "B-LE-00412"], "confidence": 0.91},
-      "rule": {"id": "B-R-002", "status": "approved", "executable": true, "text": "No difference is written off without controller approval, at any amount. Unexplained short-pays go to the AR lead with the remittance attached.", "precedent_ids": ["B-RES-00231", "B-RES-00305"], "backtest": {"support": 9, "conflicts": 0}, "origin": "induced", "version_added": 1},
-      "trace": [], "usage": {"input_tokens": 6120, "output_tokens": 410, "cache_read_tokens": 4800, "cost_usd": 0.018, "llm_calls": 3}, "grade": null
+    {
+     "step": 2,
+     "kind": "final",
+     "label": "escalate",
+     "input": {},
+     "output": "Brightwater Group LLC ACH credit of $4,787.60 on 2026-05-12 is $12.40 short of the open receivable A-LE-EXP01 ($4,800.00, A-INV-EXP01). That is just over the ~$12.30 short-pay limit in A-R-015. A-R-015 is only a proposed rule, and its history conflicts on both the account (6990 vs 4000) and the limit. So this falls under A-R-016, which sends larger customer short-pays to the owner. There is also a second problem. An identical $4,787.60 Brightwater credit came in on 2026-04-21 (A-BL-00890). It was left open, and April's $4,800 receivable A-LE-00896 (A-INV-00058) is still open too. Questions for the owner: (1) Is the recurring $12.40 short-pay a deduction you accept, for example a bank or processing charge? If so, should it be booked to 6990 or to 4000? (2) Does this May receipt belong to the May invoice A-INV-EXP01 or the April invoice A-INV-00058? Or is it a duplicate of the April payment? Other Brightwater April items (A-BL-00851/A-LE-00864, A-BL-00846/A-LE-00859) also remain open and should be cleared together.",
+     "ids": [
+      "A-BL-EXP01",
+      "A-LE-EXP01",
+      "A-LE-00896",
+      "A-BL-00890",
+      "A-LE-00859",
+      "A-LE-00864"
+     ]
     }
+   ],
+   "usage": {
+    "input_tokens": 2,
+    "output_tokens": 857,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 8111,
+    "cost_usd": 0.102545,
+    "llm_calls": 1
+   },
+   "rule": {
+    "id": "A-R-016",
+    "text": "A commercial customer ACH receipt that differs from its receivable in 1200 by more than that goes to the owner.",
+    "executable": true,
+    "when": {
+     "item_kind": "bank",
+     "direction": "in",
+     "description_regex": "^ACH CREDIT",
+     "candidate": {
+      "by": "counterparty",
+      "window_days": 5,
+      "account": "1200",
+      "max_entries": 1
+     }
+    },
+    "then": {
+     "action": "escalate",
+     "escalate_to": "owner"
+    },
+    "origin": "induced",
+    "version_added": 1,
+    "precedent_ids": [
+     "A-BL-00209"
+    ],
+    "model_confidence": 0.7,
+    "open_question": "There is only 1 case: a Harborview short-pay of $356.84 that was emailed to Marv and posted by the owner 6 days later. Do all larger customer short-pays go to you?",
+    "status": "proposed",
+    "backtest": {
+     "support": 1,
+     "conflicts": 0,
+     "conflict_examples": [],
+     "supported_by": 1
+    },
+    "confidence": 0.667,
+    "precedent_count": 1,
+    "executable_if_approved": true
+   },
+   "precedents": [
+    {
+     "id": "A-BL-00209",
+     "period": "2026-01",
+     "item_kind": "bank",
+     "date": "2026-01-13",
+     "text": "ACH CREDIT HARBORVIEW INN",
+     "counterparty": "Harborview Inn",
+     "ref": "",
+     "amount": 1367.14,
+     "left_open": false,
+     "handled_by": [
+      "owner"
+     ],
+     "days_to_handle": 6,
+     "booked": [
+      {
+       "account": "1200",
+       "amount": 356.84,
+       "memo": "adj",
+       "by": "owner"
+      }
+     ],
+     "approvals": [],
+     "linked_ledger": [
+      {
+       "id": "A-LE-00211",
+       "amount": 1723.98,
+       "account": "1200",
+       "memo": "Receipt Harborview Inn A-INV-00001",
+       "ref": "A-INV-00001",
+       "days_before_bank": 1
+      }
+     ],
+     "diff": 356.84,
+     "diff_pct": 20.699
+    }
+   ],
+   "playbook_version": 1
+  },
+  "B": {
+   "item_id": "B-BL-EXP01",
+   "item_kind": "bank",
+   "record": {
+    "id": "B-BL-EXP01",
+    "period": "2026-05",
+    "date": "2026-05-12",
+    "amount": 4787.6,
+    "description": "ACH CREDIT BRIGHTWATER GROUP LLC",
+    "counterparty": "Brightwater Group LLC",
+    "ref": ""
+   },
+   "tier": "investigator",
+   "control_flags": [],
+   "resolution": {
+    "action": "escalate",
+    "ledger_ids": [],
+    "adjustments": [],
+    "escalate_to": "ar_lead",
+    "rationale": "The ACH credit from Brightwater Group LLC is 4,787.60. The closest open invoice is B-INV-EXP01 (B-LE-EXP01) at 4,800.00, so the payment is 12.40 short. B-R-017 only covers known wire fees of 15.00 to 35.00, and a 12.40 gap is outside that range. The history also shows that odd amounts like 12.39 and 2.79 went to the AR lead (Priya), not to 7710. So B-R-018 applies: the AR lead decides whether the short amount stays on the customer's receivable. There is a second problem: B-INV-00166 (B-LE-00561, 4,800.00, dated 2026-04-21) is also open for the same customer, and there is no remittance advice. Questions for the AR lead: (1) Is this payment for B-INV-EXP01 or for the older B-INV-00166? (2) Should the 12.40 shortfall stay on Brightwater's receivable, or be written off as a deducted bank fee?",
+    "rule_id": "B-R-018",
+    "precedent_ids": [
+     "B-BL-00174",
+     "B-BL-00299"
+    ],
+    "evidence_ids": [
+     "B-BL-EXP01",
+     "B-LE-EXP01",
+     "B-LE-00561"
+    ],
+    "confidence": 0.8,
+    "proposed": null
+   },
+   "trace": [
+    {
+     "step": 1,
+     "kind": "case_file",
+     "label": "case file assembled (no model call)",
+     "input": {},
+     "output": "13 ledger candidates, 1 documents, 5 similar past items",
+     "ids": [
+      "B-LE-EXP01",
+      "B-LE-00455",
+      "B-LE-00456",
+      "B-LE-00457",
+      "B-LE-00462",
+      "B-LE-00435",
+      "B-LE-00436",
+      "B-LE-00437",
+      "B-LE-00561",
+      "B-LE-00447",
+      "B-LE-00433",
+      "B-LE-00449",
+      "B-LE-00550",
+      "B-DOC-00158"
+     ]
+    },
+    {
+     "step": 2,
+     "kind": "final",
+     "label": "escalate",
+     "input": {},
+     "output": "The ACH credit from Brightwater Group LLC is 4,787.60. The closest open invoice is B-INV-EXP01 (B-LE-EXP01) at 4,800.00, so the payment is 12.40 short. B-R-017 only covers known wire fees of 15.00 to 35.00, and a 12.40 gap is outside that range. The history also shows that odd amounts like 12.39 and 2.79 went to the AR lead (Priya), not to 7710. So B-R-018 applies: the AR lead decides whether the short amount stays on the customer's receivable. There is a second problem: B-INV-00166 (B-LE-00561, 4,800.00, dated 2026-04-21) is also open for the same customer, and there is no remittance advice. Questions for the AR lead: (1) Is this payment for B-INV-EXP01 or for the older B-INV-00166? (2) Should the 12.40 shortfall stay on Brightwater's receivable, or be written off as a deducted bank fee?",
+     "ids": [
+      "B-BL-EXP01",
+      "B-LE-EXP01",
+      "B-LE-00561"
+     ]
+    }
+   ],
+   "usage": {
+    "input_tokens": 2,
+    "output_tokens": 725,
+    "cache_read_tokens": 0,
+    "cache_creation_tokens": 11704,
+    "cost_usd": 0.135175,
+    "llm_calls": 1
+   },
+   "rule": {
+    "id": "B-R-018",
+    "text": "Any other customer wire that differs from its open invoices in 1200 goes to the AR lead, who decides whether the short payment stays on the customer's receivable.",
+    "executable": true,
+    "when": {
+     "direction": "in",
+     "description_regex": "^WIRE IN ",
+     "candidate": {
+      "by": "counterparty",
+      "account": "1200",
+      "window_days": 10
+     }
+    },
+    "then": {
+     "action": "escalate",
+     "escalate_to": "ar_lead"
+    },
+    "origin": "induced",
+    "version_added": 1,
+    "precedent_ids": [
+     "B-BL-00034",
+     "B-BL-00174"
+    ],
+    "model_confidence": 0.8,
+    "open_question": "The trail agrees with this 2 times and disagrees 0 times. Is this how you want it handled?",
+    "status": "proposed",
+    "backtest": {
+     "support": 2,
+     "conflicts": 0,
+     "conflict_examples": [],
+     "supported_by": 2
+    },
+    "confidence": 0.75,
+    "precedent_count": 2,
+    "executable_if_approved": true
+   },
+   "precedents": [
+    {
+     "id": "B-BL-00034",
+     "period": "2026-01",
+     "item_kind": "bank",
+     "date": "2026-01-26",
+     "text": "WIRE IN CASTELLAN INSURANCE",
+     "counterparty": "Castellan Insurance",
+     "ref": "",
+     "amount": 97675.08,
+     "left_open": true,
+     "handled_by": [],
+     "days_to_handle": null,
+     "booked": [],
+     "approvals": [
+      {
+       "approver": "pshah",
+       "status": "pending",
+       "comment": ""
+      }
+     ]
+    },
+    {
+     "id": "B-BL-00174",
+     "period": "2026-02",
+     "item_kind": "bank",
+     "date": "2026-02-20",
+     "text": "WIRE IN BRIGHTWATER GROUP LLC B-INV-00071",
+     "counterparty": "Brightwater Group LLC",
+     "ref": "",
+     "amount": 34549.78,
+     "left_open": false,
+     "handled_by": [
+      "AR lead"
+     ],
+     "days_to_handle": 6,
+     "booked": [
+      {
+       "account": "1200",
+       "amount": 2.79,
+       "memo": "per Priya",
+       "by": "AR lead"
+      }
+     ],
+     "approvals": [],
+     "linked_ledger": [
+      {
+       "id": "B-LE-00196",
+       "amount": 34552.57,
+       "account": "1200",
+       "memo": "Expected receipt Brightwater Group LLC B-INV-00071",
+       "ref": "B-INV-00071",
+       "days_before_bank": 0
+      }
+     ],
+     "diff": 2.79,
+     "diff_pct": 0.008
+    },
+    {
+     "id": "B-BL-00299",
+     "period": "2026-03",
+     "item_kind": "bank",
+     "date": "2026-03-09",
+     "text": "WIRE IN BRIGHTWATER GROUP LLC",
+     "counterparty": "Brightwater Group LLC",
+     "ref": "",
+     "amount": 400534.16,
+     "left_open": false,
+     "handled_by": [
+      "staff accountant"
+     ],
+     "days_to_handle": 7,
+     "booked": [
+      {
+       "account": "1200",
+       "amount": 2.46,
+       "memo": "per Priya",
+       "by": "staff accountant"
+      }
+     ],
+     "approvals": [],
+     "linked_ledger": [
+      {
+       "id": "B-LE-00328",
+       "amount": 55611.99,
+       "account": "1200",
+       "memo": "Expected receipt Brightwater Group LLC B-INV-00105",
+       "ref": "B-INV-00105",
+       "days_before_bank": 0
+      },
+      {
+       "id": "B-LE-00329",
+       "amount": 135415.61,
+       "account": "1200",
+       "memo": "Expected receipt Brightwater Group LLC B-INV-00106",
+       "ref": "B-INV-00106",
+       "days_before_bank": 0
+      },
+      {
+       "id": "B-LE-00330",
+       "amount": 107900.56,
+       "account": "1200",
+       "memo": "Expected receipt Brightwater Group LLC B-INV-00107",
+       "ref": "B-INV-00107",
+       "days_before_bank": 0
+      },
+      {
+       "id": "B-LE-00331",
+       "amount": 101608.46,
+       "account": "1200",
+       "memo": "Expected receipt Brightwater Group LLC B-INV-00108",
+       "ref": "B-INV-00108",
+       "days_before_bank": 0
+      }
+     ],
+     "diff": 2.46,
+     "diff_pct": 0.001
+    }
+   ],
+   "playbook_version": 1
   }
+ }
 }
