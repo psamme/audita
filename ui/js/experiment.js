@@ -96,7 +96,8 @@
     view.innerHTML = `
       <div class="screen">
         <div class="panel txn">
-          <div><span class="label">Bank line · ${day(t.date)}</span><div class="desc">${esc(t.description)}</div></div>
+          <div class="txn-left"><div><span class="label">Bank line · ${day(t.date)}</span><div class="desc">${esc(t.description)}</div></div>
+            ${controls(note)}</div>
           <dl class="kv num">
             <dt>Received</dt><dd class="amt">${usd(t.amount)}</dd>
             <dt>Invoice</dt><dd>${usd(t.invoice_amount)}</dd>
@@ -104,7 +105,6 @@
           </dl>
         </div>
         <div class="split">${side(byId.A, exp.results.A)}${side(byId.B, exp.results.B)}</div>
-        ${controls(note)}
         <div id="control"></div>
       </div>`;
     wire();

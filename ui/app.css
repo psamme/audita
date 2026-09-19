@@ -214,3 +214,4 @@ main.compact .txn { padding-block: var(--s-4); }
 main.compact .txn .amt { font-size: 2rem; }
 details.more > summary { padding: 12px var(--s-5); cursor: pointer; font-size: var(--t-sm); color: var(--ink-2); border-top: 1px solid var(--line); }
 details.more[open] > summary { border-bottom: 1px solid var(--line); }
+.txn-left { display: grid; gap: var(--s-3); min-width: 0; }
