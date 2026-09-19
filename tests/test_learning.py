@@ -53,11 +53,13 @@ def test_band_answer_then_retraction_restores_the_band(fee_playbook):
     con, pb = fee_playbook
     before = dict(pb["rules"][0]["bands"]["amount_max"])
     value = before["lo"] + 4
+    # Tightening is allowed even when noisy history blocks widening this fixture.
     ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", value, review=True)
     assert ans["band"]["hi"] == value and ans["band"]["source"] == "interview" and ans["diff"]["changed"]
     out = unlearn.retract("A", TRACK, correction_id=ans["correction_id"])
     now = playbook.load("A", TRACK)
-    assert now["cause"]["type"] == "retraction" and now["rules"][0]["bands"]["amount_max"]["hi"] == before["hi"]
+    assert now["cause"]["type"] == "retraction" and now["rules"][0]["bands"]["amount_max"]["lo"] == before["lo"]
+    assert now["rules"][0]["bands"]["amount_max"]["hi"] == before["hi"]
     assert out["rules_changed"] == ["A-R-001"] and "resolutions_checked" in out
     with pytest.raises(ValueError):
         unlearn.retract("A", TRACK, correction_id="A-COR-9999")
