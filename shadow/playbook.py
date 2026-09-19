@@ -431,6 +431,7 @@ def apply_band_answer(new: dict, rule_id: str, condition: str, value: float | No
                  "open_question": "You said this is not about the amount. What does decide how these are handled?"}
     elif limit is not None:
         band |= ({"lo": limit, "hi": round(limit + 0.01, 2)} if upper else {"lo": round(limit - 0.01, 2), "hi": limit}) | {"source": "stated"}
+        band |= {"lo_precedent": None, "hi_precedent": None}      # the limit rests on what a person said, not on a past item
         old = rules.get_cond(rule["when"], condition)
         rule["when"] = rules.with_cond(rule["when"], condition, limit)
         rule["text"] = _restate(rule["text"], old, limit)

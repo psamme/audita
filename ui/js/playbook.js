@@ -87,8 +87,11 @@
       // The card holds its answered state (band closed, item cleared) until the presenter moves on.
       document.querySelector(".ask .answers").innerHTML = `${SO.reranBlock(r.reran, client, true)}
         ${r.held ? `<p class="held"><span class="state state-carry">Recorded, not applied</span> ${esc(SO.cap(r.held))}</p>` : ""}
-        <button class="btn ${r.reran && r.reran.length ? "btn-secondary" : "btn-primary"}" id="nextQ">${bandQs.length > 1 ? "Next question" : "Show the playbook"}</button>`;
+        <button class="btn ${r.reran && r.reran.length ? "btn-secondary" : "btn-primary"}" id="nextQ">${bandQs.length > 1 ? "Next question" : "Show the playbook"}</button>
+        ${applied && r.correction_id ? `<button class="btn btn-ghost undo" id="undoHere" data-id="${esc(r.correction_id)}">Undo this answer</button>` : ""}`;
       document.getElementById("nextQ").addEventListener("click", () => load().catch(fail));
+      const uh = document.getElementById("undoHere");
+      if (uh) uh.addEventListener("click", () => undo(uh));
       bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${esc(said)}</h3><span class="runrow">${applied ? "" : `<span class="state state-carry">Recorded, not applied</span>`}<span class="mono faint">${esc(r.correction_id || "")}</span></span></div>
         <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}${SO.reranBlock(r.reran, client)}</div></section>`;
     } catch (e) {
@@ -123,6 +126,7 @@
       const res = await fetch("/api/retract", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, correction_id: btn.dataset.id, note: "Undone from the playbook screen" }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json(), re = r.reopened || [];
+      bandResult = "";
       undoResult = `<section class="panel"><div class="panel-body stack">
         <div class="label">${esc(r.retracted)} undone · playbook version ${esc(r.new_version)}</div>
         <h2 class="ask-q"><span class="num">${r.resolutions_checked}</span> past item${r.resolutions_checked === 1 ? "" : "s"} checked, <span class="num">${re.length}</span> re-opened</h2>
