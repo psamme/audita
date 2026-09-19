@@ -1,0 +1,350 @@
+<title>Shadow Onboarding Marble</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/*TOKENS*/
+/*COMPONENTS*/
+
+/* Panel-only layout */
+#slab { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; }
+:root[data-marble="off"] #slab { display: none; }
+.page { position: relative; z-index: 1; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 40px); }
+
+.bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-5); }
+.mark { font-weight: 500; letter-spacing: -0.02em; font-size: var(--t-md); }
+.mark span { color: var(--ink-3); font-weight: 400; margin-left: 8px; }
+
+.hero { padding-block: clamp(48px, 9vw, 120px) clamp(40px, 6vw, 72px); display: grid; gap: var(--s-5); }
+.hero p { max-width: 54ch; font-size: var(--t-lg); color: var(--ink-2); line-height: 1.5; }
+
+.controls {
+  display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-5); align-items: end;
+  padding: var(--s-4) var(--s-5); margin-top: var(--s-3);
+}
+.ctl { display: grid; gap: 6px; }
+
+.sheet { padding-block: var(--s-6) var(--s-8); display: grid; gap: var(--s-8); }
+:root[data-marble="header"] .sheet { background: var(--ground); border-top: 1px solid var(--line); }
+
+.section { display: grid; gap: var(--s-5); }
+.section-head { display: grid; gap: var(--s-2); max-width: 62ch; }
+.section-head p { color: var(--ink-2); }
+
+.lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.lane { padding: var(--s-5); display: grid; gap: var(--s-2); align-content: start; border-right: 1px solid var(--line); }
+.lane:last-child { border-right: 0; }
+.lane .who { font-family: var(--mono); font-size: var(--t-xs); color: var(--ink-3); }
+.lane p { font-size: var(--t-sm); color: var(--ink-2); }
+@media (max-width: 800px) { .lane { border-right: 0; border-bottom: 1px solid var(--line); } .lane:last-child { border-bottom: 0; } }
+
+.txn {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--s-4) var(--s-6); align-items: center;
+  padding: var(--s-5);
+}
+.txn .amt { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
+.txn .desc { font-family: var(--mono); font-size: var(--t-sm); color: var(--ink-2); overflow-wrap: anywhere; }
+@media (max-width: 640px) { .txn { grid-template-columns: 1fr; } }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+@media (max-width: 800px) { .split { grid-template-columns: 1fr; } }
+.side { display: grid; grid-template-rows: auto 1fr; }
+.side .who h3 { margin-bottom: 2px; }
+.verdict { display: grid; gap: var(--s-4); }
+.verdict .line { font-size: var(--t-xl); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; }
+.rule-text { font-size: var(--t-md); padding: var(--s-4); background: var(--surface-2); border-radius: var(--r-sm); }
+.cites { display: flex; flex-wrap: wrap; gap: 6px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); font-size: var(--t-sm); color: var(--ink-2); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+
+.two { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--s-4); align-items: start; }
+@media (max-width: 900px) { .two { grid-template-columns: 1fr; } }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--s-3); }
+.sw { display: grid; gap: 6px; font-size: var(--t-xs); }
+.sw i { display: block; height: 56px; border-radius: var(--r-sm); border: 1px solid var(--line); }
+.sw code { font-family: var(--mono); color: var(--ink-3); }
+
+.scale { display: grid; gap: var(--s-4); }
+.scale > div { display: grid; grid-template-columns: 72px 1fr; gap: var(--s-4); align-items: baseline; }
+.scale .s3 { font-size: clamp(2rem, 6vw, var(--t-3xl)); font-weight: 500; letter-spacing: -0.035em; line-height: 1.05; }
+.scale .s2 { font-size: var(--t-2xl); font-weight: 500; letter-spacing: -0.022em; line-height: 1.1; }
+.scale .s1 { font-size: var(--t-xl); font-weight: 500; letter-spacing: -0.02em; }
+
+.row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.stack { display: grid; gap: var(--s-5); }
+
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; }
+.rules > div { padding: var(--s-5); border-bottom: 1px solid var(--line); display: grid; gap: 4px; }
+.rules p { font-size: var(--t-sm); color: var(--ink-2); }
+
+.note { font-size: var(--t-xs); color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<canvas id="slab" aria-hidden="true"></canvas>
+
+<div class="page">
+  <header class="wrap bar">
+    <div class="mark">Shadow Onboarding<span>Design</span></div>
+    <div class="note mono" id="slabId">slab 11</div>
+  </header>
+
+  <section class="wrap hero">
+    <div class="label">HackMIT 2026 · Maximor track · design system v0.1</div>
+    <h1>One stone.<br>Two clients.<br>Every number in plain sight.</h1>
+    <p>Black and white marble sets the room. Everything you operate stays flat, monochrome and quiet, so the evidence is the loudest thing on screen.</p>
+
+    <div class="panel controls" role="group" aria-label="Design controls">
+      <div class="ctl">
+        <span class="label">Stone</span>
+        <div class="seg" data-ctl="stone">
+          <button id="stone-statuario" data-v="statuario">Statuario</button>
+          <button id="stone-nero" data-v="nero">Nero Marquina</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="label">Veining</span>
+        <div class="seg" data-ctl="veining">
+          <button id="vein-quiet" data-v="0.45">Quiet</button>
+          <button id="vein-medium" data-v="0.75">Medium</button>
+          <button id="vein-bold" data-v="1.15">Bold</button>
+        </div>
+      </div>
+      <div class="ctl">
+        <span class="label">Marble</span>
+        <div class="seg" data-ctl="marble">
+          <button id="marble-ground" data-v="ground">Whole page</button>
+          <button id="marble-header" data-v="header">Header only</button>
+          <button id="marble-off" data-v="off">Off</button>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="recut">Cut a new slab</button>
+    </div>
+  </section>
+
+  <div class="sheet">
+    <section class="wrap section">
+      <div class="section-head">
+        <div class="label">Terminals</div>
+        <h2>Three lanes, one repo</h2>
+        <p>Who owns what right now. Design never touches agent code, and never commits.</p>
+      </div>
+      <div class="panel lanes">
+        <div class="lane">
+          <span class="who">samuelevans-d1 · this session</span>
+          <h3>Design</h3>
+          <p>Owns <span class="mono">ui/</span>. Tokens, marble, components and the four demo screens, built as static files against fixtures.</p>
+        </div>
+        <div class="lane">
+          <span class="who">samuelevans-25</span>
+          <h3>Code build</h3>
+          <p>Owns <span class="mono">shadow/ sim/ benchrec/</span> and the agent. Wrote the UI data contract at <span class="mono">docs/API.md</span>. Server will be FastAPI on port 8787 with <span class="mono">ui/</span> mounted at the root. Nothing live yet.</p>
+        </div>
+        <div class="lane">
+          <span class="who">samuelevans-0a</span>
+          <h3>Git and planning</h3>
+          <p>Owns commits and GitHub. Picks up <span class="mono">ui/</span> as untracked work at each checkpoint.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="section-head">
+        <div class="label">Screen 1 · the centerpiece</div>
+        <h2>The same transaction, resolved twice</h2>
+        <p>This is the ten seconds the judges remember, so it gets the only large type in the product. Example data shaped like <span class="mono">GET /api/experiment</span>.</p>
+      </div>
+
+      <div class="panel txn">
+        <div class="stack" style="gap: 8px;">
+          <span class="label">Bank line · 14 Apr 2026</span>
+          <div class="desc">ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207</div>
+        </div>
+        <dl class="kv num">
+          <dt>Received</dt><dd class="amt">$4,987.60</dd>
+          <dt>Invoice</dt><dd>$5,000.00</dd>
+          <dt>Short by</dt><dd>$12.40</dd>
+        </dl>
+      </div>
+
+      <div class="split">
+        <article class="panel side">
+          <div class="panel-head who">
+            <div><h3>Lucky Quarter Holdings</h3><span class="muted" style="font-size: var(--t-sm);">Vending and laundromats · lenient</span></div>
+            <span class="state state-book">Written off</span>
+          </div>
+          <div class="panel-body verdict">
+            <p class="line">Match the invoice and write off $12.40.</p>
+            <div class="rule-text">Customer short-pays up to $15.00 are matched and the difference goes to 6990 Cash over/short and small balances. <span class="cite">A-R-004</span></div>
+            <div>
+              <div class="label" style="margin-bottom: 8px;">Their own history · 23 precedents, 0 conflicts</div>
+              <div class="cites"><a class="cite" href="#">A-RES-00112</a><a class="cite" href="#">A-RES-00187</a><a class="cite" href="#">A-RES-00240</a><span class="cite">+20</span></div>
+            </div>
+            <div class="meta-row num"><span>Tier <span class="tier">rule</span></span><span>Cost <span class="cost-zero">$0.00</span></span><span>0 model calls</span><span>Confidence 0.97</span></div>
+          </div>
+        </article>
+
+        <article class="panel side">
+          <div class="panel-head who">
+            <div><h3>Meridian AI</h3><span class="muted" style="font-size: var(--t-sm);">AI lab · strict</span></div>
+            <span class="state state-escalate">Escalated to AR lead</span>
+          </div>
+          <div class="panel-body verdict">
+            <p class="line">Hold the match and open an investigation.</p>
+            <div class="rule-text">No difference is written off without controller approval, at any amount. Unexplained short-pays go to the AR lead with the remittance attached. <span class="cite">B-R-002</span></div>
+            <div>
+              <div class="label" style="margin-bottom: 8px;">Their own history · 9 precedents, 0 conflicts</div>
+              <div class="cites"><a class="cite" href="#">B-RES-00231</a><a class="cite" href="#">B-RES-00305</a><a class="cite" href="#">B-DOC-00088</a><span class="cite">+7</span></div>
+            </div>
+            <div class="meta-row num"><span>Tier <span class="tier">investigator</span></span><span>Cost $0.018</span><span>3 model calls</span><span>Confidence 0.91</span></div>
+          </div>
+        </article>
+      </div>
+      <p class="note">Example values. The real transaction, rule ids and costs come from the build session's first run.</p>
+    </section>
+
+    <section class="wrap section">
+      <div class="section-head">
+        <div class="label">Screens 2 and 3 · working surfaces</div>
+        <h2>Queue, trace, playbook diff</h2>
+        <p>Dense and scannable. State is carried by shape first: outline for matched, soft fill for booked, solid for escalated, dashed for carried forward. Tier and cost sit on every row because three of the four tiers cost nothing.</p>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Review queue · Meridian AI · April 2026</h3>
+          <div class="row"><button class="btn btn-ghost btn-sm" id="q-filter">All tiers</button><button class="btn btn-primary btn-sm" id="q-next">Review next</button></div>
+        </div>
+        <div class="table-wrap">
+          <table class="grid">
+            <thead><tr><th>Item</th><th>Date</th><th>Description</th><th class="r">Amount</th><th>Tier</th><th class="r">Cost</th><th>Outcome</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">B-BL-00977</td><td class="num">14 Apr</td><td>ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207</td><td class="r">4,987.60</td><td class="tier">investigator</td><td class="r">$0.018</td><td><span class="state state-escalate">AR lead</span></td></tr>
+              <tr><td class="mono">B-BL-00981</td><td class="num">15 Apr</td><td>WIRE OUT STRATUS CLOUD INC</td><td class="r">−48,210.00</td><td class="tier">guardrail</td><td class="r cost-zero">$0.00</td><td><span class="state state-escalate">Controller</span></td></tr>
+              <tr><td class="mono">B-BL-00990</td><td class="num">16 Apr</td><td>WIRE IN HALCYON ROBOTICS</td><td class="r">98,000.00</td><td class="tier">rule</td><td class="r cost-zero">$0.00</td><td><span class="state">Matched, 2% discount</span></td></tr>
+              <tr><td class="mono">B-BL-01004</td><td class="num">17 Apr</td><td>PAYSTREAM PAYOUT 0417</td><td class="r">212,406.13</td><td class="tier">matcher</td><td class="r cost-zero">$0.00</td><td><span class="state">Matched</span></td></tr>
+              <tr><td class="mono">B-BL-01012</td><td class="num">20 Apr</td><td>BANK CHARGE INTL WIRE</td><td class="r">−25.00</td><td class="tier">rule</td><td class="r cost-zero">$0.00</td><td><span class="state state-book">Booked to 7710</span></td></tr>
+              <tr><td class="mono">B-LE-00688</td><td class="num">30 Apr</td><td>Castellan Insurance prepaid commit, not yet received</td><td class="r">150,000.00</td><td class="tier">investigator</td><td class="r">$0.011</td><td><span class="state state-carry">Carried forward</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="panel">
+          <div class="panel-head"><h3>Evidence trace</h3><span class="mono faint">B-BL-00981</span></div>
+          <div class="panel-body">
+            <ol class="trace">
+              <li><span class="step">1</span><div><div class="what">Matcher found one open payable for the same amount</div><div class="out">Stratus Cloud Inc, invoice due 15 Apr <span class="cite">B-LE-00412</span></div></div></li>
+              <li><span class="step">2</span><div><div class="what">Guardrail stopped the auto-match</div><div class="out">Beneficiary account ends 7302. Vendor master says 4471.</div></div></li>
+              <li><span class="step">3</span><div><div class="what">Found a bank detail change request</div><div class="out">Email dated 11 Apr asking to update remittance details <span class="cite">B-DOC-00088</span></div></div></li>
+              <li class="final"><span class="step">4</span><div><div class="what">Escalated to the controller</div><div class="out">Vendor bank changes always go to the controller. <span class="cite">B-R-007</span> <span class="cite">B-RES-00231</span></div></div></li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h3>Playbook · version 1 to 2</h3><span class="state state-proposed">Proposed</span></div>
+          <div class="panel-body stack">
+            <p class="muted" style="font-size: var(--t-sm);">Caused by your correction on <span class="mono">A-BL-00614</span>: "deposit correction fees are always $5, book them without asking."</p>
+            <div class="diff">
+              <div class="diff-row diff-del"><span class="sign">−</span><span class="txt">Bank fees under $25 go to 6110 with no review.</span></div>
+              <div class="diff-row diff-add"><span class="sign">+</span><span>Bank fees under $25 go to 6110 with no review. Deposit correction fees of exactly $5.00 are booked to 6110 even when the description is new.</span></div>
+            </div>
+            <div class="row"><button class="btn btn-primary btn-sm" id="pb-approve">Approve version 2</button><button class="btn btn-secondary btn-sm" id="pb-backtest">See backtest</button><span class="note">18 support · 0 conflicts · 4 open items would re-run</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="section-head">
+        <div class="label">Foundations</div>
+        <h2>Ink on stone</h2>
+        <p>One typeface, one weight change, nine neutrals. Green and red exist only inside diffs and grades.</p>
+      </div>
+      <div class="two">
+        <div class="panel"><div class="panel-body stack">
+          <div class="swatches">
+            <div class="sw"><i style="background: var(--ground);"></i>Ground<code>--ground</code></div>
+            <div class="sw"><i style="background: var(--surface);"></i>Surface<code>--surface</code></div>
+            <div class="sw"><i style="background: var(--surface-2);"></i>Inset<code>--surface-2</code></div>
+            <div class="sw"><i style="background: var(--ink);"></i>Ink<code>--ink</code></div>
+            <div class="sw"><i style="background: var(--ink-2);"></i>Ink, secondary<code>--ink-2</code></div>
+            <div class="sw"><i style="background: var(--ink-3);"></i>Ink, tertiary<code>--ink-3</code></div>
+            <div class="sw"><i style="background: var(--pos);"></i>Added, correct<code>--pos</code></div>
+            <div class="sw"><i style="background: var(--neg);"></i>Removed, wrong<code>--neg</code></div>
+          </div>
+          <div class="row">
+            <span class="state">Matched</span><span class="state state-book">Booked</span><span class="state state-escalate">Escalated</span><span class="state state-carry">Carried forward</span><span class="state state-proposed">Proposed rule</span>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary" id="demo-primary">Approve playbook</button>
+            <button class="btn btn-secondary" id="demo-secondary">Correct this</button>
+            <button class="btn btn-ghost" id="demo-ghost">View record</button>
+          </div>
+        </div></div>
+        <div class="panel"><div class="panel-body scale">
+          <div><span class="label">52 / 500</span><span class="s3">Signed off once</span></div>
+          <div><span class="label">36 / 500</span><span class="s2">Playbook, version 2</span></div>
+          <div><span class="label">24 / 500</span><span class="s1">Hold the match and investigate.</span></div>
+          <div><span class="label">15 / 400</span><span>Hanken Grotesk carries everything a person reads. Two weights, 400 and 500.</span></div>
+          <div><span class="label">Mono</span><span class="mono">B-BL-00977 · 4,987.60 · investigator</span></div>
+        </div></div>
+      </div>
+
+      <div class="panel rules">
+        <div><h3>Marble is the room, not the furniture</h3><p>It sits behind the page. Numbers, tables and forms always get a flat opaque surface. No blur, no glow, no translucent panels.</p></div>
+        <div><h3>One loud thing per screen</h3><p>The verdict line on the split screen. The headline number on results. Everything else is 13 to 15px.</p></div>
+        <div><h3>One primary button per view</h3><p>Solid pill for the action that moves the demo forward. Everything else is outline or text.</p></div>
+        <div><h3>Shape before colour</h3><p>Outcome pills read in greyscale and on a projector. Colour is only for diffs and grading.</p></div>
+        <div><h3>Show the receipt</h3><p>Every row carries its tier and cost. Every claim carries a citation chip that opens the record.</p></div>
+        <div><h3>Plain copy</h3><p>Sentences a controller would say. No em dashes, no exclamation marks, no agent theatrics.</p></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/*MARBLE*/
+</script>
+<script>
+(function () {
+  const root = document.documentElement;
+  const canvas = document.getElementById("slab");
+  const osDark = () => {
+    const t = root.getAttribute("data-theme");
+    return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  };
+  const state = { stone: osDark() ? "nero" : "statuario", veining: "0.75", marble: "ground", seed: 11 };
+  try { Object.assign(state, JSON.parse(localStorage.getItem("so-design") || "{}")); } catch (e) {}
+
+  let queued = 0;
+  function repaint() {
+    cancelAnimationFrame(queued);
+    queued = requestAnimationFrame(() => {
+      if (state.marble !== "off") Marble.paint(canvas, { stone: state.stone, veining: +state.veining, seed: state.seed });
+    });
+  }
+  function apply() {
+    root.setAttribute("data-stone", state.stone);
+    root.setAttribute("data-marble", state.marble);
+    document.getElementById("slabId").textContent = "slab " + state.seed;
+    document.querySelectorAll(".seg").forEach((seg) => {
+      seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === String(state[seg.dataset.ctl]))));
+    });
+    try { localStorage.setItem("so-design", JSON.stringify(state)); } catch (e) {}
+    repaint();
+  }
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    state[b.parentElement.dataset.ctl] = b.dataset.v;
+    apply();
+  }));
+  document.getElementById("recut").addEventListener("click", () => {
+    state.seed = 1 + Math.floor(Math.random() * 998);
+    apply();
+  });
+  let rt = 0;
+  addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(repaint, 200); });
+  apply();
+})();
+</script>

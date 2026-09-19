@@ -1,0 +1,155 @@
+/* Shadow Onboarding components. Reads tokens.css. Chrome stays flat:
+   no blur, no glow, no gradients. The marble is the only texture. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { font-weight: 500; letter-spacing: -0.022em; text-wrap: balance; line-height: 1.1; }
+h1 { font-size: clamp(2.25rem, 6vw, var(--t-3xl)); letter-spacing: -0.035em; }
+h2 { font-size: clamp(1.5rem, 3.4vw, var(--t-2xl)); }
+h3 { font-size: var(--t-lg); letter-spacing: -0.01em; line-height: 1.3; }
+
+.muted { color: var(--ink-2); }
+.faint { color: var(--ink-3); }
+.mono { font-family: var(--mono); font-size: 0.92em; letter-spacing: -0.01em; }
+.num { font-variant-numeric: tabular-nums; }
+.label {
+  font-size: var(--t-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Buttons: one primary per view */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--s-2);
+  height: 40px; padding: 0 18px;
+  border-radius: var(--r-pill);
+  border: 1px solid transparent;
+  font: 500 var(--t-md) / 1 var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-primary { background: var(--invert); color: var(--invert-ink); }
+.btn-primary:hover { opacity: 0.84; }
+.btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+.btn-secondary:hover { border-color: var(--ink); }
+.btn-ghost { background: transparent; color: var(--ink-2); padding: 0 10px; }
+.btn-ghost:hover { color: var(--ink); }
+.btn-sm { height: 32px; padding: 0 14px; font-size: var(--t-sm); }
+
+/* Segmented control */
+.seg {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill);
+}
+.seg button {
+  height: 30px; padding: 0 14px; border: 0; border-radius: var(--r-pill);
+  background: transparent; color: var(--ink-2);
+  font: 500 var(--t-sm) / 1 var(--font); cursor: pointer; white-space: nowrap;
+}
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--invert); color: var(--invert-ink); }
+
+/* Panels */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.panel-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap;
+  padding: var(--s-4) var(--s-5);
+  border-bottom: 1px solid var(--line);
+}
+.panel-body { padding: var(--s-5); }
+
+/* State: form first, colour second.
+   matched = outline, booked = soft fill, escalated = solid, carried = dashed */
+.state {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-strong);
+  font-size: var(--t-xs); font-weight: 500; white-space: nowrap;
+  color: var(--ink);
+}
+.state-book { background: var(--surface-2); border-color: var(--line); }
+.state-escalate { background: var(--invert); color: var(--invert-ink); border-color: var(--invert); }
+.state-carry { border-style: dashed; color: var(--ink-2); }
+.state-proposed { border-style: dashed; }
+
+.tier { font-family: var(--mono); font-size: var(--t-xs); color: var(--ink-2); }
+.cost-zero { color: var(--ink-3); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; }
+table.grid { width: 100%; border-collapse: collapse; font-size: var(--t-sm); }
+table.grid th {
+  text-align: left; font-weight: 500; font-size: var(--t-xs); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); padding: 10px var(--s-4); border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+table.grid td { padding: 13px var(--s-4); border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+table.grid tr:last-child td { border-bottom: 0; }
+table.grid tbody tr:hover td { background: var(--surface-2); }
+table.grid .r { text-align: right; font-variant-numeric: tabular-nums; }
+table.grid td.wrap { white-space: normal; min-width: 220px; }
+
+/* Evidence trace */
+.trace { list-style: none; margin: 0; padding: 0; display: grid; }
+.trace li {
+  display: grid; grid-template-columns: 28px 1fr; gap: var(--s-3);
+  padding-bottom: var(--s-4); position: relative;
+}
+.trace li::before {
+  content: ""; position: absolute; left: 11px; top: 24px; bottom: 0; width: 1px; background: var(--line-strong);
+}
+.trace li:last-child { padding-bottom: 0; }
+.trace li:last-child::before { display: none; }
+.trace .step {
+  width: 23px; height: 23px; border-radius: 50%;
+  border: 1px solid var(--line-strong); background: var(--surface);
+  display: grid; place-items: center;
+  font: 500 11px / 1 var(--mono); color: var(--ink-2);
+}
+.trace li.final .step { background: var(--invert); color: var(--invert-ink); border-color: var(--invert); }
+.trace .what { font-size: var(--t-sm); }
+.trace .out { font-size: var(--t-sm); color: var(--ink-2); }
+
+.cite {
+  display: inline-block; font-family: var(--mono); font-size: 0.75rem;
+  padding: 1px 7px; border-radius: var(--r-sm);
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
+  text-decoration: none;
+}
+a.cite:hover { color: var(--ink); border-color: var(--line-strong); }
+
+/* Playbook diff */
+.diff { font-size: var(--t-sm); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.diff-row { display: grid; grid-template-columns: 28px 1fr; padding: 10px var(--s-4) 10px 0; }
+.diff-row + .diff-row { border-top: 1px solid var(--line); }
+.diff-row .sign { text-align: center; font-family: var(--mono); }
+.diff-add { background: var(--pos-wash); }
+.diff-add .sign { color: var(--pos); }
+.diff-del { background: var(--neg-wash); color: var(--ink-2); }
+.diff-del .sign { color: var(--neg); }
+.diff-del .txt { text-decoration: line-through; text-decoration-color: var(--ink-3); }
+
+/* Key/value pairs */
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px var(--s-5); font-size: var(--t-sm); margin: 0; }
+.kv dt { color: var(--ink-3); }
+.kv dd { margin: 0; }

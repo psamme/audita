@@ -1,0 +1,6 @@
+[
+  {"id": "A", "name": "Lucky Quarter Holdings", "blurb": "Vending routes and coin laundromats across three counties. Bookkeeper reconciles weekly; owner signs off.", "policy_label": "lenient",
+   "chart": {"6110": "Bank fees", "6120": "Merchant card fees", "6990": "Cash over/short and small balances"}},
+  {"id": "B", "name": "Meridian AI", "blurb": "AI lab with consumer subscriptions and enterprise API contracts. Controller-led finance team, monthly close on business day 5.", "policy_label": "strict",
+   "chart": {"1200": "Accounts receivable", "4050": "Sales discounts", "7710": "Bank charges"}}
+]

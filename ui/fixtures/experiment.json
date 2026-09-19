@@ -1,0 +1,26 @@
+{
+  "_fixture": true,
+  "transaction": {"date": "2026-04-14", "amount": 4987.60, "description": "ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207", "invoice_amount": 5000.00, "difference": 12.40},
+  "results": {
+    "A": {
+      "item_id": "A-BL-00702", "item_kind": "bank",
+      "record": {"id": "A-BL-00702", "date": "2026-04-14", "amount": 4987.60, "description": "ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207", "counterparty": "Northgate Property Mgmt", "ref": "INV 2207"},
+      "tier": "rule",
+      "resolution": {"action": "match_adjust", "ledger_ids": ["A-LE-00933"], "adjustments": [{"account": "6990", "amount": 12.40}], "escalate_to": null,
+        "rationale": "Match the invoice and write off $12.40.", "rule_id": "A-R-004",
+        "precedent_ids": ["A-RES-00112", "A-RES-00187", "A-RES-00240"], "evidence_ids": ["A-LE-00933"], "confidence": 0.97},
+      "rule": {"id": "A-R-004", "status": "approved", "executable": true, "text": "Customer short-pays up to $15.00 are matched and the difference goes to 6990.", "precedent_ids": ["A-RES-00112", "A-RES-00187", "A-RES-00240"], "backtest": {"support": 23, "conflicts": 0}, "origin": "induced", "version_added": 1},
+      "trace": [], "usage": {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cost_usd": 0.0, "llm_calls": 0}, "grade": null
+    },
+    "B": {
+      "item_id": "B-BL-00977", "item_kind": "bank",
+      "record": {"id": "B-BL-00977", "date": "2026-04-14", "amount": 4987.60, "description": "ACH CREDIT NORTHGATE PROPERTY MGMT INV 2207", "counterparty": "Northgate Property Mgmt", "ref": "INV 2207"},
+      "tier": "investigator",
+      "resolution": {"action": "escalate", "ledger_ids": [], "adjustments": [], "escalate_to": "ar_lead",
+        "rationale": "Hold the match and open an investigation.", "rule_id": "B-R-002",
+        "precedent_ids": ["B-RES-00231", "B-RES-00305"], "evidence_ids": ["B-DOC-00088", "B-LE-00412"], "confidence": 0.91},
+      "rule": {"id": "B-R-002", "status": "approved", "executable": true, "text": "No difference is written off without controller approval, at any amount. Unexplained short-pays go to the AR lead with the remittance attached.", "precedent_ids": ["B-RES-00231", "B-RES-00305"], "backtest": {"support": 9, "conflicts": 0}, "origin": "induced", "version_added": 1},
+      "trace": [], "usage": {"input_tokens": 6120, "output_tokens": 410, "cache_read_tokens": 4800, "cost_usd": 0.018, "llm_calls": 3}, "grade": null
+    }
+  }
+}
