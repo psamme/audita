@@ -55,7 +55,7 @@
   let version = "";
   const route = () => "/api/experiment" + (version ? "?version=" + version : "");
 
-  function render(clients, exp) {
+  function render(clients, exp, live) {
     const byId = Object.fromEntries(clients.map((c) => [c.id, c]));
     const t = exp.transaction;
     view.innerHTML = `
@@ -71,21 +71,31 @@
         <div class="split">${side(byId.A, exp.results.A)}${side(byId.B, exp.results.B)}</div>
         <div class="runrow">
           <div class="seg" id="pbver" aria-label="Playbook version">
-            <button data-v="1" aria-pressed="${version === "1"}">As induced</button>
-            <button data-v="" aria-pressed="${version === ""}">After sign-off</button>
+            <button data-v="1" aria-pressed="${version === "1"}" ${SO.usedFixture ? "disabled" : ""}>As induced</button>
+            <button data-v="" aria-pressed="${version === ""}" ${SO.usedFixture ? "disabled" : ""}>After sign-off</button>
           </div>
-          <button class="btn btn-secondary btn-sm" id="fresh">Run it live</button>
-          <span class="note" id="freshNote">Showing the last saved run. A live run takes about 15 seconds and makes real model calls.</span>
+          <button class="btn btn-secondary btn-sm" id="fresh" ${SO.usedFixture ? "disabled" : ""}>Run it live</button>
+          <span class="note" id="freshNote">${SO.usedFixture ? "Saved example. Start the server to switch playbook versions or run it live."
+            : live ? "This is a live run, finished just now." : "Showing the last saved run. A live run takes about 15 seconds and makes real model calls."}</span>
         </div>
         <div id="control"></div>
       </div>`;
     document.getElementById("fresh").addEventListener("click", () => runFresh(clients));
     control(clients);
     document.querySelectorAll("#pbver button").forEach((b) => b.addEventListener("click", async () => {
-      if (b.dataset.v === version) return;
+      if (b.dataset.v === version || busy) return;
+      const previous = version;
       version = b.dataset.v;
-      try { render(clients, await get(route())); }
-      catch (err) { document.getElementById("freshNote").textContent = "That playbook version has no saved run yet."; }
+      // an uncached version can start a live run on the server, so this waits like one
+      const done = working("Loading that playbook version.");
+      try {
+        const res = await fetch(route());
+        if (!res.ok) throw new Error(String(res.status));
+        done(); render(clients, await res.json());
+      } catch (err) {
+        version = previous; done();
+        document.getElementById("freshNote").textContent = "That playbook version has no saved run yet.";
+      }
     }));
   }
 
@@ -103,22 +113,33 @@
         <div class="panel txn"><div><span class="label">Bank line · ${day(rec.date)}</span><div class="desc">${esc(rec.description)}</div></div>
           <dl class="kv num"><dt>Paid out</dt><dd class="amt">${usd(Math.abs(rec.amount))}</dd><dt>Open payable</dt><dd>${usd(Math.abs(rec.amount))}</dd><dt>Difference</dt><dd>$0.00</dd></dl></div>
         ${side(b, item)}`;
+      if (location.hash === "#control") box.scrollIntoView();
     } catch (e) { /* server not running: the split screen stands on its own */ }
   }
 
+  // one pending state for anything that may run the agents: ticker on, controls off
+  let busy = false;
+  function working(message) {
+    busy = true;
+    const note = document.getElementById("freshNote"), started = Date.now();
+    const controls = document.querySelectorAll("#fresh, #pbver button");
+    controls.forEach((c) => { c.disabled = true; });
+    const tick = setInterval(() => { note.textContent = `${message} ${Math.round((Date.now() - started) / 1000)}s`; }, 500);
+    note.textContent = message;
+    return () => { busy = false; clearInterval(tick); controls.forEach((c) => { c.disabled = false; }); };
+  }
+
   async function runFresh(clients) {
-    const btn = document.getElementById("fresh"), note = document.getElementById("freshNote");
-    btn.disabled = true;
-    const started = Date.now();
-    const tick = setInterval(() => { note.textContent = `Both agents are working the same bank line. ${Math.round((Date.now() - started) / 1000)}s`; }, 500);
+    if (busy) return;
+    const done = working("Both agents are working the same bank line.");
     try {
       const res = await fetch(route() + (version ? "&" : "?") + "fresh=true");
-      if (!res.ok) throw new Error("The live run failed (" + res.status + "). The saved run is still shown.");
-      render(clients, await res.json());
+      if (!res.ok) throw new Error(String(res.status));
+      done(); render(clients, await res.json(), true);
     } catch (e) {
-      note.textContent = e.message.includes("saved run") ? e.message : "Could not reach the server. The saved run is still shown.";
-      btn.disabled = false;
-    } finally { clearInterval(tick); }
+      done();
+      document.getElementById("freshNote").textContent = "The live run did not finish. The saved run is still shown.";
+    }
   }
 
   try {

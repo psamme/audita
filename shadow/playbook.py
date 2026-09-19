@@ -226,7 +226,8 @@ def backtest(con, pb: dict) -> dict:
     """
     from grade import same  # comparison logic only; no answer key is involved
     before = pb["trained_before"]
-    observed = {o["item"]["id"]: o for o in history.observe(con, before)}
+    gone = set(pb.get("excluded_precedents") or [])
+    observed = {o["item"]["id"]: o for o in history.observe(con, before) if o["item"]["id"] not in gone}
     compute_bands(con, pb, observed)
     periods = sorted({o["period"] for o in observed.values()})
     for r in pb["rules"]:
@@ -331,7 +332,7 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
             for ctx, bank in replay:
                 for b in bank:
                     o = observed.get(b["id"])
-                    if not o or not o["outcome"]:
+                    if not o or not o["outcome"] or b["date"] < rule.get("valid_from", ""):
                         continue
                     out = rules._evaluate(probe, b, "bank", ctx)
                     v = out and out.get("values", {}).get(rules.BANDED[cond][0])
@@ -382,11 +383,11 @@ def band_questions(pb: dict, limit: int = 8) -> list[dict]:
     return out[:limit]
 
 
-def answer_band(client: str, track: str, rule_id: str, condition: str, value: float, review: bool) -> dict:
-    """Instant, no model call: 'yes, review it' pulls hi down to the value, 'no' pushes lo up to it."""
-    old = load(client, track)
-    new = json.loads(json.dumps(old))
-    rule = next(r for r in new["rules"] if r["id"] == rule_id)
+def apply_band_answer(new: dict, rule_id: str, condition: str, value: float, review: bool) -> dict | None:
+    """Move one band in place. Returns the band before the move, or None when the rule or band no longer exists."""
+    rule = next((r for r in new["rules"] if r["id"] == rule_id), None)
+    if not rule or condition not in (rule.get("bands") or {}):
+        return None
     band = rule["bands"][condition]
     before_band = dict(band)
     band |= ({"hi": value} if review else {"lo": value}) | {"source": "interview"}
@@ -395,10 +396,20 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
             if other is not rule and ob.get("side") == "lower" and rules.BANDED[c][0] == rules.BANDED[condition][0] \
                     and ob.get("lo") == before_band["lo"] and ob.get("hi") == before_band["hi"]:
                 ob |= ({"hi": value} if review else {"lo": value}) | {"source": "interview"}
+    return before_band
+
+
+def answer_band(client: str, track: str, rule_id: str, condition: str, value: float, review: bool, correction_id: str | None = None) -> dict:
+    """Instant, no model call: 'yes, review it' pulls hi down to the value, 'no' pushes lo up to it."""
+    old = load(client, track)
+    new = json.loads(json.dumps(old))
+    before_band = apply_band_answer(new, rule_id, condition, value, review)
+    band = next(r for r in new["rules"] if r["id"] == rule_id)["bands"][condition]
     unit = "%" if "pct" in condition else "$"
-    cause = {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition, "value": value,
+    cause = {"type": "interview", "source": "interview", "correction_id": correction_id, "rule_id": rule_id, "condition": condition, "value": value,
              "note": f"Asked about {unit}{value:,.2f}: " + ("send it for review." if review else "handle it the usual way, no review."),
-             "band_before": {"lo": before_band["lo"], "hi": before_band["hi"]}, "band_after": {"lo": band["lo"], "hi": band["hi"]}}
+             "band_before": {"lo": before_band["lo"], "hi": before_band["hi"]}, "band_after": {"lo": band["lo"], "hi": band["hi"]},
+             "patch": {"kind": "band", "rule_id": rule_id, "condition": condition, "value": value, "review": review}}
     saved = save(client, track, {k: v for k, v in new.items() if k not in ("version", "created_at", "cause")}, cause)
     return {"new_version": saved["version"], "diff": diff(old, saved), "band": band, "cause": cause}
 

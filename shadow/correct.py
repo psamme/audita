@@ -79,7 +79,8 @@ def _apply_ops(pb: dict, ops: list[dict], client: str, origin: str) -> dict:
             if "when" in op:
                 rs[idx]["bands"] = _stated_bands(rs[idx])
         elif op["op"] == "add" and "text" in op:
-            rule = {"id": f"{client}-R-{nxt:03d}", "text": op["text"], "executable": bool(op.get("executable")),
+            op.setdefault("assigned_id", f"{client}-R-{nxt:03d}")    # kept in the stored patch so a replay gives the same id
+            rule = {"id": op["assigned_id"], "text": op["text"], "executable": bool(op.get("executable")),
                     "when": op.get("when") or {}, "then": op.get("then") or {}, "origin": origin, "precedent_ids": [],
                     "status": "approved", "human_confirmed": True, "open_question": None, "version_added": pb.get("version", 0) + 1}
             rule["bands"] = _stated_bands(rule)
@@ -118,11 +119,39 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 
 
-def correct(client: str, track: str, item: dict, human: dict, note: str, run_id: str = "", usage: llm.Usage | None = None) -> dict:
-    """item: an Item from a run (record, item_kind, resolution, trace). human: the Resolution the person chose."""
+def answer_band(client: str, track: str, rule_id: str, condition: str, value: float, review: bool) -> dict:
+    """Yes/no answer to a band question. Instant: no model call."""
+    entry = _log(client, {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition,
+                          "value": value, "review": review})
+    return pbmod.answer_band(client, track, rule_id, condition, value, review, entry["correction_id"]) | {"correction_id": entry["correction_id"]}
+
+
+def correct(client: str, track: str, item: dict, human: dict, note: str, run_id: str = "", usage: llm.Usage | None = None,
+            role: str | None = None, force: bool = False, valid_from: str | None = None) -> dict:
+    """item: an Item from a run (record, item_kind, resolution, trace). human: the Resolution the person chose.
+
+    Who may teach: a correction that makes the agent more cautious applies at once. One that contradicts a signed-off
+    rule with healthy support is not applied; it is raised as a conflict for a senior to settle. One that widens what
+    is auto-resolved, taught by someone who is not senior, lands as a proposed rule until a senior confirms it.
+    """
     con = db.connect(client, readonly=True)
     pb_old = pbmod.load(client, track) or {"version": 0, "rules": [], "trained_before": None}
     period = item["record"]["period"]
+    seniors = {u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
+    is_senior = role is None or role in seniors
+    fired = next((r for r in pb_old["rules"] if r["id"] == item["resolution"].get("rule_id")), None)
+    if (not force and fired and item.get("tier") == "rule" and item["resolution"]["action"] != "escalate" and human["action"] != "escalate"
+            and fired["status"] == "approved" and fired.get("backtest", {}).get("support", 0) >= pbmod.APPROVE_MIN_SUPPORT
+            and not same(item["resolution"], human)):
+        conflict = _log(client, {"type": "conflict", "status": "open", "run_id": run_id, "item": item, "human": human, "note": note,
+                                 "by_role": role, "rule_id": fired["id"], "rule_text": fired["text"],
+                                 "rule_support": fired["backtest"]["support"],
+                                 "outcomes": ["one_off_exception", "policy_change", "mistake"]})
+        return {"correction_id": conflict["correction_id"], "diff": None, "new_version": pb_old.get("version", 0),
+                "conflict": {k: conflict[k] for k in ("correction_id", "rule_id", "rule_text", "rule_support", "note", "by_role", "outcomes")},
+                "explanation": f"This contradicts {fired['id']}, which is signed off and agrees with {fired['backtest']['support']} past items. "
+                               "Nothing was changed. A senior needs to say whether this is a one-off exception, a change of policy, or a mistake.",
+                "check": "conflict raised"}
     entry = _log(client, {"type": "correction", "run_id": run_id, "item_id": item["item_id"], "note": note,
                           "agent": item["resolution"], "human": human, "playbook_version": pb_old.get("version", 0)})
     info = db.q(con, "SELECT * FROM client")[0]
@@ -137,6 +166,13 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
         reply = llm.call(SYSTEM, messages, schema=PATCH_SCHEMA, max_tokens=8000, usage=usage)
         patch = json.loads(reply.text)
         pb_new = _apply_ops(pb_old, patch["ops"], client, f"correction {entry['correction_id']}")
+        touched = {op.get("assigned_id") or op.get("rule_id") for op in patch["ops"]}
+        for r in pb_new["rules"]:
+            if r["id"] in touched and valid_from:
+                r["valid_from"] = valid_from          # precedents before this date stop counting toward its bands
+            if r["id"] in touched and not is_senior and (r.get("then") or {}).get("action") != "escalate" and r["status"] == "approved":
+                r |= {"status": "proposed", "human_confirmed": False, "awaiting_senior": True,
+                      "open_question": f"Taught by {role}: \"{note}\". This widens what is resolved without review. Does a senior confirm it?"}
         if not patch["ops"] or human["action"] == "escalate" and not patch["ops"]:
             verdict = "no change needed"
             break
@@ -149,7 +185,8 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
         return {"correction_id": entry["correction_id"], "diff": None, "new_version": pb_old.get("version", 0),
                 "explanation": patch["explanation"], "check": verdict}
     cause = {"type": "correction", "correction_id": entry["correction_id"], "item_id": item["item_id"], "note": note,
-             "explanation": patch["explanation"], "check": verdict}
+             "explanation": patch["explanation"], "check": verdict, "by_role": role,
+             "patch": {"kind": "ops", "ops": patch["ops"], "origin": f"correction {entry['correction_id']}"}}
     saved, d = _finish(con, client, track, pb_old, pb_new, cause, period)
     return {"correction_id": entry["correction_id"], "diff": d, "new_version": saved["version"],
             "explanation": patch["explanation"], "check": verdict}
@@ -173,6 +210,26 @@ def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.U
         patch["ops"] = [{"op": "approve", "rule_id": rule_id}]
     pb_new = _apply_ops(pb_old, patch["ops"], client, f"interview {entry['correction_id']}")
     cause = {"type": "interview", "correction_id": entry["correction_id"], "rule_id": rule_id, "note": answer_text,
-             "explanation": patch["explanation"]}
+             "explanation": patch["explanation"],
+             "patch": {"kind": "ops", "ops": patch["ops"], "origin": f"interview {entry['correction_id']}"}}
     saved, d = _finish(con, client, track, pb_old, pb_new, cause)
     return {"correction_id": entry["correction_id"], "diff": d, "new_version": saved["version"], "explanation": patch["explanation"]}
+
+
+def resolve_conflict(client: str, track: str, conflict_id: str, outcome: str, role: str | None = None, usage: llm.Usage | None = None) -> dict:
+    """A senior settles a conflict: one_off_exception | policy_change | mistake."""
+    path = db.DATA / client / "corrections.jsonl"
+    conflict = next(json.loads(l) for l in path.read_text().splitlines() if json.loads(l).get("correction_id") == conflict_id)
+    item = conflict["item"]
+    result = {"conflict_id": conflict_id, "outcome": outcome, "diff": None}
+    if outcome == "policy_change":
+        result |= correct(client, track, item, conflict["human"], conflict["note"], conflict.get("run_id", ""), usage, role=role,
+                          force=True, valid_from=item["record"]["date"])
+    elif outcome == "one_off_exception":     # recorded, never becomes a precedent
+        pb = pbmod.load(client, track)
+        pb["excluded_precedents"] = sorted(set(pb.get("excluded_precedents") or []) | {item["item_id"]})
+        saved = pbmod.save(client, track, {k: v for k, v in pb.items() if k not in ("version", "created_at", "cause")},
+                           {"type": "one_off_exception", "correction_id": conflict_id, "item_id": item["item_id"], "note": conflict["note"]})
+        result["new_version"] = saved["version"]
+    _log(client, {"type": "conflict_resolved", "conflict_id": conflict_id, "outcome": outcome, "by_role": role})
+    return result

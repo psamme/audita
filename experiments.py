@@ -51,7 +51,7 @@ def one_client(client: str, skip: set[str], label: str, workers: int) -> dict:
     pipeline.run(client, PERIOD, "playbook", "main", version=1, run_id=rid, workers=workers, label=label)
     out["full_month"]["playbook"], out["second_half"]["playbook"] = score(rid, key, False), score(rid, key, True)
 
-    answers = reviewer.interview(client, "main", usage=human_cost)
+    answers = reviewer.band_interview(client, "main", usage=human_cost) + reviewer.interview(client, "main", usage=human_cost)
     rid_half = f"{client}_{PERIOD}_signed_off_first_half"
     pipeline.run(client, PERIOD, "corrected", "main", run_id=rid_half, workers=workers, date_to=SPLIT_TO, label=label)
     fixes = reviewer.review_queue(client, "main", rid_half, key, SPLIT_TO, usage=human_cost)
@@ -81,8 +81,8 @@ if __name__ == "__main__":
     path = db.RUNS / "results.json"
     merged = json.loads(path.read_text()) if path.exists() else {"period": PERIOD, "clients": {}, "full_month": {}, "detail": {}}
     for c, r in results.items():
-        merged["clients"][c] = {k: v | {"scope": "second_half"} for k, v in r["second_half"].items()}
-        merged["full_month"][c] = r["full_month"]
+        merged["clients"].setdefault(c, {}).update({k: v | {"scope": "second_half"} for k, v in r["second_half"].items()})
+        merged["full_month"].setdefault(c, {}).update(r["full_month"])
         merged["detail"][c] = {"induction": r["induction"], "human_input": r["human_input"]}
     merged |= {"test_set": a.label, "backend": llm.backend(), "model": llm.MODEL, "effort": llm.EFFORT,
                "split": {"corrections_from": f"{PERIOD}-01..{SPLIT_TO}", "scored_on": f"{SPLIT_FROM}..end"}}

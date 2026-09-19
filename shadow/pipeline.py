@@ -11,7 +11,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
-from shadow import db, guardrails, investigator, matcher, playbook as pbmod, rules
+from shadow import db, guardrails, investigator, matcher, playbook as pbmod, rules, stale
 
 ZERO = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cache_creation_tokens": 0, "cost_usd": 0.0, "llm_calls": 0}
 
@@ -129,6 +129,8 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
     out_dir = db.RUNS / run_id
     out_dir.mkdir(parents=True, exist_ok=True)
     ordered = sorted(items.values(), key=lambda it: (it["record"]["date"], it["item_id"]))
+    for it in ordered:
+        it["evidence_fingerprint"] = stale.fingerprint(con, it["resolution"])
     (out_dir / "resolutions.jsonl").write_text("\n".join(json.dumps(it, default=str) for it in ordered))
     tiers = {t: sum(it["tier"] == t for it in ordered) for t in ("matcher", "guardrail", "rule", "investigator")}
     summary = {"run_id": run_id, "client": client, "condition": condition, "period": period, "track": track, "label": label,

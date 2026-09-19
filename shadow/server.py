@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from shadow import correct, db, experiment, pipeline, playbook as pbmod
+from shadow import correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
 
 app = FastAPI(title="Shadow Onboarding")
 CLIENTS = ("A", "B")
@@ -105,6 +105,7 @@ class Correction(BaseModel):
     resolution: dict
     note: str = ""
     track: str = TRACK
+    role: str | None = None       # who is teaching; a non-senior role cannot widen auto-resolution without sign-off
 
 
 @app.post("/api/corrections")
@@ -114,7 +115,7 @@ def post_correction(c: Correction):
         raise HTTPException(404, "no such item in that run")
     human = {"action": c.resolution["action"], "ledger_ids": c.resolution.get("ledger_ids") or [],
              "adjustments": c.resolution.get("adjustments") or [], "escalate_to": c.resolution.get("escalate_to")}
-    result = correct.correct(c.client, c.track, item, human, c.note, run_id=c.run_id)
+    result = correct.correct(c.client, c.track, item, human, c.note, run_id=c.run_id, role=c.role)
     reran = []
     if result["diff"]:   # give every other item still in the queue another go under the new playbook
         s = _summary(c.run_id)
@@ -148,10 +149,56 @@ class BandAnswer(BaseModel):
 
 @app.post("/api/playbook/answer-band")
 def post_band_answer(a: BandAnswer):
-    out = pbmod.answer_band(a.client, a.track, a.rule_id, a.condition, a.value, a.review)
-    correct._log(a.client, {"type": "interview", "source": "interview", "rule_id": a.rule_id, "condition": a.condition,
-                            "value": a.value, "review": a.review, "playbook_version": out["new_version"]})
-    return out
+    return correct.answer_band(a.client, a.track, a.rule_id, a.condition, a.value, a.review)
+
+
+class ConflictOutcome(BaseModel):
+    client: str
+    outcome: str          # one_off_exception | policy_change | mistake
+    role: str | None = None
+    track: str = TRACK
+
+
+@app.post("/api/conflicts/{conflict_id}")
+def settle_conflict(conflict_id: str, o: ConflictOutcome):
+    if o.outcome not in ("one_off_exception", "policy_change", "mistake"):
+        raise HTTPException(400, "outcome must be one_off_exception, policy_change or mistake")
+    return correct.resolve_conflict(o.client, o.track, conflict_id, o.outcome, o.role)
+
+
+class Retraction(BaseModel):
+    client: str
+    correction_id: str | None = None
+    precedent_id: str | None = None
+    note: str = ""
+    track: str = TRACK
+
+
+@app.post("/api/retract")
+def post_retract(r: Retraction):
+    """Undo one input of the playbook. Deterministic: stored patches are replayed, no model call."""
+    try:
+        return unlearn.retract(r.client, r.track, r.correction_id, r.precedent_id, r.note)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.get("/api/corrections/{client}")
+def corrections(client: str):
+    path = db.DATA / client / "corrections.jsonl"
+    return [json.loads(l) for l in path.read_text().splitlines()][::-1] if path.exists() else []
+
+
+@app.get("/api/reopened/{client}")
+def reopened(client: str):
+    path = db.DATA / client / "reopened.jsonl"
+    return [json.loads(l) for l in path.read_text().splitlines()][::-1] if path.exists() else []
+
+
+@app.get("/api/runs/{run_id}/stale")
+def stale_check(run_id: str):
+    meta = _summary(run_id)
+    return stale.verify(meta["client"], run_id)
 
 
 @app.get("/api/curve")

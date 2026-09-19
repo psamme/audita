@@ -4,7 +4,7 @@
   const canvas = document.getElementById("slab");
   const SEED = 11, VEINING = 0.75;
 
-  const NAV = [["index.html", "Experiment"], ["queue.html", "Review queue"], ["playbook.html", "Playbook"], ["results.html", "Results"]];
+  const NAV = [["index.html", "Experiment"], ["index.html#control", "Bank change"], ["queue.html", "Review queue"], ["playbook.html", "Playbook"], ["results.html", "Results"]];
   const here = location.pathname.split("/").pop() || "index.html";
   const nav = document.querySelector(".nav");
   if (nav) nav.innerHTML = NAV.map(([href, label]) => `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");

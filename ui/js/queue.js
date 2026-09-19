@@ -4,7 +4,10 @@
 (async function () {
   const { get, usd, cost, day, esc, role, cap, period, outcome, verdict, cite, reasoning, ruleBlock, diffBlock } = SO;
   const view = document.getElementById("view"), summary = document.getElementById("summary"), runSel = document.getElementById("run");
-  let clients = {}, run = null, queue = [], current = null;
+  let clients = {}, run = null, queue = [], current = null, resultHtml = "";
+  // Grades come from the answer key. They stay off screen unless the presenter asks (?grades=1),
+  // and even then they sit in their own marked block, never beside the agent's own output.
+  const showGrades = new URLSearchParams(location.search).get("grades") === "1";
 
   const text = (rec) => rec.description || rec.memo || rec.id;
   const TRACE_WORDS = {
@@ -54,8 +57,7 @@
           <textarea class="input" id="c-note" rows="2" placeholder="Quarry always nets their wire fee and a 3% volume rebate. Book the rebate to 4050."></textarea></div>
         <div class="wide runrow"><button class="btn btn-primary" id="c-send">Send correction</button><span class="note" id="c-note-status">Takes 10 to 25 seconds. One model call, then a back-test against history.</span></div>
       </div>
-    </form>
-    <div id="result"></div>`;
+    </form>`;
   }
 
   function wireForm(it) {
@@ -82,19 +84,23 @@
         const res = await fetch("/api/corrections", { method: "POST", headers: { "content-type": "application/json" },
           body: SO.body({ client: run.client, run_id: run.run_id, item_id: it.item_id, resolution, note: resolution.rationale }) });
         if (!res.ok) throw new Error(String(res.status));
-        showResult(await res.json());
-        status.textContent = "Done.";
+        const result = await res.json();
+        // the corrected item and anything the new rule cleared leave the queue
+        const gone = new Set([it.item_id, ...(result.reran || []).map((x) => x.item_id)]);
+        queue = queue.filter((x) => !gone.has(x.item_id));
+        current = queue[0] || null;
+        showResult(result, it);
       } catch (err) {
-        status.textContent = "The correction did not go through. Nothing was changed. Check that the server is running and try again.";
+        status.textContent = "No result came back. The correction may already be logged, so check the playbook's versions before sending it again.";
         btn.disabled = false;
       } finally { clearInterval(tick); }
     });
   }
 
-  function showResult(r) {
+  function showResult(r, corrected) {
     const reran = r.reran || [];
-    document.getElementById("result").innerHTML = `<div class="panel">
-      <div class="panel-head"><h3>${r.diff ? `Playbook version ${esc(r.new_version)}` : "No playbook change"}</h3><span class="mono faint">${esc(r.correction_id)}</span></div>
+    resultHtml = `<div class="panel result">
+      <div class="panel-head"><h3>${esc(text(corrected.record))} is corrected. ${r.diff ? `The playbook is now version ${esc(r.new_version)}` : "The playbook did not need to change"}.</h3><span class="mono faint">${esc(r.correction_id)}</span></div>
       <div class="panel-body stack">
         <p>${esc(r.explanation || "")}</p>
         ${diffBlock(r.diff)}
@@ -102,21 +108,24 @@
         ${reran.length ? `<div><div class="label">Now cleared by the new rule, at $0.00</div>
           <div class="table-wrap"><table class="grid tight"><tbody>${reran.map((x) => `<tr><td>${cite(run.client, x.item_id)}</td><td class="wrap">${esc(text(x.record))}</td><td class="r">${usd(x.record.amount)}</td><td>${esc(outcome(x.resolution).text)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
       </div></div>`;
+    paint();
   }
 
   function detail(it) {
     const c = clients[run.client] || { chart: {} }, res = it.resolution, o = outcome(res);
     const flags = (it.control_flags || []).map((f) => `<div class="rule-text"><span class="label">Control, enforced by code</span><div>${esc(cap(f.detail || f.flag))}</div></div>`).join("");
     const proposed = res.proposed ? `<div class="rule-text"><span class="label">What the agent wanted to do</span><div>${esc(verdict(res.proposed, c.chart))}</div></div>` : "";
-    const graded = it.grade ? `<span class="state" style="color: var(${it.grade.correct ? "--pos" : "--neg"})">${it.grade.correct ? "Graded correct" : "Graded wrong"}${!it.grade.correct && it.grade.key_action ? " · key says " + esc(it.grade.key_action.replace(/_/g, " ")) : ""}</span>` : "";
+    const graded = showGrades && it.grade ? `<div class="rule-text graded"><span class="label">Grader, from the answer key. The agent never sees this.</span>
+      <div>${it.grade.correct ? "Marked correct." : "Marked wrong."}${!it.grade.correct && it.grade.key_action ? " The key's action was " + esc(it.grade.key_action.replace(/_/g, " ")) + "." : ""}</div></div>` : "";
     return `<div class="stack">
       <div class="panel">
         <div class="panel-head"><div><h3>${esc(text(it.record))}</h3><span class="sub faint">${cite(run.client, it.item_id)} · ${day(it.record.date)} · ${esc(it.record.counterparty || "")}</span></div>
           <div class="amt2 num">${usd(it.record.amount)}</div></div>
         <div class="panel-body verdict">
-          <div class="rule-top"><p class="line">${esc(verdict(res, c.chart))}</p><span class="runrow"><span class="state ${o.cls}">${esc(o.text)}</span>${graded}</span></div>
+          <div class="rule-top"><p class="line">${esc(verdict(res, c.chart))}</p><span class="state ${o.cls}">${esc(o.text)}</span></div>
           ${flags}${reasoning(res)}${proposed}${it.rule ? ruleBlock(it.rule) : res.rule_id ? `<div class="faint small">Cites playbook rule <span class="cite">${esc(res.rule_id)}</span></div>` : ""}
           <div class="meta-row"><span>Tier <span class="tier">${esc(it.tier)}</span></span><span>Cost ${cost(it.usage.cost_usd)}</span><span>${it.usage.llm_calls} model call${it.usage.llm_calls === 1 ? "" : "s"}</span><span>Confidence ${Number(res.confidence).toFixed(2)}</span></div>
+          ${graded}
         </div>
       </div>
       <div class="panel"><div class="panel-head"><h3>Evidence trace</h3><span class="faint small">Every step the agent took, in order</span></div>
@@ -126,8 +135,8 @@
   }
 
   function paint() {
-    if (!queue.length) { view.innerHTML = `<div class="panel error">Nothing in this run needed a person.</div>`; return; }
-    view.innerHTML = `<div class="qlayout"><div class="panel qlist">${queue.map(listRow).join("")}</div><div id="detail">${detail(current)}</div></div>`;
+    if (!queue.length) { view.innerHTML = `${resultHtml}<div class="panel error">Nothing in this run is waiting on a person.</div>`; return; }
+    view.innerHTML = `${resultHtml}<div class="qlayout"><div class="panel qlist">${queue.map(listRow).join("")}</div><div id="detail">${detail(current)}</div></div>`;
     view.querySelectorAll(".qrow").forEach((b) => b.addEventListener("click", () => {
       current = queue.find((q) => q.item_id === b.dataset.id); paint();
       if (matchMedia("(max-width: 900px)").matches) document.getElementById("detail").scrollIntoView({ behavior: "smooth" });
@@ -136,15 +145,19 @@
   }
 
   async function load(runId) {
+    resultHtml = "";
     view.innerHTML = `<div class="panel error">Loading the queue</div>`;
     const runs = await get("/api/runs");
     run = runs.find((r) => r.run_id === runId);
+    if (!run) throw new Error("That run is not on the server any more. Pick another one.");
     queue = await get(`/api/runs/${runId}/queue`);
     current = queue[0] || null;
     const t = run.tiers, free = t.matcher + t.guardrail + t.rule;
     summary.innerHTML = `<span><b class="num">${run.n_items}</b> items</span><span><b class="num">${free}</b> cleared by code at $0.00</span><span><b class="num">${t.investigator}</b> worked by the investigator</span><span><b class="num">${queue.length}</b> sent to a person</span><span>Run cost <b class="num">${cost(run.cost_usd)}</b></span>${run.label ? `<span class="state state-proposed">${esc(cap(run.label))}</span>` : ""}`;
     paint();
   }
+
+  const fail = (e) => { summary.innerHTML = ""; view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`; };
 
   try {
     const [cl, runs] = await Promise.all([get("/api/clients"), get("/api/runs")]);
@@ -155,9 +168,7 @@
     const first = usable.find((r) => r.run_id === want) || usable.find((r) => r.condition === "playbook" && r.cost_usd > 0) || usable[0];
     if (!first) throw new Error("No runs yet. Start one with the build session, then reload.");
     runSel.value = first.run_id;
-    runSel.addEventListener("change", () => load(runSel.value));
+    runSel.addEventListener("change", () => load(runSel.value).catch(fail));
     await load(first.run_id);
-  } catch (e) {
-    view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`;
-  }
+  } catch (e) { fail(e); }
 })();

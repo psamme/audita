@@ -1,15 +1,17 @@
 /* Shadow Onboarding design tokens.
    Two stones: Statuario (white, grey veins) and Nero Marquina (black, white veins).
    Set data-stone="statuario|nero" on <html> to pin one; otherwise the OS theme picks.
-   Colour is reserved for state. Everything else is ink on stone. */
+   Colour is reserved for state. Everything else is ink on stone.
+   --ink-3 is the lightest text allowed and still clears 4.5:1 on --surface in both stones,
+   because this gets read off a projector. */
 
 :root {
   --ground: #F3F2EF;
   --surface: #FFFFFF;
   --surface-2: #F7F6F4;
   --ink: #0D0D0D;
-  --ink-2: #55565A;
-  --ink-3: #8B8C91;
+  --ink-2: #46474B;
+  --ink-3: #66676C;
   --line: rgba(13, 13, 13, 0.10);
   --line-strong: rgba(13, 13, 13, 0.24);
   --invert: #0D0D0D;
@@ -53,8 +55,8 @@
     --surface: #0F0F10;
     --surface-2: #161618;
     --ink: #F4F3F0;
-    --ink-2: #A4A5A9;
-    --ink-3: #6E6F74;
+    --ink-2: #B4B5B9;
+    --ink-3: #94959B;
     --line: rgba(255, 255, 255, 0.10);
     --line-strong: rgba(255, 255, 255, 0.26);
     --invert: #F4F3F0;
@@ -74,8 +76,8 @@
   --surface: #0F0F10;
   --surface-2: #161618;
   --ink: #F4F3F0;
-  --ink-2: #A4A5A9;
-  --ink-3: #6E6F74;
+  --ink-2: #B4B5B9;
+  --ink-3: #94959B;
   --line: rgba(255, 255, 255, 0.10);
   --line-strong: rgba(255, 255, 255, 0.26);
   --invert: #F4F3F0;
@@ -93,8 +95,8 @@
   --surface: #FFFFFF;
   --surface-2: #F7F6F4;
   --ink: #0D0D0D;
-  --ink-2: #55565A;
-  --ink-3: #8B8C91;
+  --ink-2: #46474B;
+  --ink-3: #66676C;
   --line: rgba(13, 13, 13, 0.10);
   --line-strong: rgba(13, 13, 13, 0.24);
   --invert: #0D0D0D;

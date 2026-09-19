@@ -4,13 +4,16 @@
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
+/* 18px base: the rem type scale is sized for a room, not a laptop */
+html { font-size: 112.5%; }
+
 body {
   margin: 0;
   background: var(--ground);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.55;
+  font-size: 1rem;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

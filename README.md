@@ -8,7 +8,7 @@ Every client has a different system. The real difference is not schema, it is po
 
 ## How it works
 
-1. **Deterministic matcher** clears the easy ~90% of lines with zero model calls ($0).
+1. **Deterministic matcher** clears the easy lines with zero model calls ($0). On our simulated clients that is about half of volume; compiled playbook rules clear roughly another third, also with no model calls.
 2. **Investigator agent** works the residue using the playbook plus tools: remittance emails, invoices, prior periods, ledger queries.
 3. **Escalation** when precedents are thin or conflict. Every human correction becomes a visible diff to the playbook.
 4. **Evidence chain** on every resolution: what matched, which rule or precedent applied, which documents support it.
@@ -37,7 +37,7 @@ Three conditions on month 4:
 
 Reported for each: resolution accuracy, escalation precision, wrong-match rate, LLM cost per run, share of volume cleared by the deterministic tier.
 
-The matcher tier also runs on [BenchRec](https://www.kaggle.com/datasets/benchmarkteam/benchrec-real-world-cash-reconciliation-dataset) (~32k labelled lines from a production cash ledger, CC BY 4.0) so at least one number comes from data we did not create.
+We also run a deterministic matcher on [BenchRec](https://www.kaggle.com/datasets/benchmarkteam/benchrec-real-world-cash-reconciliation-dataset) (~32k labelled lines from a production cash ledger, CC BY 4.0) so at least one number comes from data we did not create. That matcher (`benchrec/matcher.py`) is a separate implementation tuned on BenchRec's training split only; it never sees the solution file. We report both precision definitions: pair-level (a prediction counts if it is a subset of the labelled allocation) and strict (exact allocation).
 
 ## Setup
 

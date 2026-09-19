@@ -2,7 +2,7 @@
 
 #slab { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; }
 .page { position: relative; z-index: 1; min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
-.wrap { max-width: 1120px; margin: 0 auto; width: 100%; padding-inline: clamp(16px, 4vw, 40px); }
+.wrap { max-width: 1280px; margin: 0 auto; width: 100%; padding-inline: clamp(16px, 4vw, 40px); }
 
 .bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4); flex-wrap: wrap; }
 .mark { font-weight: 500; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
@@ -17,7 +17,7 @@
 
 main { padding-block: clamp(32px, 6vw, 72px) var(--s-7); display: grid; gap: var(--s-5); align-content: start; }
 .lede { display: grid; gap: var(--s-3); max-width: 60ch; margin-bottom: var(--s-4); }
-.lede p { color: var(--ink-2); font-size: var(--t-lg); line-height: 1.5; }
+.lede p { color: var(--ink); font-size: var(--t-lg); line-height: 1.5; }
 
 .txn { display: grid; grid-template-columns: 1fr auto; gap: var(--s-4) var(--s-6); align-items: center; padding: var(--s-5); }
 .txn .amt { font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
@@ -148,3 +148,20 @@ main.compact { padding-block: var(--s-5) var(--s-7); gap: var(--s-4); }
 #control:not(:empty) { margin-top: var(--s-7); }
 #control > * { min-width: 0; }
 .control-head { display: grid; gap: var(--s-2); }
+
+/* Nothing small sits straight on the veins: nav gets a solid pill, working screens
+   put their heading and summary on a flat surface. Only the experiment headline,
+   which is large and solid ink, stays on the stone. */
+.nav { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 3px; }
+.nav a[aria-current="page"] { background: var(--invert); color: var(--invert-ink); border: 0; padding: 6px 12px; }
+.mark { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 5px 14px; }
+main.compact .lede-row, main.compact .summary { background: var(--surface); border: 1px solid var(--line); padding: var(--s-4) var(--s-5); }
+main.compact .lede-row { border-radius: var(--r-md) var(--r-md) 0 0; border-bottom: 0; }
+main.compact .summary { border-radius: 0 0 var(--r-md) var(--r-md); margin-top: calc(-1 * var(--s-4)); }
+main.compact .summary:empty { padding-block: 0 var(--s-2); }
+main:not(.compact) .lede { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--s-5); max-width: 68ch; }
+#view { display: grid; gap: var(--s-4); }
+#view > * { min-width: 0; }
+.rule-text.graded { border: 1px dashed var(--line-strong); background: transparent; }
+.qlayout { grid-template-columns: minmax(0, 380px) minmax(0, 1fr); }
+@media (max-width: 900px) { .qlayout { grid-template-columns: minmax(0, 1fr); } }
