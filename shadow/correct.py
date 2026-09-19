@@ -140,6 +140,21 @@ def _reproduces(con, pb: dict, period: str, item: dict, kind: str, human: dict) 
 RULE_FLOOR = 0.6     # a taught rule that replayed history and agreed with less than this share of it does not execute
 
 
+def _replay_failures(con, pb_new: dict, ops: list[dict], period: str | None) -> str | None:
+    """Back-test a patched playbook before it is saved. Returns a complaint naming the taught rules that contradict history."""
+    touched = {op.get("assigned_id") or op.get("rule_id") for op in ops}
+    trial = json.loads(json.dumps(pb_new))
+    trial["trained_before"] = trial.get("trained_before") or period
+    pbmod.backtest(con, trial)
+    bad = []
+    for r in trial["rules"]:
+        bt = r["backtest"]
+        n = bt["support"] + bt["conflicts"]
+        if r["id"] in touched and r.get("executable") and n >= 2 and bt["support"] / n < RULE_FLOOR:
+            bad.append(f"{r['id']} disagrees with {bt['conflicts']} of {n} past items it matched, e.g. {json.dumps(bt['conflict_examples'][:2], default=str)}")
+    return "; ".join(bad) or None
+
+
 def _finish(con, client, track, pb_old, pb_new, cause, period=None):
     before = pb_new.get("trained_before") or period
     pb_new["trained_before"] = before
@@ -153,12 +168,13 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
                 r["open_question"] = None
         bt = r.get("backtest") or {}
         n = bt.get("support", 0) + bt.get("conflicts", 0)
-        if confirmed and status == "approved" and str(r.get("origin", "")).startswith("correction") and n >= 2 and bt["support"] / n < RULE_FLOOR:
-            # one correction must not become a policy that history disagrees with: it keeps the corrected item's lesson as
-            # guidance for the investigator and waits for a senior to say whether this is a change of policy or an exception
+        if confirmed and status == "approved" and r.get("executable") and n >= 2 and bt["support"] / n < RULE_FLOOR:
+            # Whatever a person said, the rule as WRITTEN replays against the client's own history and gets most of it wrong.
+            # Either the patch mistranslated them (a wrong field, a wrong account) or it is a change of policy. It does not
+            # execute until someone says which; meanwhile it stays as guidance for the investigator.
             r |= {"status": "proposed", "human_confirmed": False, "below_floor": True,
-                  "open_question": f"This came from one correction, but it disagrees with {bt['conflicts']} of {n} comparable past items. "
-                                   "Is it a change of policy from now on, or was that item an exception?"}
+                  "open_question": f"As written, this rule disagrees with {bt['conflicts']} of {n} comparable past items. "
+                                   "Is it a change of policy from now on, or did I write it down wrong?"}
     saved = pbmod.save(client, track, {k: v for k, v in pb_new.items() if k not in ("version", "created_at", "cause")}, cause)
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 
@@ -237,8 +253,11 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
             verdict = "no change needed"
             break
         ok, verdict = _reproduces(con, pb_new, period, item["record"], item["item_kind"], human)
-        if ok:
+        failures = _replay_failures(con, pb_new, patch["ops"], period) if ok else None
+        if ok and not failures:
             break
+        if failures:
+            verdict = f"replayed over history: {failures}"
         messages += [{"role": "assistant", "content": reply.text},
                      {"role": "user", "content": f"Checked by code: {verdict}. Fix the patch (conditions, order or amounts) so the corrected item comes out the human's way."}]
     if not patch["ops"]:
@@ -264,8 +283,17 @@ def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.U
            "rule_in_question": {k: rule.get(k) for k in ("id", "status", "executable", "text", "when", "then")},
            "question_you_asked": rule.get("open_question"), "what_the_controller_answered": answer_text,
            "current_playbook": [{k: r.get(k) for k in ("id", "status", "executable", "text", "when", "then")} for r in pb_old["rules"] if r["status"] != "retired"]}
-    reply = llm.call(SYSTEM, [{"role": "user", "content": json.dumps(ask, indent=1, default=str)}], schema=PATCH_SCHEMA, max_tokens=8000, usage=usage)
-    patch = json.loads(reply.text)
+    messages = [{"role": "user", "content": json.dumps(ask, indent=1, default=str)}]
+    for attempt in range(2):
+        reply = llm.call(SYSTEM, messages, schema=PATCH_SCHEMA, max_tokens=8000, usage=usage)
+        patch = json.loads(reply.text)
+        trial_ops = json.loads(json.dumps(patch["ops"]))      # applying assigns ids to added rules; keep the real patch untouched
+        failures = _replay_failures(con, _apply_ops(pb_old, trial_ops, client, "trial"), trial_ops, None) if patch["ops"] else None
+        if not failures:
+            break
+        messages += [{"role": "assistant", "content": reply.text},
+                     {"role": "user", "content": f"Checked by code, replayed over the client's history: {failures}. If the controller did not announce a change of "
+                                                 "policy, the rule is written wrong (a document field name, an account, a sign, a condition). Fix the patch."}]
     if not patch["ops"]:       # no explicit change: the rule stays exactly as it was, still proposed
         return {"correction_id": entry["correction_id"], "diff": None, "new_version": pb_old["version"], "explanation": patch["explanation"]}
     pb_new = _apply_ops(pb_old, patch["ops"], client, f"interview {entry['correction_id']}")

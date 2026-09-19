@@ -486,12 +486,14 @@ REPAIR_SCHEMA = {
 }
 
 
-def _failing(pb: dict) -> list[dict]:
+def _failing(pb: dict, first_round: bool = False) -> list[dict]:
+    """Rules to hand back to the model: those that fail their precedents, and (once) those that pass overall but keep
+    disagreeing with a handful of cases, because a repeated disagreement is often a finer convention the rule missed."""
     out = []
     for r in pb["rules"]:
         bt = r["backtest"]
         n = bt["support"] + bt["conflicts"]
-        if r.get("executable") and (n == 0 or bt["support"] / n < PASS_SHARE):
+        if r.get("executable") and (n == 0 or bt["support"] / n < PASS_SHARE or (first_round and bt["conflicts"] >= 3)):
             out.append(r)
     return out
 
@@ -501,7 +503,7 @@ def repair(con, pb: dict, info: dict, usage: llm.Usage | None = None, max_rounds
     as counterexamples. At most three rounds. What still disagrees afterwards is reported, not absorbed."""
     all_cases = {c["id"]: c for c in cases(con, pb["trained_before"])}
     for round_no in range(1, max_rounds + 1):
-        bad = _failing(pb)
+        bad = _failing(pb, first_round=round_no == 1)
         if not bad:
             return round_no - 1
         ask = [{"id": r["id"], "text": r["text"], "executable": r["executable"], "when": r["when"], "then": r["then"],
@@ -510,7 +512,10 @@ def repair(con, pb: dict, info: dict, usage: llm.Usage | None = None, max_rounds
                 "cases_you_cited": [all_cases[i] for i in r.get("precedent_ids", [])[:4] if i in all_cases]} for r in bad]
         prompt = ("These rules failed when replayed over the client's own history. Each is shown with how often it agreed, the "
                   "cases where it disagreed with what the trail shows, and cases you cited for it. A rule that never fired has "
-                  "conditions that match nothing (wrong regex, wrong candidate method, wrong sign). Fix each rule, make it a "
+                  "conditions that match nothing (wrong regex, wrong candidate method, wrong sign). A rule that mostly agrees but keeps "
+                  "disagreeing in the same way has usually missed a finer convention (for example part of a difference going to a "
+                  "second account, or a document that says how to split it): tighten it so it no longer fires on those cases, and "
+                  "say in open_question what you saw. You cannot add rules here, only fix these. Fix each rule, make it a "
                   "judgement rule (executable false) if the rule language cannot express it, and keep the id. Rule text must stand alone.\n\n"
                   f"Chart of accounts: {json.dumps(info['chart'])}\n\n{json.dumps(ask, indent=1, default=str)}")
         reply = llm.call(INDUCE_SYSTEM, [{"role": "user", "content": prompt}], schema=REPAIR_SCHEMA, max_tokens=16000, usage=usage)

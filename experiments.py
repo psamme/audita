@@ -94,6 +94,10 @@ if __name__ == "__main__":
         merged["clients"].setdefault(c, {}).update({k: v | {"scope": "second_half"} for k, v in r["second_half"].items()})
         merged["full_month"].setdefault(c, {}).update(r["full_month"])
         merged["detail"][c] = {"induction": r["induction"], "human_input": r["human_input"]}
+    import subprocess
+    head = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip() or "unknown"
+    dirty = bool(subprocess.run(["git", "status", "--porcelain", "shadow", "grade.py", "experiments.py"], capture_output=True, text=True).stdout.strip())
+    merged |= {"code_commit": head + (" (with uncommitted changes)" if dirty else ""), "note": None}
     merged |= {"test_set": a.label, "backend": llm.backend(), "model": llm.MODEL, "effort": llm.EFFORT,
                "split": {"corrections_from": f"{PERIOD}-01..{SPLIT_TO}", "scored_on": f"{SPLIT_FROM}..end"}}
     path.write_text(json.dumps(merged, indent=1))

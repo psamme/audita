@@ -160,9 +160,10 @@ def test_a_taught_rule_that_history_contradicts_does_not_execute(fee_playbook):
     con, pb = fee_playbook
     new = correct._apply_ops(pb, [{"op": "add", "text": "All bank fees go to merchant card fees.", "executable": True, "insert_before": "A-R-001",
                                    "when": {"direction": "out", "counterparty_regex": "first prairie"}, "then": {"action": "book", "account": "6120"}}],
-                             "A", "correction A-COR-0001")
-    saved, d = correct._finish(con, "A", TRACK, pb, new, {"type": "correction", "correction_id": "A-COR-0001"})
-    taught = next(r for r in saved["rules"] if r["origin"].startswith("correction"))
+                             "A", "interview A-COR-0001")
+    assert "disagrees with" in correct._replay_failures(con, new, [{"op": "add", "assigned_id": new["rules"][0]["id"]}], None)
+    saved, d = correct._finish(con, "A", TRACK, pb, new, {"type": "interview", "correction_id": "A-COR-0001"})
+    taught = next(r for r in saved["rules"] if r["origin"].startswith("interview"))
     assert taught["status"] == "proposed" and taught["below_floor"] and taught["open_question"]
 
 
