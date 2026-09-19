@@ -59,7 +59,7 @@ Fresh clone: `uv sync`, `uv run python -m sim.build`, `uv run pytest -q` succeed
 
 New fixtures use in-memory SQLite and temporary output paths. They do not need generated client databases. Any unmocked model call fails the test.
 
-Before fixes: `uv run pytest -q tests/test_safety_codex.py --runxfail --tb=short` reproduced **10 failed, 14 passed**. After fixes, the full suite reports **37 passed, 7 xfailed**. The seven strict xfails document open defects, not successful safety checks. Run with `--runxfail` to expose them as failures; remove a marker when the corresponding fix lands. Strict markers make an unexpected pass require updating the review.
+Before fixes: `uv run pytest -q tests/test_safety_codex.py --runxfail --tb=short` reproduced **10 failed, 14 passed**. After fixes on the original baseline, the full suite reported **37 passed, 7 xfailed**. The seven strict xfails document open defects, not successful safety checks. Run with `--runxfail` to expose them as failures; remove a marker when the corresponding fix lands. Strict markers make an unexpected pass require updating the review.
 
 Passing coverage includes late-posting rejection, reference-supported invoice batches, duplicate payments without references, band edges, pipeline `reason=in_band`, proposed rules with questions, empty interview patches, and stale amount/date/account edits. The tests also pin the three fixes above.
 
@@ -70,3 +70,9 @@ Passing coverage includes late-posting rejection, reference-supported invoice ba
 No API fields were added or renamed. The correction endpoint can now return `diff: null`, the unchanged version and a failed `check` after exhausted retries; callers should show that failure instead of implying the model's explanatory text was accepted.
 
 The existing learning tests append to tracked `data/A/corrections.jsonl`; those test-generated changes were restored in this isolated clone and are excluded from the PR. New safety tests keep their correction logs under the temporary fixture directory. The post-fix explicit failure run reports **7 failed, 17 passed**, matching the seven remaining strict xfails.
+
+## Rebase verification
+
+Rebased onto `d70af18`. Upstream added band role checks, stated limits, a categorical-fee heuristic and guards against widening conflicted rules. The baseline-only observation that `answer_band` lacks a role parameter is now superseded; omitted-role trust and ordinary interview authorization still need review. The seven open reproductions continue to fail as expected.
+
+A separate clean worktree of unmodified `d70af18` produced **21 passed, 1 failed**: the existing retraction test expected widening despite the new conflict guard. This PR updates that test to tighten the band and verify both restored boundaries, preserving the guard. Final full suite: **39 passed, 7 xfailed**. No UI or other upstream behavior was reverted.
