@@ -32,6 +32,14 @@
         </div>
         <div class="panel-body verdict">
           <p class="line">${esc(verdict(res, chart))}</p>
+          <div class="meta-row lead">
+            <span>Tier <span class="tier">${esc(item.tier)}</span></span>
+            <span>Cost <span class="${item.usage.cost_usd === 0 ? "cost-zero" : ""}">${cost(item.usage.cost_usd)}</span></span>
+            <span>${item.usage.llm_calls} model call${item.usage.llm_calls === 1 ? "" : "s"}</span>
+            ${item.playbook_version != null ? `<span>Playbook v${esc(item.playbook_version)}</span>` : ""}
+            <span>Confidence ${Number(res.confidence).toFixed(2)}</span>
+          </div>
+
           ${flags}
           ${reasoning(res)}
           ${ruleBlock(rule)}
@@ -40,13 +48,6 @@
               <div class="table-wrap"><table class="grid tight"><tbody>${precedents.slice(0, 3).map((p) => precedentRow(p, client.id)).join("")}</tbody></table></div>
               ${precedents.length > 3 ? `<div class="faint small">and ${precedents.length - 3} more</div>` : ""}
             </div>` : ""}
-          <div class="meta-row">
-            <span>Tier <span class="tier">${esc(item.tier)}</span></span>
-            <span>Cost <span class="${item.usage.cost_usd === 0 ? "cost-zero" : ""}">${cost(item.usage.cost_usd)}</span></span>
-            <span>${item.usage.llm_calls} model call${item.usage.llm_calls === 1 ? "" : "s"}</span>
-            ${item.playbook_version != null ? `<span>Playbook v${esc(item.playbook_version)}</span>` : ""}
-            <span>Confidence ${Number(res.confidence).toFixed(2)}</span>
-          </div>
         </div>
       </article>`;
   }
@@ -95,7 +96,8 @@
     view.innerHTML = `
       <div class="screen">
         <div class="panel txn">
-          <div><span class="label">Bank line · ${day(t.date)}</span><div class="desc">${esc(t.description)}</div></div>
+          <div class="txn-left"><div><span class="label">Bank line · ${day(t.date)}</span><div class="desc">${esc(t.description)}</div></div>
+            ${controls(note)}</div>
           <dl class="kv num">
             <dt>Received</dt><dd class="amt">${usd(t.amount)}</dd>
             <dt>Invoice</dt><dd>${usd(t.invoice_amount)}</dd>
@@ -103,7 +105,6 @@
           </dl>
         </div>
         <div class="split">${side(byId.A, exp.results.A)}${side(byId.B, exp.results.B)}</div>
-        ${controls(note)}
         <div id="control"></div>
       </div>`;
     wire();

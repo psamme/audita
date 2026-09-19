@@ -20,15 +20,16 @@
       <span class="cite">${esc(r.id)}</span>
       ${n ? `<span>Agrees with ${bt.support} of ${n} past case${n === 1 ? "" : "s"}</span>` : `<span>No past cases in the trail</span>`}
       ${r.confidence != null ? `<span>Confidence ${Number(r.confidence).toFixed(2)}</span>` : ""}
-      ${r.executable ? `<span>Runs as code at $0.00</span>` : `<span>Guidance for the investigator</span>`}
+      ${r.below_floor ? `<span class="state state-carry">Not running</span>` : r.executable ? `<span>Runs as code at $0.00</span>` : `<span>Guidance for the investigator</span>`}
+      ${r.valid_from ? `<span>Counts from ${day(r.valid_from)}</span>` : ""}
       ${r.human_confirmed ? `<span class="state">Confirmed by a person</span>` : ""}
-    </div>${ids ? `<div class="cites">${ids}${more}</div>` : ""}${bands(r)}`;
+    </div>${r.floor_exempt ? `<div class="faint small">${esc(r.floor_exempt)}</div>` : ""}${ids ? `<div class="cites">${ids}${more}</div>` : ""}${bands(r)}`;
   }
 
   // condition keys look like amount_max, diff_min, doc.net_diff_abs_max: name the quantity, not the key
   const condLabel = (k) => (/pct/.test(k) ? "Difference, % of invoice" : /diff/.test(k) ? "Difference" : /amount/.test(k) ? "Amount" : /day/.test(k) ? "Days" : cap(k.replace(/[._]/g, " ")));
   function bands(r) {
-    return Object.entries(r.bands || {}).filter(([, b]) => b.source !== "rejected").map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
+    return Object.entries(r.bands || {}).filter(([, b]) => b.source !== "rejected").map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client, dormant: !!r.below_floor })}</div>`).join("");
   }
 
   // The stage moment: one question about one band, four possible answers, no model call.
@@ -127,9 +128,11 @@
     // an undone input is not flagged on its own entry: the retraction entries name what they undid
     const undone = new Set(inputs.filter((c) => c.type === "retraction").map((c) => c.retracted));
     return `<section class="panel" id="taught"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
-      ${inputs.map((c) => `<div class="rule-row input-row"><div><p>${esc(c.summary || c.note || c.answer || INPUT[c.type] || c.type)}</p>
+      ${(() => { const row = (c) => `<div class="rule-row input-row"><div><p>${esc(c.summary || c.note || c.answer || INPUT[c.type] || c.type)}</p>
         <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${undone.has(c.correction_id) ? `<span class="state state-carry">Undone</span>` : ""}${c.status === "held" ? `<span class="state state-carry">Recorded, not applied</span>` : ""}</div></div>
-        ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) && c.status !== "held" ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
+        ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) && c.status !== "held" ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`;
+        // the latest few stay in reach for Undo; a long history folds away so it never buries the questions
+        return inputs.slice(0, 3).map(row).join("") + (inputs.length > 3 ? `<details class="more"><summary>Show all ${inputs.length}</summary>${inputs.slice(3).map(row).join("")}</details>` : ""); })()}</section>`;
   }
 
   async function undo(btn) {
@@ -155,7 +158,7 @@
   function question(r) {
     const open = r.id === openId;
     return `<div class="qa ${open ? "open" : ""}">
-      <button class="qa-head" data-id="${esc(r.id)}" aria-expanded="${open}"><span class="qa-q"><span>${esc(r.open_question)}</span>${open ? "" : `<span class="faint small">${esc(r.text)}</span>`}</span><span class="cite">${esc(r.id)}</span></button>
+      <button class="qa-head" data-id="${esc(r.id)}" aria-expanded="${open}"><span class="qa-q">${r.below_floor ? `<span class="label">Not running until this is answered</span>` : ""}<span>${esc(r.open_question)}</span>${open ? "" : `<span class="faint small">${esc(r.text)}</span>`}</span><span class="cite">${esc(r.id)}</span></button>
       ${open ? `<div class="qa-body">
         <div class="rule-text"><span class="label">What the agent will do unless you say otherwise</span><div>${esc(r.text)}</div></div>
         ${evidence(r)}
@@ -182,11 +185,13 @@
 
   function paint() {
     const live = pb.rules.filter((r) => r.status !== "retired");
-    const asks = live.filter((r) => r.status === "proposed" && r.open_question);
-    const approved = live.filter((r) => r.status === "approved");
+    // below_floor: as written the rule disagrees with too much of its own history, so it does not run
+    // (whatever its status says) until a person answers whether policy changed or it was written down wrong
+    const asks = live.filter((r) => (r.status === "proposed" || r.below_floor) && r.open_question);
+    const approved = live.filter((r) => r.status === "approved" && !(r.below_floor && r.open_question));
     const other = live.filter((r) => r.status === "proposed" && !r.open_question);
     if (openId === null && asks.length) openId = asks[0].id;
-    summary.innerHTML = `<span><b class="num">${live.length}</b> rules</span><span><b class="num">${approved.length}</b> approved</span><span><b class="num">${asks.length}</b> waiting on an answer</span><span><b class="num">${live.filter((r) => r.executable).length}</b> run as code at $0.00</span><span>Version <b class="num">${pb.version}</b></span>`;
+    summary.innerHTML = `<span><b class="num">${live.length}</b> rules</span><span><b class="num">${approved.length}</b> approved</span><span><b class="num">${asks.length}</b> waiting on an answer</span><span><b class="num">${live.filter((r) => r.executable && !r.below_floor).length}</b> run as code at $0.00</span>${live.some((r) => r.below_floor) ? `<span><b class="num">${live.filter((r) => r.below_floor).length}</b> held back by their own history</span>` : ""}<span>Version <b class="num">${pb.version}</b></span>`;
     view.innerHTML = `<div class="stack">
       ${pb.synthetic_demo ? `<section class="panel"><div class="panel-body"><b>Illustrative demo</b><p>Hand-authored policies and synthetic transactions. This demonstrates the interaction, not learned policy quality or benchmark performance.</p></div></section>` : ""}
       ${undoResult}

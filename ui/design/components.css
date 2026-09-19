@@ -249,3 +249,6 @@ pre.doc {
 .legend .dot { fill: var(--ink); stroke: none; }
 .legend .dot.hollow { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
 .curve + .legend, .curve .legend { justify-content: center; margin-top: 6px; }
+.curve .legend svg.key { width: 14px; height: 14px; flex: none; }
+.curve .legend svg.key.wide, .curve .legend svg.key.ring-key { width: 22px; height: 16px; }
+.curve .leader { stroke: var(--ink-2); stroke-width: 1; }

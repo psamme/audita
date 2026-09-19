@@ -163,7 +163,7 @@
         ${closed || band.hi == null ? "" : end(hi, band.hi, band.hi_precedent)}
         ${open && !closed ? `<span class="band-end far ${upper ? "" : "far-left"}"><b>No ${upper ? "larger" : "smaller"} one seen</b></span>` : ""}
       </div>
-      <div class="legend"><span><i class="band-key acts"></i>Rule applies, $0.00</span>${closed ? "" : `<span><i class="band-key asks"></i>Asks a person</span>`}<span><i class="band-key out"></i>Rule does not apply</span></div>
+      <div class="legend"><span><i class="band-key acts"></i>${opts.dormant ? "Would apply once it runs" : "Rule applies, $0.00"}</span>${closed ? "" : `<span><i class="band-key asks"></i>Asks a person</span>`}<span><i class="band-key out"></i>Rule does not apply</span></div>
     </div>`;
   }
 
@@ -191,17 +191,20 @@
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Share of exceptions handled correctly with no model call, after each answer from a person">
         ${ticks.map((t) => `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" class="axis">${Math.round(t * 100)}%</text>`).join("")}
         ${pts.filter((p) => p.k % step === 0).map((p) => `<text x="${x(p.k)}" y="${H - 12}" text-anchor="middle" class="axis">${p.k}</text>`).join("")}
-        ${target != null ? `<line x1="${L}" x2="${W - R}" y1="${y(target)}" y2="${y(target)}" class="target"/><text x="${L + 6}" y="${y(target) - 6}" text-anchor="start" class="axis">Trust line ${Math.round(target * 100)}%</text>` : ""}
+        ${target != null ? `<line x1="${L}" x2="${W - R}" y1="${y(target)}" y2="${y(target)}" class="target"/>` : ""}
         <path d="${d}" class="line" fill="none"/>
         <text x="${x(pts[0].k) + 8}" y="${y(pts[0].auto_resolve_rate) + 18}" text-anchor="start" class="axis strong">${(pts[0].auto_resolve_rate * 100).toFixed(1)}%</text>
         <text x="${x(pts[pts.length - 1].k)}" y="${y(pts[pts.length - 1].auto_resolve_rate) + 18}" text-anchor="end" class="axis strong">${(pts[pts.length - 1].auto_resolve_rate * 100).toFixed(1)}%</text>
         ${reached != null ? pts.filter((p) => p.k === reached).map((p) => `<circle cx="${x(p.k)}" cy="${y(p.auto_resolve_rate)}" r="10" class="ring"/>`).join("") : ""}
         ${pts.map((p) => marker(p.answer_kind, x(p.k), y(p.auto_resolve_rate))).join("")}
+        ${pts.filter((p) => p.note).map((p) => { const px = x(p.k), py = y(p.auto_resolve_rate), right = px < W * 0.6;
+          // a drop with a note is the system withdrawing a rule on purpose: say so on the chart, not only on hover
+          return `<line x1="${px}" x2="${px}" y1="${py + 8}" y2="${py + 22}" class="leader"/><text x="${px + (right ? 6 : -6)}" y="${py + 34}" text-anchor="${right ? "start" : "end"}" class="axis strong">${esc(String(p.note).split(/[:.]/)[0])}</text>`; }).join("")}
         ${pts.map((p, i) => `<rect x="${x(p.k) - 14}" y="${T}" width="28" height="${H - T - Bm}" fill="transparent" class="hit" data-i="${i}"/>`).join("")}
       </svg>
       <div class="curve-x axis-label">Answers given by a person</div>
       <div class="legend">${[["open_question", "A question answered in words"], ["band", "A yes or no on a band"], ["correction", "A queue correction"]].filter(([k]) => pts.some((p) => p.answer_kind === k))
-        .map(([k, label]) => `<span><svg width="14" height="14" viewBox="0 0 14 14">${marker(k, 7, 7)}</svg>${label}</span>`).join("")}${reached != null ? `<span><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" class="ring"/></svg>Crosses the trust line</span>` : ""}</div>
+        .map(([k, label]) => `<span><svg class="key" viewBox="0 0 14 14">${marker(k, 7, 7)}</svg>${label}</span>`).join("")}${target != null ? `<span><svg class="key wide" viewBox="0 0 22 14"><line x1="0" x2="22" y1="7" y2="7" class="target"/></svg>Trust line ${Math.round(target * 100)}%</span>` : ""}${reached != null ? `<span><svg class="key ring-key" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" class="ring"/></svg>Crosses the trust line</span>` : ""}</div>
       <div class="tip" hidden></div>
     </div>`;
   }
@@ -213,7 +216,7 @@
       h.addEventListener("mouseenter", () => {
         const p = pts[+h.dataset.i];
         tip.innerHTML = `<b>After ${p.k} answer${p.k === 1 ? "" : "s"}</b><span>${esc(KIND[p.answer_kind] || "")}${p.answer ? ": " + esc(String(p.answer).slice(0, 120)) : ""}</span>
-          <span class="num">${(p.auto_resolve_rate * 100).toFixed(1)}% right at $0.00 · ${p.wrong_auto ?? p.wrong_matches} silent error${(p.wrong_auto ?? p.wrong_matches) === 1 ? "" : "s"} · ${p.left_for_model_or_human} left for the model or a person${p.est_llm_cost_usd != null ? " · est. " + usd(p.est_llm_cost_usd) : ""}</span>`;
+          ${p.note ? `<span>${esc(p.note)}</span>` : ""}<span class="num">${(p.auto_resolve_rate * 100).toFixed(1)}% right at $0.00 · ${p.wrong_auto ?? p.wrong_matches} silent error${(p.wrong_auto ?? p.wrong_matches) === 1 ? "" : "s"} · ${p.left_for_model_or_human} left for the model or a person${p.est_llm_cost_usd != null ? " · est. " + usd(p.est_llm_cost_usd) : ""}</span>`;
         tip.hidden = false;
         tip.style.left = Math.min(70, Math.max(0, (+h.getAttribute("x") / 640) * 100 - 10)) + "%";
       });
