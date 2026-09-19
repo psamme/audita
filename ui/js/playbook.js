@@ -28,7 +28,7 @@
   // condition keys look like amount_max, diff_min, doc.net_diff_abs_max: name the quantity, not the key
   const condLabel = (k) => (/pct/.test(k) ? "Difference, % of invoice" : /diff/.test(k) ? "Difference" : /amount/.test(k) ? "Amount" : /day/.test(k) ? "Days" : cap(k.replace(/[._]/g, " ")));
   function bands(r) {
-    return Object.entries(r.bands || {}).map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
+    return Object.entries(r.bands || {}).filter(([, b]) => b.source !== "rejected").map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
   }
 
   // The stage moment: one question about one band, four possible answers, no model call.
@@ -74,26 +74,29 @@
           limit: kind === "limit" ? amount : null, review: kind === "review" ? true : kind === "usual" ? false : null, not_amount: kind === "not_amount" }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json();
-      if (r.band) {
+      // a held answer still carries band, cause and the current version, so `held` decides, nothing else
+      const moved = !r.held && r.band && r.band.source !== "rejected";
+      if (moved) {
         // same scale as before the answer, so the band is seen to narrow or collapse to a line
         const max = Number(document.querySelector("#askBand .band").dataset.max);
         const fits = Math.max(Math.abs(r.band.lo || 0), Math.abs(r.band.hi || 0)) <= max;
         document.getElementById("askBand").innerHTML = bandBar(r.band, { client, value: kind === "limit" ? null : q.value, max: fits ? max : undefined });
       }
-      const applied = r.diff != null;
+      const applied = !r.held && r.diff != null;
       note.textContent = applied ? `Recorded. The playbook is now version ${r.new_version}.` : "Recorded, not applied.";
       // The question is answered, so the headline becomes the answer. That also keeps the payoff on the first screen.
       document.querySelector(".ask .ask-q").textContent = SO.cap(said) + ".";
       // The card holds its answered state (band closed, item cleared) until the presenter moves on.
       document.querySelector(".ask .answers").innerHTML = `${SO.reranBlock(r.reran, client, true)}
-        ${r.held ? `<p class="held"><span class="state state-carry">Recorded, not applied</span> ${esc(SO.cap(r.held))}</p>` : ""}
+        ${r.held ? `<p class="held"><span class="state state-carry">Recorded, not applied</span> ${esc(SO.cap(r.held.replace(/_/g, " ")))}</p>` : ""}
+        ${kind === "not_amount" && !r.held ? `<p class="held">The rule stops running on its own and now asks what does decide these. It moves to the worded questions below.</p>` : ""}
         <button class="btn ${r.reran && r.reran.length ? "btn-secondary" : "btn-primary"}" id="nextQ">${bandQs.length > 1 ? "Next question" : "Show the playbook"}</button>
         ${applied && r.correction_id ? `<button class="btn btn-ghost undo" id="undoHere" data-id="${esc(r.correction_id)}">Undo this answer</button>` : ""}`;
       document.getElementById("nextQ").addEventListener("click", () => load().catch(fail));
       const uh = document.getElementById("undoHere");
       if (uh) uh.addEventListener("click", () => undo(uh));
       bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${esc(said)}</h3><span class="runrow">${applied ? "" : `<span class="state state-carry">Recorded, not applied</span>`}<span class="mono faint">${esc(r.correction_id || "")}</span></span></div>
-        <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}${SO.reranBlock(r.reran, client)}</div></section>`;
+        <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held.replace(/_/g, " ")))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}${SO.reranBlock(r.reran, client)}</div></section>`;
     } catch (e) {
       note.textContent = "The answer did not go through. Check that the server is running and try again.";
       controls.forEach((c) => { c.disabled = false; });
