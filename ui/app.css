@@ -208,3 +208,9 @@ table.grid.tight.big td.wrap:nth-child(2) { width: 40%; }
 .outcome:disabled { opacity: 0.5; cursor: default; }
 .outcome b { font-weight: 500; font-size: var(--t-lg); }
 .outcome span { font-size: var(--t-sm); color: var(--ink-2); }
+.meta-row.lead { border-top: 0; padding-top: 0; margin-top: -6px; color: var(--ink); font-size: var(--t-md); }
+.meta-row.lead .tier { font-size: var(--t-sm); color: var(--ink); }
+main.compact .txn { padding-block: var(--s-4); }
+main.compact .txn .amt { font-size: 2rem; }
+details.more > summary { padding: 12px var(--s-5); cursor: pointer; font-size: var(--t-sm); color: var(--ink-2); border-top: 1px solid var(--line); }
+details.more[open] > summary { border-bottom: 1px solid var(--line); }
