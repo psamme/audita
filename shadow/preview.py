@@ -74,7 +74,7 @@ def build(client, track, period, rule_id, condition, role, value=None, review=No
         if len(PREVIEWS) >= 100:
             del PREVIEWS[next(iter(PREVIEWS))]
         PREVIEWS[token] = {"expires": time.time() + TTL_SECONDS, "fingerprint": snapshot(con, old),
-                           "period": period, "args": dict(client=client, track=track, rule_id=rule_id, condition=condition,
+                           "period": period, "resolved_ids": [x["item_id"] for x in changes if x["before"] and x["after"] and x["before"]["action"] == "escalate" and x["after"]["action"] != "escalate"], "args": dict(client=client, track=track, rule_id=rule_id, condition=condition,
                                         value=value, review=review, limit=limit, not_amount=not_amount, role=role)}
         return {"preview_id": token, "client": client, "track": track, "period": period, "version": old["version"],
                 "expires_in_seconds": TTL_SECONDS, "before": summarize(before["items"]), "after": summarize(after["items"]),
@@ -107,6 +107,8 @@ def commit(preview_id, role):
             out["reconciliation"] = pipeline.run(args["client"], entry["period"], "corrected", args["track"],
                                                   use_llm=False, run_id=run_id, con_override=con,
                                                   label="Policy preview applied. Deterministic rehearsal, not an accuracy evaluation.")
+            out["reran"] = [json.loads(line) for line in (db.RUNS / run_id / "resolutions.jsonl").read_text().splitlines()
+                            if json.loads(line)["item_id"] in entry["resolved_ids"]]
         return out
     finally:
         con.rollback()

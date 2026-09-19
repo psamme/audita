@@ -10,6 +10,8 @@
   const showGrades = new URLSearchParams(location.search).get("grades") === "1";
 
   const text = (rec) => rec.description || rec.memo || rec.id;
+  const SENIOR = { A: "owner", B: "controller" };
+  const ROLES = { A: ["owner", "bookkeeper", "ops_manager"], B: ["controller", "ar_lead", "ap_lead", "staff_accountant"] };
   const TRACE_WORDS = {
     case_file: "Assembled the case file", search_bank: "Searched the bank feed", search_ledger: "Searched the ledger",
     search_documents: "Searched documents", find_precedents: "Looked for how this was handled before", get_record: "Opened a record",
@@ -40,6 +42,9 @@
     const start = it.resolution.proposed || it.resolution;
     const accounts = Object.entries(chart).map(([a, n]) => `<option value="${esc(a)}">${esc(a)} ${esc(n)}</option>`).join("");
     const roles = ["owner", "controller", "ar_lead", "ap_lead", "ops_manager"].map((r) => `<option value="${r}">${esc(cap(role(r).replace(/^the /, "")))}</option>`).join("");
+    // who may teach: a junior correction that contradicts a signed-off rule is raised as a conflict, not applied
+    const senior = SENIOR[run.client], people = [senior, ...ROLES[run.client].filter((r) => r !== senior)];
+    const who = people.map((r) => `<option value="${r}">${esc(cap(role(r).replace(/^the /, "")))}${r === senior ? " (signs off)" : ""}</option>`).join("");
     return `<form id="correct" class="panel">
       <div class="panel-head"><h3>Correct this</h3><span class="faint small">Your answer becomes a playbook change you can read before it applies anywhere else.</span></div>
       <div class="panel-body formgrid">
@@ -53,6 +58,7 @@
         <div class="ctl" data-for="match_adjust book"><label class="label" for="c-account">Account</label><select class="select" id="c-account">${accounts}</select></div>
         <div class="ctl" data-for="match_adjust book"><label class="label" for="c-amount">Amount</label><input class="input num" id="c-amount" inputmode="decimal" placeholder="0.00"></div>
         <div class="ctl" data-for="escalate"><label class="label" for="c-role">Send to</label><select class="select" id="c-role">${roles}</select></div>
+        <div class="ctl"><label class="label" for="c-who">Who is teaching</label><select class="select" id="c-who">${who}</select></div>
         <div class="ctl wide"><label class="label" for="c-note">Why, in your words</label>
           <textarea class="input" id="c-note" rows="2" placeholder="Quarry always nets their wire fee and a 3% volume rebate. Book the rebate to 4050."></textarea></div>
         <div class="wide runrow"><button class="btn btn-primary" id="c-send">Send correction</button><span class="note" id="c-note-status">Takes 10 to 25 seconds. One model call, then a back-test against history.</span></div>
@@ -82,9 +88,10 @@
       const t0 = Date.now(), tick = setInterval(() => { status.textContent = `Rewriting the playbook and replaying history. ${Math.round((Date.now() - t0) / 1000)}s`; }, 500);
       try {
         const res = await fetch("/api/corrections", { method: "POST", headers: { "content-type": "application/json" },
-          body: SO.body({ client: run.client, role: new URLSearchParams(location.search).get("role") || (clients[run.client]?.senior_roles || [])[0], run_id: run.run_id, item_id: it.item_id, resolution, note: resolution.rationale }) });
+          body: SO.body({ client: run.client, run_id: run.run_id, item_id: it.item_id, resolution, note: resolution.rationale, role: document.getElementById("c-who").value }) });
         if (!res.ok) throw new Error(String(res.status));
         const result = await res.json();
+        if (result.conflict) { clearInterval(tick); showConflict(result.conflict, it); return; }
         // the corrected item and anything the new rule cleared leave the queue
         const gone = new Set([it.item_id, ...(result.reran || []).map((x) => x.item_id)]);
         queue = queue.filter((x) => !gone.has(x.item_id));
@@ -97,6 +104,51 @@
     });
   }
 
+  // A correction that contradicts a well-supported, signed-off rule is not learned. The senior picks what it was.
+  const OUTCOMES = {
+    one_off_exception: ["A one-off exception", "Recorded for this item only. The rule stays as it is and this case never counts as a precedent."],
+    policy_change: ["The policy has changed", "The rule changes from this item's date. Earlier cases stop counting. About 20 seconds, one model call."],
+    mistake: ["That was a mistake", "The correction is rejected and logged. Nothing changes."],
+  };
+  function showConflict(c, it) {
+    resultHtml = `<section class="panel ask" id="conflict"><div class="panel-body stack">
+      <div class="label">Not learned yet · settling as ${esc(role(SENIOR[run.client]))}</div>
+      <h2 class="ask-q">This contradicts a rule the team signed off, and ${esc(c.rule_support)} past case${c.rule_support === 1 ? "" : "s"} agree with the rule.</h2>
+      <div class="rule-text"><span class="label">The rule</span><div>${esc(c.rule_text)} <span class="cite">${esc(c.rule_id)}</span></div></div>
+      <p><span class="faint">${esc(cap(role(c.by_role || "").replace(/^the /, "")) || "Someone")} said:</span> ${esc(c.note || "no reason given")} <span class="faint">on</span> ${cite(run.client, it.item_id)}</p>
+      <div class="outcomes">${(c.outcomes || Object.keys(OUTCOMES)).filter((k) => OUTCOMES[k]).map((k) => `<button class="outcome" data-outcome="${k}"><b>${OUTCOMES[k][0]}</b><span>${OUTCOMES[k][1]}</span></button>`).join("")}</div>
+      <span class="note" id="conflictNote">Only ${esc(role(SENIOR[run.client]))} can settle this.</span>
+    </div></section>`;
+    paint();
+    scrollTo({ top: 0 });
+    document.querySelectorAll("#conflict .outcome").forEach((b) => b.addEventListener("click", () => settle(c, it, b.dataset.outcome)));
+  }
+
+  async function settle(c, it, outcome) {
+    const note = document.getElementById("conflictNote"), buttons = document.querySelectorAll("#conflict .outcome");
+    buttons.forEach((b) => { b.disabled = true; });
+    const t0 = Date.now(), slow = outcome === "policy_change";
+    const tick = slow ? setInterval(() => { note.textContent = `Rewriting the rule from this item's date and replaying history. ${Math.round((Date.now() - t0) / 1000)}s`; }, 500) : 0;
+    try {
+      const res = await fetch("/api/conflicts/" + encodeURIComponent(c.correction_id), { method: "POST", headers: { "content-type": "application/json" },
+        body: SO.body({ client: run.client, outcome, role: SENIOR[run.client] }) });
+      if (!res.ok) throw new Error(String(res.status));
+      const r = await res.json();
+      if (outcome !== "mistake") {
+        const gone = new Set([it.item_id, ...(r.reran || []).map((x) => x.item_id)]);
+        queue = queue.filter((x) => !gone.has(x.item_id));
+        current = queue[0] || null;
+      }
+      const said = { one_off_exception: "Recorded as a one-off exception. The rule did not change.", policy_change: `The policy changed. The playbook is now version ${r.new_version}.`, mistake: "Rejected as a mistake and logged. Nothing changed." }[outcome];
+      resultHtml = `<div class="panel result"><div class="panel-head"><h3>${esc(said)}</h3><span class="mono faint">${esc(c.correction_id)}</span></div>
+        <div class="panel-body stack">${r.explanation ? `<p>${esc(r.explanation)}</p>` : ""}${r.diff ? diffBlock(r.diff, { client: run.client }) : ""}${SO.reranBlock(r.reran, run.client)}</div></div>`;
+      paint();
+    } catch (e) {
+      note.textContent = "That did not go through. The conflict is still open. Check that the server is running and try again.";
+      buttons.forEach((b) => { b.disabled = false; });
+    } finally { clearInterval(tick); }
+  }
+
   function showResult(r, corrected) {
     const reran = r.reran || [];
     resultHtml = `<div class="panel result">
@@ -105,8 +157,7 @@
         <p>${esc(r.explanation || "")}</p>
         ${diffBlock(r.diff)}
         ${r.check ? `<div class="rule-text"><span class="label">Checked by code, not by the model</span><div>${esc(cap(r.check))}</div></div>` : ""}
-        ${reran.length ? `<div><div class="label">Now cleared by the new rule, at $0.00</div>
-          <div class="table-wrap"><table class="grid tight"><tbody>${reran.map((x) => `<tr><td>${cite(run.client, x.item_id)}</td><td class="wrap">${esc(text(x.record))}</td><td class="r">${usd(x.record.amount)}</td><td>${esc(outcome(x.resolution).text)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
+        ${SO.reranBlock(reran, run.client)}
       </div></div>`;
     paint();
   }

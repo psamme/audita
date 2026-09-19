@@ -239,3 +239,17 @@ def test_answer_updates_the_rule_sentence_and_condition(sandbox):
     playbook.apply_band_answer(pb, "T-R-001", "amount_max", 15, review=False)
     assert pb["rules"][0]["when"]["amount_max"] == 15
     assert "15.00" in pb["rules"][0]["text"]
+
+
+def test_partial_rerun_still_sees_other_ledger_claimants(sandbox):
+    con, api = sandbox
+    for iid, amount in [("X", 90), ("Y", 85)]:
+        con.execute("INSERT INTO bank_line VALUES (?, '2026-03','2026-03-10',?,'Receipt','Customer','SHARED')", (iid, amount))
+    con.execute("INSERT INTO ledger_entry VALUES ('L1','2026-03','2026-03-09','2026-03-09','cash',100,'Invoice','Customer','SHARED','')")
+    con.commit()
+    pb = {"version": 1, "rules": [{"id": "T-R-001", "text": "Adjust a shortfall", "status": "approved", "executable": True,
+          "when": {"direction": "in", "candidate": {"by": "ref"}, "diff_abs_max": 20}, "then": {"action": "match_adjust", "account": "fees"}}]}
+    result = pipeline.run("T", "2026-03", "corrected", "dev", use_llm=False, only={"X"},
+                          persist=False, playbook_override=pb)
+    assert [it["item_id"] for it in result["items"]] == ["X"]
+    assert result["items"][0]["resolution"]["action"] == "escalate"

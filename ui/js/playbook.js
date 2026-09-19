@@ -6,7 +6,7 @@
   const view = document.getElementById("view"), summary = document.getElementById("summary");
   const clientSeg = document.getElementById("client"), verSel = document.getElementById("version");
   let clients = [], client = new URLSearchParams(location.search).get("client") || "A", pb = null, openId = null;
-  let bandQs = [], inputs = [], bandResult = "", undoResult = "";
+  let bandQs = [], inputs = [], bandResult = "", undoResult = "", pendingPreview = null;
 
   const CAUSE = { induction: "Induced from the ERP trail", correction: "A reviewer's correction", interview: "An answered question",
     retraction: "An input was undone", one_off_exception: "A one-off exception was recorded", band: "A yes or no on a band" };
@@ -28,7 +28,7 @@
   // condition keys look like amount_max, diff_min, doc.net_diff_abs_max: name the quantity, not the key
   const condLabel = (k) => (/pct/.test(k) ? "Difference, % of invoice" : /diff/.test(k) ? "Difference" : /amount/.test(k) ? "Amount" : /day/.test(k) ? "Days" : cap(k.replace(/[._]/g, " ")));
   function bands(r) {
-    return Object.entries(r.bands || {}).map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
+    return Object.entries(r.bands || {}).filter(([, b]) => b.source !== "rejected").map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
   }
 
   // The stage moment: one question about one band, four possible answers, no model call.
@@ -40,7 +40,7 @@
   const asRole = () => { const r = new URLSearchParams(location.search).get("role"); return r && /^[a-z_]{2,24}$/.test(r) ? r : seniorRole(); };
   function bandCard() {
     const q = bandQs[0];
-    if (!q) return bandResult;
+    if (!q) return "";
     const rule = pb.rules.find((r) => r.id === q.rule_id), b = (rule && rule.bands && rule.bands[q.condition]) || { side: "upper", lo: q.lo, hi: q.hi };
     const can = (k) => !q.answers || q.answers.includes(k), limitFirst = q.ask === "limit";
     const text = q.text.startsWith(q.rule_text) ? q.text.slice(q.rule_text.length).trim() : q.text;
@@ -59,12 +59,14 @@
         ${can("not_amount") ? `<button class="btn btn-ghost" data-answer="not_amount">It is not about the amount</button>` : ""}</div>
       <label class="label" for="previewPeriod">Preview period</label><input class="input" id="previewPeriod" type="month" value="${esc(new URLSearchParams(location.search).get("period") || pb.trained_before || "")}"><span class="note" id="askNote">Preview the effect before applying. No model call.</span>
       <div class="rule-text"><span class="label">The rule this belongs to</span><div>${esc(q.rule_text)} <span class="cite">${esc(q.rule_id)}</span></div></div>
-    </div></section>${bandResult}`;
+    </div></section>`;
   }
 
   async function answerBand(kind, amount) {
+    undoResult = "";
     const q = bandQs[0], note = document.getElementById("askNote");
     const controls = document.querySelectorAll(".ask button, .ask input");
+    const targetClient = client;
     const period = document.getElementById("previewPeriod").value;
     const role = asRole();
     if (!period) { note.textContent = "Choose a period to preview."; return; }
@@ -75,6 +77,7 @@
         body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, answer: kind, role, period,
           limit: kind === "limit" ? amount : null }) });
       const r = await res.json();
+      if (client !== targetClient) return;
       if (!res.ok) throw new Error(r.detail || String(res.status));
       if (r.held) { note.textContent = r.held; controls.forEach((c) => { c.disabled = false; }); return; }
       bandResult = `<section class="panel" id="policyPreview"><div class="panel-head"><h3>Review the effect before applying</h3><span class="state state-proposed">Not saved</span></div>
@@ -85,20 +88,29 @@
         ${diffBlock(r.diff, { client })}
         ${r.changed_items.length ? `<div class="table-wrap"><table class="grid tight"><thead><tr><th>Item</th><th>Before</th><th>After</th></tr></thead><tbody>${r.changed_items.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td>${esc(x.before?.action || (x.before_claimed_by ? "Cleared by " + x.before_claimed_by : "No separate item"))} ${esc((x.before?.adjustments || []).map((a) => a.account + ": " + usd(a.amount)).join(", "))}</td><td>${esc(x.after?.action || (x.after_claimed_by ? "Cleared by " + x.after_claimed_by : "No separate item"))} ${esc((x.after?.adjustments || []).map((a) => a.account + ": " + usd(a.amount)).join(", "))}</td></tr>`).join("")}</tbody></table></div>` : `<p>No decisions change in this period.</p>`}
         <div class="runrow"><button class="btn btn-primary" id="applyPreview">Apply this policy change</button><button class="btn btn-secondary" id="cancelPreview">Cancel</button><span class="note" id="previewNote">The policy and supporting data will be checked again.</span></div></div></section>`;
+      pendingPreview = { report: r, role };
       paint();
       document.getElementById("policyPreview").scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("cancelPreview").onclick = () => { bandResult = ""; paint(); };
-      document.getElementById("applyPreview").onclick = async (e) => {
-        e.target.disabled = true;
-        try {
-          const response = await fetch("/api/playbook/apply-preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ preview_id: r.preview_id, role }) });
-          const result = await response.json();
-          if (!response.ok) throw new Error(result.detail || String(response.status));
-          bandResult = `<section class="panel"><div class="panel-body stack"><h3>Applied as version ${result.new_version}</h3><p>${esc(result.cause?.note || "Policy updated.")}</p>${diffBlock(result.diff, { client })}${result.reconciliation ? `<p>Reconciled ${result.reconciliation.period} again with no model calls. ${result.reconciliation.escalated} items remain for review.</p>` : ""}</div></section>`;
-          await load();
-        } catch (err) { document.getElementById("previewNote").textContent = err.message; }
-      };
+
     } catch (e) { note.textContent = e.message; controls.forEach((c) => { c.disabled = false; }); }
+  }
+
+  function wirePreview() {
+    if (!pendingPreview || !document.getElementById("applyPreview")) return;
+    const { report: r, role } = pendingPreview;
+    document.getElementById("cancelPreview").onclick = () => { pendingPreview = null; bandResult = ""; paint(); };
+    document.getElementById("applyPreview").onclick = async (e) => {
+      e.target.disabled = true;
+      try {
+        const response = await fetch("/api/playbook/apply-preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ preview_id: r.preview_id, role }) });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || String(response.status));
+        pendingPreview = null;
+        bandResult = `<section class="panel"><div class="panel-body stack"><h3>Applied as version ${result.new_version}</h3><p>${esc(result.cause?.note || "Policy updated.")}</p>${SO.reranBlock(result.reran, client, true)}${diffBlock(result.diff, { client })}${result.reconciliation ? `<p>Reconciled ${result.reconciliation.period} again with no model calls. ${result.reconciliation.escalated} items remain for review.</p>` : ""}<button class="btn btn-secondary undo" data-id="${esc(result.correction_id)}">Undo this answer</button></div></section>`;
+        await load();
+        scrollTo({ top: 0 });
+      } catch (err) { document.getElementById("previewNote").textContent = err.message; }
+    };
   }
 
   function findingsBlock() {
@@ -111,10 +123,10 @@
   // Unlearning: every input the playbook received can be undone. Deterministic, no model call.
   const INPUT = { correction: "Correction", interview: "Answer", band: "Yes or no", conflict: "Conflict raised", conflict_resolved: "Conflict settled", retraction: "Undo" };
   function inputsBlock() {
-    if (!inputs.length && !undoResult) return "";
+    if (!inputs.length) return "";
     // an undone input is not flagged on its own entry: the retraction entries name what they undid
     const undone = new Set(inputs.filter((c) => c.type === "retraction").map((c) => c.retracted));
-    return `${undoResult}<section class="panel"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
+    return `<section class="panel" id="taught"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
       ${inputs.map((c) => `<div class="rule-row input-row"><div><p>${esc(c.summary || c.note || c.answer || INPUT[c.type] || c.type)}</p>
         <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${undone.has(c.correction_id) ? `<span class="state state-carry">Undone</span>` : ""}${c.status === "held" ? `<span class="state state-carry">Recorded, not applied</span>` : ""}</div></div>
         ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) && c.status !== "held" ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
@@ -127,13 +139,15 @@
       const res = await fetch("/api/retract", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, correction_id: btn.dataset.id, role: asRole(), note: "Undone from the playbook screen" }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json(), re = r.reopened || [];
+      bandResult = "";
       undoResult = `<section class="panel"><div class="panel-body stack">
         <div class="label">${esc(r.retracted)} undone · playbook version ${esc(r.new_version)}</div>
         <h2 class="ask-q"><span class="num">${r.resolutions_checked}</span> past item${r.resolutions_checked === 1 ? "" : "s"} checked, <span class="num">${re.length}</span> re-opened</h2>
-        ${diffBlock(r.diff, { client })}
         ${re.length ? `<div class="table-wrap"><table class="grid tight"><tbody>${re.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td class="wrap">${esc((x.record || {}).description || (x.record || {}).memo || "")}</td><td class="r">${x.record ? usd(x.record.amount) : ""}</td><td class="wrap">Rule withdrawn, back in the queue</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Nothing already resolved depended on it.</p>`}
+        ${diffBlock(r.diff, { client })}
       </div></section>`;
       await load();
+      scrollTo({ top: 0 });
     } catch (e) { btn.disabled = false; btn.dataset.armed = ""; btn.textContent = "Undo did not go through. Try again"; }
   }
 
@@ -175,16 +189,19 @@
     summary.innerHTML = `<span><b class="num">${live.length}</b> rules</span><span><b class="num">${approved.length}</b> approved</span><span><b class="num">${asks.length}</b> waiting on an answer</span><span><b class="num">${live.filter((r) => r.executable).length}</b> run as code at $0.00</span><span>Version <b class="num">${pb.version}</b></span>`;
     view.innerHTML = `<div class="stack">
       ${pb.synthetic_demo ? `<section class="panel"><div class="panel-body"><b>Illustrative demo</b><p>Hand-authored policies and synthetic transactions. This demonstrates the interaction, not learned policy quality or benchmark performance.</p></div></section>` : ""}
+      ${undoResult}
+      ${bandResult}
       ${bandCard()}
+      ${inputsBlock()}
       ${asks.length ? `<section class="panel"><div class="panel-head"><h3>Questions for you</h3><span class="faint small">The agent asks before it assumes. Each answer becomes a rule change you can read.</span></div>${asks.map(question).join("")}</section>` : ""}
       <section class="panel"><div class="panel-head"><h3>Approved rules</h3><span class="faint small">${approved.length} in force</span></div>${approved.map(ruleRow).join("") || `<div class="panel-body muted">None yet. Answer a question above to approve the first one.</div>`}</section>
       ${other.length ? `<section class="panel"><div class="panel-head"><h3>Proposed, no question</h3></div>${other.map(ruleRow).join("")}</section>` : ""}
       ${findingsBlock()}
-      ${inputsBlock()}
       <section class="panel"><div class="panel-head"><h3>Versions</h3><span class="faint small">Every change has a cause</span></div>
         <div class="panel-body stack"><div class="versions">${pb.versions.map((v) => `<button class="vrow" data-v="${v.version}"><span class="num">v${v.version}</span><span>${esc(CAUSE[(v.cause || {}).type] || cap((v.cause || {}).type || "change"))}</span><span class="faint">${when(v.created_at)}</span></button>`).join("")}</div><div id="vdiff"></div></div></section>
     </div>`;
 
+    wirePreview();
     view.querySelectorAll(".ask button[data-answer]").forEach((b) => b.addEventListener("click", () => answerBand(b.dataset.answer)));
     const lf = document.getElementById("limitForm");
     if (lf) lf.addEventListener("submit", (e) => {
@@ -208,7 +225,7 @@
         if (!res.ok) throw new Error(String(res.status));
         const r = await res.json();
         note.textContent = "Done.";
-        out.innerHTML = `<div class="stack"><p>${esc(r.explanation || "")}</p>${diffBlock(r.diff, { client })}<div class="runrow"><button class="btn btn-secondary btn-sm" id="reload">Show playbook version ${esc(r.new_version)}</button></div></div>`;
+        out.innerHTML = `<div class="stack"><p>${esc(r.explanation || "")}</p>${diffBlock(r.diff, { client })}${SO.reranBlock(r.reran, client)}<div class="runrow"><button class="btn btn-secondary btn-sm" id="reload">Show playbook version ${esc(r.new_version)}</button></div></div>`;
         document.getElementById("reload").addEventListener("click", () => { openId = null; load(); });
       } catch (err) {
         note.textContent = "The answer did not go through. Nothing was changed. Check that the server is running and try again.";
@@ -228,11 +245,11 @@
     ]);
     verSel.innerHTML = pb.versions.slice().reverse().map((v) => `<option value="${v.version}"${v.version === pb.version ? " selected" : ""}>Version ${v.version}</option>`).join("");
     clientSeg.innerHTML = clients.map((c) => `<button data-v="${esc(c.id)}" aria-pressed="${c.id === client}">${esc(c.name)}</button>`).join("");
-    clientSeg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { client = b.dataset.v; openId = null; bandResult = ""; undoResult = ""; load().catch(fail); }));
+    clientSeg.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { client = b.dataset.v; pendingPreview = null; openId = null; bandResult = ""; undoResult = ""; load().catch(fail); }));
     paint();
   }
   const fail = (e) => { view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`; };
-  verSel.addEventListener("change", () => { openId = null; load(verSel.value).catch(fail); });
+  verSel.addEventListener("change", () => { pendingPreview = null; bandResult = ""; openId = null; load(verSel.value).catch(fail); });
 
   try { clients = await get("/api/clients"); await load(); } catch (e) { fail(e); }
 })();

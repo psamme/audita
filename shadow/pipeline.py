@@ -68,9 +68,12 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
             if not rule or out.get("defer"):
                 if rule and out and out.get("reason"):
                     rule = rule | {"_defer_reason": out["reason"]}
-                queue.append((item, kind, fl, rule))
+                if in_scope(item):
+                    queue.append((item, kind, fl, rule))
                 continue
             if out.get("in_band"):
+                if not in_scope(item):
+                    continue
                 b = out["in_band"]
                 known = f"up to {fmt(b['condition'], b['lo'])}" if b["lo"] else "never"
                 far = f"from {fmt(b['condition'], b['hi'])} it was handled differently" if b["hi"] is not None else "nothing larger has ever come up"
@@ -88,6 +91,8 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
                 continue
             res = out["resolution"]
             ctx.used.update(res["ledger_ids"])
+            if not in_scope(item):
+                continue
             items[item["id"]] = {
                 "item_id": item["id"], "item_kind": kind, "record": item, "tier": "rule", "usage": dict(ZERO),
                 "resolution": blank(**res, rule_id=rule["id"], precedent_ids=rule.get("precedent_ids", [])[:6],
@@ -95,12 +100,12 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
                 "trace": [{"step": 1, "kind": "matcher", "label": "no unique exact match", "input": {}, "output": "left for the playbook", "ids": []},
                           {"step": 2, "kind": "rule", "label": rule["id"], "input": rule["when"], "output": rule["text"], "ids": out["evidence_ids"]}]}
 
-    rule_tier([("bank", b) for b in bank if b["id"] not in matched and in_scope(b)])
+    rule_tier([("bank", b) for b in bank if b["id"] not in matched])
 
     def work(job):
         item, kind, fl, rule = job
         if not use_llm:
-            return item, kind, fl, {"resolution": blank(escalate_to=roles[0] if roles else None, confidence=0.0, reason=(rule or {}).get("_defer_reason", "no_rule"),
+            return item, kind, fl, {"resolution": blank(escalate_to=roles[0] if roles else None, confidence=0.0, reason="fraud_shaped" if any(f["flag"] in investigator.HARD_FLAGS for f in fl) else (rule or {}).get("_defer_reason", "no_rule"),
                                                         rationale="Not cleared by the matcher or a playbook rule. Left for review (model tier disabled)."),
                                     "trace": [], "usage": dict(ZERO)}
         return item, kind, fl, investigator.investigate_safely(db.connect(client, readonly=True, path=db_file), info, period, item, kind,
@@ -123,7 +128,7 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
     drain()
     # ledger entries of this period that nothing cleared
     rule_tier([("ledger", e) for e in db.q(con, "SELECT * FROM ledger_entry WHERE period=? ORDER BY date, id", period)
-               if e["id"] in by_id and e["id"] not in ctx.used and in_scope(e)])
+               if e["id"] in by_id and e["id"] not in ctx.used])
     drain()
 
     run_id = run_id or f"{client}_{period}_{condition}_{datetime.now():%m%d-%H%M%S}"

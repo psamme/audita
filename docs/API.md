@@ -169,6 +169,11 @@ round amounts, which looks like a fee schedule; induction then attaches an open 
 and `source` can also be `"rejected"` after a not-about-the-amount answer.
 Non-main tracks keep their own logs: `corrections_<track>.jsonl`, `reopened_<track>.jsonl`.
 
+Both answer routes (`POST /api/playbook/answer-band`, `POST /api/playbook/answer`) also return `reran`, like
+`POST /api/corrections`: after a diff the open queue of the newest base run on that track is re-run at the $0 tiers as
+run id `<run>__after_<correction_id>`, and `reran` lists the items that are no longer escalated. An undo sees those
+runs: the blast radius keeps the newest standing resolution of every item across all runs on the track.
+
 ## Policy approval preview and safety update
 
 The local prototype requires an explicit senior `role` for band answers, interview approvals, conflict settlement, and retractions. `GET /api/clients` adds `senior_roles`. Unknown or omitted roles cannot grant approval. These are role checks, not identity authentication: run on loopback with one server worker; do not expose this prototype as a production approval service.

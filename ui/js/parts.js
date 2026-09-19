@@ -118,6 +118,15 @@
     openRecord(a.dataset.rec);
   });
 
+  // The payoff after teaching: items that were waiting on a person and now resolve under the new playbook, free.
+  function reranBlock(items, client, big) {
+    if (!items || !items.length) return "";
+    const text = (rec) => rec.description || rec.memo || rec.id;
+    return `<div class="payoff"><div class="${big ? "payoff-head" : "label"}">Now cleared, at $0.00</div>
+      <div class="table-wrap"><table class="grid tight ${big ? "big" : ""}"><tbody>${items.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td class="wrap">${esc(text(x.record))}</td><td class="r">${usd(x.record.amount)}</td>
+        <td class="wrap">${esc(verdict(x.resolution, {}))}${x.resolution.rule_id ? ` <span class="cite">${esc(x.resolution.rule_id)}</span>` : ""}</td></tr>`).join("")}</tbody></table></div></div>`;
+  }
+
   // Why it stopped. Set on every escalation by the pipeline.
   const REASON = { in_band: "Inside the unknown band", no_rule: "No rule covers this", conflicting_precedents: "History disagrees with itself",
     fraud_shaped: "Shaped like fraud", thin_precedent: "Too few past cases" };
@@ -140,7 +149,9 @@
     const pos = (v) => Math.min(100, (Math.abs(v) / max) * 100);
     const lo = band.lo == null ? 0 : pos(band.lo), hi = band.hi == null ? 100 : pos(band.hi);
     const c = opts.client;
-    const end = (at, value, precedent) => `<span class="band-end ${at < 8 ? "at-start" : at > 92 ? "at-end" : ""}" style="left: ${at}%"><b class="num">${money(value)}</b>${precedent && c ? cite(c, precedent) : ""}</span>`;
+    // a stated number was given by a person, so it cites the person, not the old precedent the server still carries
+    const stated = band.source === "stated";
+    const end = (at, value, precedent) => `<span class="band-end ${at < 8 ? "at-start" : at > 92 ? "at-end" : ""}" style="left: ${at}%"><b class="num">${money(value)}</b>${stated ? `<span class="faint">Stated by a person</span>` : precedent && c ? cite(c, precedent) : ""}</span>`;
     return `<div class="band" data-max="${max}">
       <div class="band-track">
         <span class="band-seg acts ${upper ? "" : "right"}" style="left: ${upper ? 0 : hi}%; width: ${upper ? lo : 100 - hi}%"></span>
@@ -210,5 +221,5 @@
     });
   }
 
-  Object.assign(SO, { reasonPill, bandBar, curveChart, wireCurve, role, cap, period, outcome, verdict, splitRationale, leadAndRest, cite, reasoning, ruleBlock, diffBlock, openRecord });
+  Object.assign(SO, { reranBlock, reasonPill, bandBar, curveChart, wireCurve, role, cap, period, outcome, verdict, splitRationale, leadAndRest, cite, reasoning, ruleBlock, diffBlock, openRecord });
 })();
