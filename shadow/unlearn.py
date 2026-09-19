@@ -8,15 +8,16 @@ that leaned on what was retracted is re-run through the new playbook, and only t
 import json
 
 from grade import same
-from shadow import correct, db, pipeline, playbook as pbmod
+from shadow import state, authority, correct, db, pipeline, playbook as pbmod
 
 
 def _patches(client: str, track: str) -> tuple[dict, list[dict]]:
     vs = pbmod.versions(client, track)
-    base_v = max(v for v in vs if pbmod.load(client, track, v)["cause"].get("type") == "induction")
+    base_v = max((v for v in vs if pbmod.load(client, track, v)["cause"].get("type") == "induction"), default=0)
     causes = [pbmod.load(client, track, v)["cause"] for v in vs if v > base_v]
     retracted = {c["retracted"] for c in causes if c.get("type") == "retraction"}      # stays dropped in every later replay
-    return pbmod.load(client, track, base_v), [c for c in causes if c.get("patch") and c.get("correction_id") not in retracted]
+    base = pbmod.load(client, track, base_v) if base_v else {"version": 0, "rules": [], "trained_before": pbmod.load(client, track)["trained_before"]}
+    return base, [c for c in causes if c.get("patch") and c.get("correction_id") not in retracted]
 
 
 def _replay(client: str, base: dict, patches: list[dict], dropped: str | None) -> tuple[dict, list[str]]:
@@ -27,9 +28,14 @@ def _replay(client: str, base: dict, patches: list[dict], dropped: str | None) -
             continue
         patch = cause["patch"]
         if patch["kind"] == "band":
-            if pbmod.apply_band_answer(pb, patch["rule_id"], patch["condition"], patch["value"], patch["review"],
-                                      patch.get("limit"), patch.get("not_amount", False)) is None:
-                notes.append(f"{cause.get('correction_id')}: band answer no longer has a rule to apply to; skipped")
+            try:
+                result = pbmod.apply_band_answer(pb, patch["rule_id"], patch["condition"], patch.get("value"), patch.get("review"),
+                                                patch.get("limit"), patch.get("not_amount", False))
+            except ValueError as exc:
+                result = None
+                notes.append(f"{cause.get('correction_id')}: dependent band answer needs review: {exc}")
+            if result is None or result.get("held"):
+                notes.append(f"{cause.get('correction_id')}: band answer not re-applied; review required")
             continue
         ids = {r["id"] for r in pb["rules"]}
         clean = [op for op in patch["ops"] if op["op"] == "add" or op.get("rule_id") in ids]
@@ -37,6 +43,23 @@ def _replay(client: str, base: dict, patches: list[dict], dropped: str | None) -
             if op not in clean:     # the rule this patch edited is gone; ask instead of guessing
                 notes.append(f"{cause.get('correction_id')}: could not re-apply '{op['op']}' to {op.get('rule_id')}")
         pb = correct._apply_ops(pb, clean, client, patch["origin"])
+        touched = {op.get("assigned_id") or op.get("rule_id") for op in clean}
+        for rule in pb["rules"]:
+            if rule["id"] not in touched or rule.get("status") == "retired":
+                continue
+            safety = patch.get("safety", {}).get(rule["id"])
+            if safety is not None:
+                for key in authority.SAFETY_FIELDS:
+                    if safety.get(key) is None:
+                        rule.pop(key, None)
+                    else:
+                        rule[key] = safety[key]
+            else:
+                # Legacy patches did not store authority or effective dates. Never
+                # promote an unverified old patch while undoing a different input.
+                rule.update(status="proposed", human_confirmed=False, awaiting_senior=True,
+                            open_question="This replayed legacy correction needs senior confirmation.")
+                notes.append(f"{cause.get('correction_id')}: legacy approval not replayed")
     return pb, notes
 
 
@@ -51,22 +74,36 @@ def _touched_by(client: str, track: str, correction_id: str) -> set[str]:
     return set()
 
 
+@state.serialized
 def retract(client: str, track: str, correction_id: str | None = None, precedent_id: str | None = None, note: str = "") -> dict:
-    """Undo one input. Only rules that input touched may change; every other rule stays byte-identical."""
-    assert correction_id or precedent_id
+    """Undo one input and replay dependent changes without restoring withdrawn evidence."""
+    if bool(correction_id) == bool(precedent_id):
+        raise ValueError("Choose exactly one correction or precedent")
     con = db.connect(client, readonly=True)
     current = pbmod.load(client, track)
+    target = correction_id or precedent_id
+    previous = [pbmod.load(client, track, v)["cause"] for v in pbmod.versions(client, track)]
+    if any(c.get("type") == "retraction" and c.get("retracted") == target for c in previous):
+        return {"retracted": target, "new_version": current["version"], "already_retracted": True,
+                "diff": pbmod.diff(current, current), "rules_changed": [], "replay_notes": [],
+                "resolutions_checked": 0, "reopened": []}
     base, patches = _patches(client, track)
     if correction_id and not any(c.get("correction_id") == correction_id for c in patches):
         raise ValueError(f"{correction_id} is not an input of the current playbook (held answers and earlier retractions cannot be retracted)")
+    exclusions = set(current.get("excluded_precedents") or []) | ({precedent_id} if precedent_id else set())
+    if exclusions:
+        base["excluded_precedents"] = sorted(exclusions)
+        pbmod.backtest(con, base)
     replayed, notes = _replay(client, base, patches, correction_id)
     if precedent_id:
-        replayed["excluded_precedents"] = sorted(set(current.get("excluded_precedents") or []) | {precedent_id})
-        pbmod.backtest(con, replayed)
-        touched = {r["id"] for r in current["rules"] if precedent_id in (r.get("precedent_ids") or [])
-                   or any(precedent_id in (b.get("lo_precedent"), b.get("hi_precedent")) for b in (r.get("bands") or {}).values())}
+        touched = {r["id"] for r in current["rules"] + replayed["rules"]}
     else:
         touched = _touched_by(client, track, correction_id)
+        # A dependent patch may stop applying when its originating rule is removed.
+        # Include the resulting semantic differences, not just direct citations.
+        delta = pbmod.diff(current, replayed)
+        touched |= {r["id"] for r in delta["added"] + delta["removed"]}
+        touched |= {x["after"]["id"] for x in delta["changed"]}
     by_id = {r["id"]: r for r in replayed["rules"]}
     rules_out = []
     for r in current["rules"]:
@@ -90,19 +127,18 @@ def retract(client: str, track: str, correction_id: str | None = None, precedent
 
 
 def blast_radius(client: str, track: str, rule_ids: set[str], precedent_id: str | None, version: int) -> dict:
-    """Re-run, at the $0 tiers, every past resolution that cited a changed rule or the retracted precedent."""
+    """Re-run complete periods at $0 to check direct and indirect dependencies."""
     checked, reopened = 0, []
     for run_json in sorted(db.RUNS.glob("*/run.json")):
         meta = json.loads(run_json.read_text())
         if meta["client"] != client or meta.get("track") != track or "__" in meta["run_id"] or meta["run_id"].startswith("blast_"):
             continue
         items = [json.loads(l) for l in (run_json.parent / "resolutions.jsonl").read_text().splitlines()]
-        touched = {it["item_id"]: it for it in items if it["resolution"]["action"] != "escalate" and
-                   (it["resolution"].get("rule_id") in rule_ids or precedent_id in (it["resolution"].get("precedent_ids") or []))}
+        touched = {it["item_id"]: it for it in items if it["resolution"]["action"] != "escalate" and (rule_ids or precedent_id)}
         if not touched:
             continue
         rid = f"blast_{meta['run_id']}"
-        pipeline.run(client, meta["period"], "corrected", track, version=version, use_llm=False, only=set(touched), run_id=rid,
+        pipeline.run(client, meta["period"], "corrected", track, version=version, use_llm=False, run_id=rid,
                      label="blast radius check after a retraction")
         after = {json.loads(l)["item_id"]: json.loads(l) for l in (db.RUNS / rid / "resolutions.jsonl").read_text().splitlines()}
         for item_id, before in touched.items():

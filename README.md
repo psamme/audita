@@ -63,8 +63,12 @@ unzip -o benchrec.zip && rm benchrec.zip
 - **The agent code must never read the answer key.** Month-4 keys live in `keys/`, which is gitignored. The grader is a standalone script that takes resolutions plus the key and outputs metrics.
 - Secrets go in `.env`, never in code.
 - `runs/` and `*.db` are local output, not committed.
-- Commit small and often to `main`; pull with `git pull --rebase` before pushing.
+- Work in an isolated clone on a `codex/<topic>` branch and open a PR. Do not push to `main`.
 
 ## Cut list
 
 Not building: a third client, ledger-as-git, self-play, computer-use ERP, multi-agent finance team, forecasting / close / accruals, multi-entity onboarding, schema mapping as a headline.
+
+## Controller approval preview
+
+See [the build and rehearsal guide](docs/BUILD_CODEX.md) for the no-model, isolated preview demo and safety fixes.

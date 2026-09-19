@@ -82,7 +82,7 @@
       const t0 = Date.now(), tick = setInterval(() => { status.textContent = `Rewriting the playbook and replaying history. ${Math.round((Date.now() - t0) / 1000)}s`; }, 500);
       try {
         const res = await fetch("/api/corrections", { method: "POST", headers: { "content-type": "application/json" },
-          body: SO.body({ client: run.client, run_id: run.run_id, item_id: it.item_id, resolution, note: resolution.rationale }) });
+          body: SO.body({ client: run.client, role: new URLSearchParams(location.search).get("role") || (clients[run.client]?.senior_roles || [])[0], run_id: run.run_id, item_id: it.item_id, resolution, note: resolution.rationale }) });
         if (!res.ok) throw new Error(String(res.status));
         const result = await res.json();
         // the corrected item and anything the new rule cleared leave the queue

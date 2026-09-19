@@ -1,7 +1,7 @@
 """Tier 1: playbook rules compiled to checkable conditions. No model calls.
 
 The playbook is written by the model from the client's own history and signed off by a human; this module only
-executes it. A rule is a flat `when` (all conditions must hold) and a `then`. Rules are tried in playbook order.
+executes it. A rule is a flat `when` (all conditions must hold) and a `then`. Disagreeing approved rules defer to review.
 A matching rule with executable=false does not resolve anything: it hands the item to the investigator with the
 rule attached, which is how judgement calls pre-empt the mechanical rules that follow them.
 
@@ -33,7 +33,7 @@ from datetime import date, timedelta
 from itertools import combinations
 
 from shadow import db
-from shadow.matcher import days_between, period_end, posted_late, tokens
+from shadow.matcher import days_between, period_end, posted_late, tokens, _evidenced
 
 
 _num, _str = {"type": "number"}, {"type": "string"}
@@ -95,6 +95,8 @@ def _find_candidates(item: dict, spec: dict, when: dict, ctx: Ctx) -> list[list[
         if len(pool) > 16 and k > 2:
             break
         for combo in combinations(pool, k):
+            if k > 1 and not _evidenced(ctx.con, item, combo):
+                continue
             if _diff_ok(round(sum(e["amount"] for e in combo) - item["amount"], 2), sum(e["amount"] for e in combo), when):
                 hits.append(list(combo))
         if hits:
@@ -158,6 +160,9 @@ def evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
     bands = rule.get("bands") or {}
     if not bands or not rule.get("executable"):
         return _evaluate(rule, item, kind, ctx)
+    if any(b.get("source") == "trail" and b.get("n_known") == 0 for b in bands.values()):
+        probe = _evaluate(rule | {"executable": False}, item, kind, ctx)
+        return {"defer": True, "reason": "thin_precedent"} if probe else None
     when = rule["when"]
     for cond, b in bands.items():
         side = BANDED[cond][1]
@@ -183,6 +188,8 @@ def evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
 def _evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
     """Returns {"resolution": ...} when the rule fires, {"defer": True} when a non-executable rule claims the item
     for the investigator, or None."""
+    if item["date"] < rule.get("valid_from", ""):
+        return None
     when, then = rule.get("when") or {}, rule.get("then") or {}
     if when.get("item_kind", "bank") != kind:
         return None
@@ -265,7 +272,7 @@ def _evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
         res["adjustments"] = [{"account": then["account"], "amount": round(-item["amount"], 2)}]
     elif action == "escalate":
         res["escalate_to"] = then.get("escalate_to")
-    elif action != "carry_forward":
+    elif action != "carry_forward" or kind != "ledger":
         return None
     total = sum(e["amount"] for e in ledger)
     values = {"amount": abs(item["amount"]), "diff": diff, "diff_abs": abs(diff) if diff is not None else None,
@@ -275,14 +282,16 @@ def _evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
 
 
 def apply(playbook: dict, item: dict, kind: str, ctx: Ctx, include_proposed: bool = False) -> tuple[dict | None, dict | None]:
-    """First matching rule wins. Returns (rule, outcome); outcome is None when nothing matched.
+    """Matching approved rules must agree. Returns (rule, outcome), or (None, None).
 
     Proposed rules never resolve anything in a live run: a matching proposed rule hands the item to the investigator
     as guidance, exactly like a judgement rule."""
+    selected = None
     for rule in playbook.get("rules", []):
         if rule.get("status") == "retired":
             continue
-        if rule.get("status") != "approved" and not include_proposed:
+        unresolved = rule.get("awaiting_senior") or (rule.get("open_question") and not rule.get("human_confirmed"))
+        if (rule.get("status") != "approved" or unresolved) and not include_proposed:
             out = evaluate(rule | {"executable": False}, item, kind, ctx)
             if out:
                 return rule, out
@@ -295,8 +304,12 @@ def apply(playbook: dict, item: dict, kind: str, ctx: Ctx, include_proposed: boo
                         and _evaluate(r | {"executable": True}, item, kind, ctx)), None)
             out["escalate_to"] = (far or {}).get("then", {}).get("escalate_to")
         if out:
-            return rule, out
-    return None, None
+            if selected is None:
+                selected = (rule, out)
+            elif out != selected[1] and out.get("resolution") != selected[1].get("resolution"):
+                return selected[0], {"defer": True, "reason": "conflicting_precedents",
+                                     "conflicting_rules": [selected[0]["id"], rule["id"]]}
+    return selected or (None, None)
 
 
 def plan(playbook: dict, items: list[tuple[str, dict]], ctx: Ctx, include_proposed: bool = False) -> dict[str, tuple]:

@@ -6,13 +6,29 @@ import json
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from shadow import correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
+from shadow import authority, preview, correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
 
 app = FastAPI(title="Shadow Onboarding")
 CLIENTS = ("A", "B")
 TRACK = "main"
+
+
+@app.exception_handler(PermissionError)
+async def permission_error(request, exc):
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(preview.StalePreview)
+async def stale_preview(request, exc):
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(ValueError)
+async def bad_value(request, exc):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 def _run_dir(run_id: str):
@@ -53,7 +69,9 @@ def clients():
     out = []
     for c in CLIENTS:
         if db.db_path(c).exists():
-            out.append({k: v for k, v in db.q(db.connect(c, readonly=True), "SELECT * FROM client")[0].items() if k != "close_days"})
+            con = db.connect(c, readonly=True)
+            out.append({k: v for k, v in db.q(con, "SELECT * FROM client")[0].items() if k != "close_days"} |
+                       {"senior_roles": [u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT role FROM user WHERE senior=1")]})
     return out
 
 
@@ -127,6 +145,9 @@ class Correction(BaseModel):
 
 @app.post("/api/corrections")
 def post_correction(c: Correction):
+    meta = _summary(c.run_id)
+    if meta["client"] != c.client or meta.get("track", TRACK) != c.track:
+        raise HTTPException(400, "The run must belong to this client and track")
     item = next((it for it in _items(c.run_id) if it["item_id"] == c.item_id), None)
     if not item:
         raise HTTPException(404, "no such item in that run")
@@ -184,7 +205,33 @@ def post_band_answer(a: BandAnswer):
                                    limit=a.limit if kind == "limit" else None,
                                    not_amount=kind == "not_amount", role=a.role)
     except ValueError as e:      # unknown rule or band
-        raise HTTPException(404, str(e))
+        raise HTTPException(400, str(e))
+
+
+class BandPreview(BandAnswer):
+    period: str
+
+
+@app.post("/api/playbook/preview-band")
+def preview_band(a: BandPreview):
+    _con(a.client).close()
+    kind = a.answer or {True: "review", False: "usual"}.get(a.review)
+    if kind not in {"limit", "review", "usual", "not_amount"}:
+        raise HTTPException(400, "Choose limit, review, usual or not_amount")
+    return preview.build(a.client, a.track, a.period, a.rule_id, a.condition, a.role,
+                         value=a.value if kind in {"review", "usual"} else None,
+                         review={"review": True, "usual": False}.get(kind),
+                         limit=a.limit if kind == "limit" else None, not_amount=kind == "not_amount")
+
+
+class ApplyPreview(BaseModel):
+    preview_id: str
+    role: str
+
+
+@app.post("/api/playbook/apply-preview")
+def apply_preview(a: ApplyPreview):
+    return preview.commit(a.preview_id, a.role)
 
 
 class ConflictOutcome(BaseModel):
@@ -202,6 +249,7 @@ def settle_conflict(conflict_id: str, o: ConflictOutcome):
 
 
 class Retraction(BaseModel):
+    role: str | None = None
     client: str
     correction_id: str | None = None
     precedent_id: str | None = None
@@ -212,6 +260,7 @@ class Retraction(BaseModel):
 @app.post("/api/retract")
 def post_retract(r: Retraction):
     """Undo one input of the playbook. Deterministic: stored patches are replayed, no model call."""
+    authority.require_senior(_con(r.client), r.role)
     try:
         return unlearn.retract(r.client, r.track, r.correction_id, r.precedent_id, r.note)
     except ValueError as e:
@@ -252,6 +301,7 @@ def curve():
 
 
 class Answer(BaseModel):
+    role: str | None = None
     client: str
     rule_id: str
     answer: str
@@ -260,7 +310,7 @@ class Answer(BaseModel):
 
 @app.post("/api/playbook/answer")
 def post_answer(a: Answer):
-    return correct.answer(a.client, a.track, a.rule_id, a.answer)
+    return correct.answer(a.client, a.track, a.rule_id, a.answer, role=a.role)
 
 
 @app.get("/api/metrics")

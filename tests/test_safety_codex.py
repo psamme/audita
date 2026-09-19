@@ -1,7 +1,6 @@
 """Isolated safety contracts. No built client data, hidden keys, network or model calls.
 
-Strict xfails identify reviewed defects, not passing safety checks. Run with
-`--runxfail` to reproduce them; remove each marker when its fix lands.
+Each reviewed defect is now an ordinary passing regression test.
 """
 import copy
 import json
@@ -21,6 +20,7 @@ def con(monkeypatch, tmp_path):
     c.row_factory = sqlite3.Row
     c.executescript(db.SCHEMA)
     c.execute("INSERT INTO client VALUES ('T','Test','fixture','{}',3)")
+    c.execute("INSERT INTO user VALUES ('senior','Senior','controller',1)")
     monkeypatch.setattr(db, "DATA", tmp_path / "data")
     monkeypatch.setattr(db, "RUNS", tmp_path / "runs")
     (db.DATA / "T").mkdir(parents=True)
@@ -82,7 +82,6 @@ def test_invoice_batch_requires_references(con, evidence):
     assert bool(matches) == (evidence != "none")
 
 
-@pytest.mark.xfail(strict=True, reason="C2: anonymous non-invoice batches bypass evidence requirements")
 def test_anonymous_batch_still_needs_evidence(con):
     bank(con, amount=100, counterparty="")
     ledger(con, "L1", 40)
@@ -90,7 +89,6 @@ def test_anonymous_batch_still_needs_evidence(con):
     assert matcher.run(con, PERIOD) == ([], set())
 
 
-@pytest.mark.xfail(strict=True, reason="C3: batch candidates are consumed in bank order, not mutually unique")
 def test_two_receipts_contesting_same_invoice_batch_abstain(con):
     for bid in ["B1", "B2"]:
         bank(con, bid, 100, description="INV-100 INV-200")
@@ -99,7 +97,6 @@ def test_two_receipts_contesting_same_invoice_batch_abstain(con):
     assert matcher.run(con, PERIOD) == ([], set())
 
 
-@pytest.mark.xfail(strict=True, reason="C4: bank-change request only flags the first payment")
 def test_bank_change_document_holds_second_payment_too(con):
     bank(con, "B1", -100)
     bank(con, "B2", -200, date="2026-03-11")
@@ -143,7 +140,6 @@ def test_proposed_open_question_defers(con):
     assert rules.apply({"rules": [r]}, b, "bank", context(con))[1] == {"defer": True}
 
 
-@pytest.mark.xfail(strict=True, reason="C5: runtime trusts approved status even with an unanswered question")
 def test_approved_rule_with_open_question_cannot_execute(con):
     b = bank(con, amount=-5)
     r = book_rule(open_question="May this be booked?", human_confirmed=False)
@@ -158,12 +154,11 @@ def test_empty_interview_patch_does_not_approve(con, monkeypatch):
     def no_save(*a, **kw):
         pytest.fail("Empty patch must not save a playbook")
     monkeypatch.setattr(playbook, "save", no_save)
-    result = correct.answer("T", "dev", "T-R-001", "I do not know")
+    result = correct.answer("T", "dev", "T-R-001", "I do not know", role="controller")
     assert result["diff"] is None and result["new_version"] == 1
     assert pb["rules"][0]["status"] == "proposed"
 
 
-@pytest.mark.xfail(strict=True, reason="C6: correction replay loses the non-senior approval restriction")
 def test_replay_preserves_junior_approval_restriction(con):
     base = {"rules": [book_rule(status="proposed", awaiting_senior=True, human_confirmed=False)]}
     cause = {"correction_id": "C1", "by_role": "junior", "patch": {"kind": "ops", "origin": "correction C1", "ops": [
@@ -172,7 +167,6 @@ def test_replay_preserves_junior_approval_restriction(con):
     assert replayed["rules"][0]["status"] != "approved"
 
 
-@pytest.mark.xfail(strict=True, reason="C7: valid_from is only consulted during band induction, not execution")
 def test_future_policy_does_not_apply_to_earlier_transaction(con):
     b = bank(con, amount=-5)
     r = book_rule(valid_from="2026-03-20")
@@ -205,7 +199,6 @@ def seed_run(con):
                                                         "evidence_fingerprint": stale.fingerprint(con, res)}) + "\n")
 
 
-@pytest.mark.xfail(strict=True, reason="C9: evidence fingerprint records document IDs but not content")
 def test_stale_detects_changed_supporting_document(con):
     ledger(con)
     seed_run(con)
@@ -221,6 +214,6 @@ def test_invalid_correction_is_not_published(con, monkeypatch):
     monkeypatch.setattr(llm, "call", lambda *a, **kw: SimpleNamespace(text=json.dumps(reply)))
     item = {"item_id": b["id"], "record": b, "item_kind": "bank", "tier": "investigator", "resolution": {"action": "escalate"}}
     human = {"action": "book", "ledger_ids": [], "adjustments": [{"account": "fees", "amount": 5}]}
-    result = correct.correct("T", "dev", item, human, "Use the fees account")
+    result = correct.correct("T", "dev", item, human, "Use the fees account", role="controller")
     assert result["diff"] is None
     assert playbook.load("T", "dev")["version"] == 1

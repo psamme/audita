@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 from grade import same
-from shadow import db, guardrails, llm, matcher, playbook as pbmod, rules
+from shadow import state, authority, db, guardrails, llm, matcher, playbook as pbmod, rules
 
 PATCH_SCHEMA = {
     "type": "object", "additionalProperties": False, "required": ["explanation", "ops"],
@@ -69,6 +69,7 @@ def _summary(e: dict) -> str:
 def log_path(client: str, track: str = "main"):
     """The main track's inputs live in corrections.jsonl; every other track keeps its own log so rehearsals, the
     development curve and tests never mix into the record of what the client actually told the system."""
+    pbmod.pb_dir(client, track)  # validate before constructing a path
     return db.DATA / client / ("corrections.jsonl" if track == "main" else f"corrections_{track}.jsonl")
 
 
@@ -103,12 +104,12 @@ def _apply_ops(pb: dict, ops: list[dict], client: str, origin: str) -> dict:
         if op["op"] == "retire" and idx is not None:
             rs[idx]["status"] = "retired"
         elif op["op"] == "approve" and idx is not None:
-            rs[idx] |= {"status": "approved", "human_confirmed": True, "open_question": None}
+            rs[idx] |= {"status": "approved", "human_confirmed": True, "open_question": None, "awaiting_senior": False}
             if rs[idx].pop("executable_if_approved", None):
                 rs[idx]["executable"] = True
         elif op["op"] == "modify" and idx is not None:
             rs[idx] |= {k: op[k] for k in ("text", "executable", "when", "then") if k in op}
-            rs[idx] |= {"status": "approved", "human_confirmed": True, "open_question": None, "origin_of_change": origin}
+            rs[idx] |= {"status": "approved", "human_confirmed": True, "open_question": None, "origin_of_change": origin, "awaiting_senior": False}
             if "when" in op:
                 rs[idx]["bands"] = _stated_bands(rs[idx])
         elif op["op"] == "add" and "text" in op:
@@ -130,6 +131,10 @@ def _reproduces(con, pb: dict, period: str, item: dict, kind: str, human: dict) 
     rule, out = rules.apply(pb, item, kind, ctx)
     if not rule:
         return False, "no rule in the patched playbook matches the corrected item"
+    if item["id"] in flagged and human["action"] != "escalate":
+        return False, "A control flag prevents automatic resolution of this item"
+    if out.get("in_band"):
+        return False, "The corrected item still falls inside an unresolved policy band"
     if out.get("defer"):
         return True, f"{rule['id']} now sends this kind of item to the investigator with the new guidance"
     if same(out["resolution"], human):
@@ -148,6 +153,10 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
             r["status"] = status
             if confirmed:
                 r["open_question"] = None
+    if cause.get("patch", {}).get("kind") == "ops":
+        touched = {op.get("assigned_id") or op.get("rule_id") for op in cause["patch"]["ops"]}
+        cause["patch"]["safety"] = {r["id"]: {k: r.get(k) for k in authority.SAFETY_FIELDS}
+                                    for r in pb_new["rules"] if r["id"] in touched}
     saved = pbmod.save(client, track, {k: v for k, v in pb_new.items() if k not in ("version", "created_at", "cause")}, cause)
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 
@@ -157,6 +166,7 @@ def _peek_id(client: str, track: str) -> str:
     return f"{client}-COR-{(len(path.read_text().splitlines()) if path.exists() else 0) + 1:04d}"
 
 
+@state.serialized
 def answer_band(client: str, track: str, rule_id: str, condition: str, value: float | None = None, review: bool | None = None,
                 limit: float | None = None, not_amount: bool = False, role: str | None = None) -> dict:
     """Answer to a band question: a stated limit, yes/no at the asked value, or "it is not about the amount".
@@ -166,7 +176,7 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
     seniors = {u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
     said = {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition, "value": value,
             "review": review, "limit": limit, "not_amount": not_amount, "by_role": role, "status": "applied"}
-    if role is not None and role not in seniors:
+    if not authority.is_senior(con, role):
         held = f"{role} cannot move a limit; a senior role has to answer this"
         entry = _log(client, said | {"status": "held", "held": held}, track)
         return {"correction_id": entry["correction_id"], "diff": None, "held": held}
@@ -175,6 +185,7 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
     return out | {"correction_id": entry["correction_id"]}
 
 
+@state.serialized
 def correct(client: str, track: str, item: dict, human: dict, note: str, run_id: str = "", usage: llm.Usage | None = None,
             role: str | None = None, force: bool = False, valid_from: str | None = None) -> dict:
     """item: an Item from a run (record, item_kind, resolution, trace). human: the Resolution the person chose.
@@ -187,7 +198,9 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
     pb_old = pbmod.load(client, track) or {"version": 0, "rules": [], "trained_before": None}
     period = item["record"]["period"]
     seniors = {u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
-    is_senior = role is None or role in seniors
+    is_senior = authority.is_senior(con, role)
+    if force or valid_from:
+        authority.require_senior(con, role)
     fired = next((r for r in pb_old["rules"] if r["id"] == item["resolution"].get("rule_id")), None)
     if (not force and fired and item.get("tier") == "rule" and item["resolution"]["action"] != "escalate" and human["action"] != "escalate"
             and fired["status"] == "approved" and fired.get("backtest", {}).get("support", 0) >= pbmod.APPROVE_MIN_SUPPORT
@@ -241,9 +254,11 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
             "explanation": patch["explanation"], "check": verdict}
 
 
-def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.Usage | None = None) -> dict:
+@state.serialized
+def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.Usage | None = None, role: str | None = None) -> dict:
     """The controller answers a proposed rule's open question; the playbook absorbs the answer."""
     con = db.connect(client, readonly=True)
+    authority.require_senior(con, role)
     pb_old = pbmod.load(client, track)
     rule = next(r for r in pb_old["rules"] if r["id"] == rule_id)
     entry = _log(client, {"type": "interview", "rule_id": rule_id, "question": rule.get("open_question"), "answer": answer_text,
@@ -265,8 +280,12 @@ def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.U
     return {"correction_id": entry["correction_id"], "diff": d, "new_version": saved["version"], "explanation": patch["explanation"]}
 
 
+@state.serialized
 def resolve_conflict(client: str, track: str, conflict_id: str, outcome: str, role: str | None = None, usage: llm.Usage | None = None) -> dict:
     """A senior settles a conflict: one_off_exception | policy_change | mistake."""
+    authority.require_senior(db.connect(client, readonly=True), role)
+    if outcome not in {"one_off_exception", "policy_change", "mistake"}:
+        raise ValueError("Unknown conflict outcome")
     path = log_path(client, track)
     conflict = next(json.loads(l) for l in path.read_text().splitlines() if json.loads(l).get("correction_id") == conflict_id)
     item = conflict["item"]

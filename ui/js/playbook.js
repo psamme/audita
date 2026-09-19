@@ -34,10 +34,10 @@
   // The stage moment: one question about one band, four possible answers, no model call.
   // A real controller knows their number, so stating the limit leads whenever the band is open ended.
   // The person on stage answers as the client's senior role; a non-senior answer is recorded but held.
-  const SENIOR = { A: "owner", B: "controller" };
+  const seniorRole = () => (clients.find((c) => c.id === client)?.senior_roles || [])[0] || "";
   // ?role=bookkeeper answers as someone junior, to show an answer being recorded but held. No picker on
   // the card: the stage path stays one click.
-  const asRole = () => { const r = new URLSearchParams(location.search).get("role"); return r && /^[a-z_]{2,24}$/.test(r) ? r : SENIOR[client]; };
+  const asRole = () => { const r = new URLSearchParams(location.search).get("role"); return r && /^[a-z_]{2,24}$/.test(r) ? r : seniorRole(); };
   function bandCard() {
     const q = bandQs[0];
     if (!q) return bandResult;
@@ -57,7 +57,7 @@
       <div id="askBand">${bandBar(b, { client, value: q.value })}${b.categorical ? `<span class="state state-proposed" style="margin-top: 8px;">Looks like a fee schedule</span>` : ""}</div>
       <div class="answers">${limitFirst ? limit + yesNo : yesNo + limit}
         ${can("not_amount") ? `<button class="btn btn-ghost" data-answer="not_amount">It is not about the amount</button>` : ""}</div>
-      <span class="note" id="askNote">Instant. No model call.</span>
+      <label class="label" for="previewPeriod">Preview period</label><input class="input" id="previewPeriod" type="month" value="${esc(new URLSearchParams(location.search).get("period") || pb.trained_before || "")}"><span class="note" id="askNote">Preview the effect before applying. No model call.</span>
       <div class="rule-text"><span class="label">The rule this belongs to</span><div>${esc(q.rule_text)} <span class="cite">${esc(q.rule_id)}</span></div></div>
     </div></section>${bandResult}`;
   }
@@ -65,35 +65,46 @@
   async function answerBand(kind, amount) {
     const q = bandQs[0], note = document.getElementById("askNote");
     const controls = document.querySelectorAll(".ask button, .ask input");
+    const period = document.getElementById("previewPeriod").value;
+    const role = asRole();
+    if (!period) { note.textContent = "Choose a period to preview."; return; }
     controls.forEach((c) => { c.disabled = true; });
-    const said = { limit: `the limit is ${usd(amount || 0)}`, review: `yes, review one at ${usd(q.value)}`, usual: `no, ${usd(q.value)} is handled as usual`, not_amount: "it is not about the amount" }[kind];
+    note.textContent = "Comparing the current and proposed policy. Nothing has been saved.";
     try {
-      const res = await fetch("/api/playbook/answer-band", { method: "POST", headers: { "content-type": "application/json" },
-        body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, answer: kind, role: asRole(),
-          limit: kind === "limit" ? amount : null, review: kind === "review" ? true : kind === "usual" ? false : null, not_amount: kind === "not_amount" }) });
-      if (!res.ok) throw new Error(String(res.status));
+      const res = await fetch("/api/playbook/preview-band", { method: "POST", headers: { "content-type": "application/json" },
+        body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, answer: kind, role, period,
+          limit: kind === "limit" ? amount : null }) });
       const r = await res.json();
-      if (r.band) {
-        // same scale as before the answer, so the band is seen to narrow or collapse to a line
-        const max = Number(document.querySelector("#askBand .band").dataset.max);
-        const fits = Math.max(Math.abs(r.band.lo || 0), Math.abs(r.band.hi || 0)) <= max;
-        document.getElementById("askBand").innerHTML = bandBar(r.band, { client, value: kind === "limit" ? null : q.value, max: fits ? max : undefined });
-      }
-      const applied = r.diff != null;
-      note.textContent = applied ? `Recorded. The playbook is now version ${r.new_version}.` : "Recorded, not applied.";
-      bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${esc(said)}</h3><span class="runrow">${applied ? "" : `<span class="state state-carry">Recorded, not applied</span>`}<span class="mono faint">${esc(r.correction_id || "")}</span></span></div>
-        <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}</div></section>`;
-      setTimeout(() => load().catch(fail), applied && r.band ? 1600 : 0);
-    } catch (e) {
-      note.textContent = "The answer did not go through. Check that the server is running and try again.";
-      controls.forEach((c) => { c.disabled = false; });
-    }
+      if (!res.ok) throw new Error(r.detail || String(res.status));
+      if (r.held) { note.textContent = r.held; controls.forEach((c) => { c.disabled = false; }); return; }
+      bandResult = `<section class="panel" id="policyPreview"><div class="panel-head"><h3>Review the effect before applying</h3><span class="state state-proposed">Not saved</span></div>
+        <div class="panel-body stack"><p>Period ${esc(r.period)} · version ${r.version} · ${r.before.bank_exceptions} bank exceptions checked</p>
+        <h2 class="ask-q">${r.before.automatic_exceptions} → ${r.after.automatic_exceptions} automatic exceptions</h2>
+        <p>${r.after.needs_review} bank items still need review. ${r.changed_items.length} decisions change.</p>
+        <p class="muted">${esc(r.scope_note)} ${esc(r.accuracy_note)}</p>
+        ${diffBlock(r.diff, { client })}
+        ${r.changed_items.length ? `<div class="table-wrap"><table class="grid tight"><thead><tr><th>Item</th><th>Before</th><th>After</th></tr></thead><tbody>${r.changed_items.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td>${esc(x.before?.action || (x.before_claimed_by ? "Cleared by " + x.before_claimed_by : "No separate item"))} ${esc((x.before?.adjustments || []).map((a) => a.account + ": " + usd(a.amount)).join(", "))}</td><td>${esc(x.after?.action || (x.after_claimed_by ? "Cleared by " + x.after_claimed_by : "No separate item"))} ${esc((x.after?.adjustments || []).map((a) => a.account + ": " + usd(a.amount)).join(", "))}</td></tr>`).join("")}</tbody></table></div>` : `<p>No decisions change in this period.</p>`}
+        <div class="runrow"><button class="btn btn-primary" id="applyPreview">Apply this policy change</button><button class="btn btn-secondary" id="cancelPreview">Cancel</button><span class="note" id="previewNote">The policy and supporting data will be checked again.</span></div></div></section>`;
+      paint();
+      document.getElementById("policyPreview").scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("cancelPreview").onclick = () => { bandResult = ""; paint(); };
+      document.getElementById("applyPreview").onclick = async (e) => {
+        e.target.disabled = true;
+        try {
+          const response = await fetch("/api/playbook/apply-preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ preview_id: r.preview_id, role }) });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || String(response.status));
+          bandResult = `<section class="panel"><div class="panel-body stack"><h3>Applied as version ${result.new_version}</h3><p>${esc(result.cause?.note || "Policy updated.")}</p>${diffBlock(result.diff, { client })}${result.reconciliation ? `<p>Reconciled ${result.reconciliation.period} again with no model calls. ${result.reconciliation.escalated} items remain for review.</p>` : ""}</div></section>`;
+          await load();
+        } catch (err) { document.getElementById("previewNote").textContent = err.message; }
+      };
+    } catch (e) { note.textContent = e.message; controls.forEach((c) => { c.disabled = false; }); }
   }
 
   function findingsBlock() {
     const f = pb.findings || [];
     if (!f.length) return "";
-    return `<section class="panel"><div class="panel-head"><h3>Where a person broke the pattern</h3><span class="faint small">Past items that disagree with a rule the rest of history supports. Reported, never learned from.</span></div>
+    return `<section class="panel"><div class="panel-head"><h3>Pattern disagreements to review</h3><span class="faint small">Past items that disagree with a rule the rest of history supports. Reported, never learned from.</span></div>
       ${f.map((x) => `<div class="rule-row"><p>${esc(x.summary)}</p><div class="rule-meta"><span>${cite(client, x.item_id)}</span><span>${day(x.date)}</span><span class="num">${usd(x.amount)}</span><span>${esc((x.posted_by || []).join(", "))}</span><span>${x.agreeing_cases} comparable items went the other way</span><span class="cite">${esc(x.rule_id)}</span></div></div>`).join("")}</section>`;
   }
 
@@ -113,7 +124,7 @@
     if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.textContent = "Confirm undo"; return; }
     btn.disabled = true; btn.textContent = "Undoing";
     try {
-      const res = await fetch("/api/retract", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, correction_id: btn.dataset.id, note: "Undone from the playbook screen" }) });
+      const res = await fetch("/api/retract", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, correction_id: btn.dataset.id, role: asRole(), note: "Undone from the playbook screen" }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json(), re = r.reopened || [];
       undoResult = `<section class="panel"><div class="panel-body stack">
@@ -163,6 +174,7 @@
     if (openId === null && asks.length) openId = asks[0].id;
     summary.innerHTML = `<span><b class="num">${live.length}</b> rules</span><span><b class="num">${approved.length}</b> approved</span><span><b class="num">${asks.length}</b> waiting on an answer</span><span><b class="num">${live.filter((r) => r.executable).length}</b> run as code at $0.00</span><span>Version <b class="num">${pb.version}</b></span>`;
     view.innerHTML = `<div class="stack">
+      ${pb.synthetic_demo ? `<section class="panel"><div class="panel-body"><b>Illustrative demo</b><p>Hand-authored policies and synthetic transactions. This demonstrates the interaction, not learned policy quality or benchmark performance.</p></div></section>` : ""}
       ${bandCard()}
       ${asks.length ? `<section class="panel"><div class="panel-head"><h3>Questions for you</h3><span class="faint small">The agent asks before it assumes. Each answer becomes a rule change you can read.</span></div>${asks.map(question).join("")}</section>` : ""}
       <section class="panel"><div class="panel-head"><h3>Approved rules</h3><span class="faint small">${approved.length} in force</span></div>${approved.map(ruleRow).join("") || `<div class="panel-body muted">None yet. Answer a question above to approve the first one.</div>`}</section>
@@ -192,7 +204,7 @@
       btn.disabled = true;
       const t0 = Date.now(), tick = setInterval(() => { note.textContent = `Rewriting the rule and replaying history. ${Math.round((Date.now() - t0) / 1000)}s`; }, 500);
       try {
-        const res = await fetch("/api/playbook/answer", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, rule_id: f.dataset.id, answer: ta.value }) });
+        const res = await fetch("/api/playbook/answer", { method: "POST", headers: { "content-type": "application/json" }, body: SO.body({ client, rule_id: f.dataset.id, answer: ta.value, role: asRole() }) });
         if (!res.ok) throw new Error(String(res.status));
         const r = await res.json();
         note.textContent = "Done.";

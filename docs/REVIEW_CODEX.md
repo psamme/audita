@@ -1,5 +1,7 @@
 # Codex independent safety review
 
+**Implementation follow-up:** all ten numbered findings below are now addressed by passing regression tests in the controller-preview build. See BUILD_CODEX.md and the API additions. The original scenarios and baseline line references below are retained as the historical audit record. No xfail markers remain in the safety suite.
+
 Reviewed baseline `f28e411e9f1c6dd5d2a3c0f472aa57c573d48fd4`, September 19, 2026. Scope: deterministic matcher, rule execution, bands, correction/retraction and stale evidence. No hidden keys, item-level grades, simulator policies or client implementations were read. No model calls were made. Line references below identify the baseline, before this PR's small changes.
 
 ## Findings ranked by impact

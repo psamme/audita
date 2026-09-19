@@ -168,3 +168,33 @@ open-ended, `hi` null, the card should lead with the limit input and the text as
 round amounts, which looks like a fee schedule; induction then attaches an open question instead of trusting the amount)
 and `source` can also be `"rejected"` after a not-about-the-amount answer.
 Non-main tracks keep their own logs: `corrections_<track>.jsonl`, `reopened_<track>.jsonl`.
+
+## Policy approval preview and safety update
+
+The local prototype requires an explicit senior `role` for band answers, interview approvals, conflict settlement, and retractions. `GET /api/clients` adds `senior_roles`. Unknown or omitted roles cannot grant approval. These are role checks, not identity authentication: run on loopback with one server worker; do not expose this prototype as a production approval service.
+
+`POST /api/playbook/preview-band` accepts the same fields as `answer-band`, plus required `period` (`YYYY-MM`). It computes the current and proposed outcomes for the entire period with no model calls. It does not save a playbook, correction log or reconciliation run. Response:
+
+```jsonc
+{
+  "preview_id": "opaque, single-use token", "client": "A", "track": "dev",
+  "period": "2026-03", "version": 1, "expires_in_seconds": 900,
+  "before": {"bank_items": 5, "bank_exceptions": 5, "automatic_exceptions": 1,
+             "needs_review": 4, "automatic_bank_items": 1},
+  "after": {"bank_items": 5, "bank_exceptions": 5, "automatic_exceptions": 2,
+            "needs_review": 3, "automatic_bank_items": 2},
+  "changed_items": [{"item_id": "...", "item_kind": "bank", "record": {},
+                     "before": {}, "after": {}, "before_claimed_by": null, "after_claimed_by": null}],
+  "diff": {}, "llm_calls": 0, "scope_note": "...", "accuracy_note": "..."
+}
+```
+
+The example numbers illustrate the shape only. `bank_exceptions` excludes tier-0 matches. Automatic exceptions include match, match-adjust and book actions, not carry-forward. Ledger items consumed by a bank match are reported with `after: null` and `after_claimed_by`, not silently labelled unaccounted-for. Changed routing counts as a decision change. A held answer returns `held`, `preview_id: null`, `diff: null`.
+
+`POST /api/playbook/apply-preview` takes `{preview_id, role}`. It requires the same role, policy and source-data fingerprint. An expired, already-used or stale preview returns 409 and must be regenerated. Success returns the usual band-answer result plus `reconciliation`, a saved no-model re-run of the previewed period. The run is labelled as a deterministic rehearsal, not an accuracy evaluation. Preview tokens live in memory and expire after 15 minutes; restarting the server invalidates them. Policy mutations are serialized in the single-process server.
+
+`POST /api/playbook/answer` adds `role`. `POST /api/retract` adds `role` and requires exactly one of `correction_id` or `precedent_id`. Repeating a successful retraction returns `already_retracted: true`, unchanged version and zero newly checked/reopened items. Correction validation failures return `diff: null`, unchanged version and a failed `check`. No invalid patch is published.
+
+Band answers reject non-finite amounts and yes/no values outside the current open band. Equal numeric boundaries do not link unrelated policies; automatic paired-boundary movement requires matching explicit `policy_id`. The readable sentence and numeric condition follow the supported boundary. Rule diffs include effective dates, approval state and unresolved questions.
+
+New evidence fingerprints include document content, bank records, link state and journal entries/reversals. New run summaries include `ledger_snapshot_ids`, allowing same-day or backdated additions to be identified without guessing timestamps. Stale changes may be `added`, `edited` or `deleted`. `complete_snapshot` distinguishes new snapshots from legacy runs, whose missing historical evidence cannot be reconstructed.
