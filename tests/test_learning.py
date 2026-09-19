@@ -179,3 +179,15 @@ def test_investigator_cannot_book_on_an_unsigned_rule():
     out = investigator.grounded(res, pb, Desk(), ["ar_lead", "controller"])
     assert out["action"] == "escalate" and out["escalate_to"] == "controller" and out["questions"] == ["Is approval required?"]
     assert out["proposed"]["action"] == "match_adjust" and out["ledger_ids"] == []
+
+
+def test_declared_policy_change_is_exempt_from_the_floor_and_says_so(fee_playbook):
+    con, pb = fee_playbook
+    new = correct._apply_ops(pb, [{"op": "add", "text": "From now on all bank fees go to merchant card fees.", "executable": True, "insert_before": "A-R-001",
+                                   "when": {"direction": "out", "counterparty_regex": "first prairie"}, "then": {"action": "book", "account": "6120"}}],
+                             "A", "correction A-COR-0002")
+    new["rules"][0]["valid_from"] = "2026-03-10"
+    saved, d = correct._finish(con, "A", TRACK, pb, new, {"type": "correction", "correction_id": "A-COR-0002", "by_role": "owner"})
+    rule = saved["rules"][0]
+    assert rule["status"] == "approved" and "Policy change effective 2026-03-10" in rule["floor_exempt"] and "owner" in rule["floor_exempt"]
+    assert any(a["id"] == rule["id"] and a["floor_exempt"] for a in d["added"])        # the exemption is in the diff a person reads

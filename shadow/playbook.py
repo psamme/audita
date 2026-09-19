@@ -45,7 +45,7 @@ def save(client: str, track: str, pb: dict, cause: dict) -> dict:
 
 def diff(a: dict, b: dict) -> dict:
     ra, rb = {r["id"]: r for r in a["rules"]}, {r["id"]: r for r in b["rules"]}
-    core = lambda r: {k: r.get(k) for k in ("text", "when", "then", "executable", "status", "bands")}
+    core = lambda r: {k: r.get(k) for k in ("text", "when", "then", "executable", "status", "bands", "valid_from", "floor_exempt", "below_floor")}
     return {"from": a["version"], "to": b["version"], "cause": b.get("cause"),
             "added": [rb[i] for i in rb if i not in ra], "removed": [ra[i] for i in ra if i not in rb],
             "changed": [{"before": ra[i], "after": rb[i]} for i in rb if i in ra and core(ra[i]) != core(rb[i])]}
@@ -469,6 +469,8 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
     cause = {"type": "interview", "source": "interview", "correction_id": correction_id, "rule_id": rule_id, "condition": condition,
              "value": value, "note": said[0].upper() + said[1:] + (f" ({res['held']})" if res["held"] else ""), "held": res["held"],
              "band_before": {"lo": res["before"]["lo"], "hi": res["before"]["hi"]}, "band_after": {"lo": band["lo"], "hi": band["hi"]},
+             "replay_check": "not applied: a band answer creates no rule, it only moves how far an existing, already replayed rule reaches, "
+                             "and only a senior role can give one",
              "patch": {"kind": "band", "rule_id": rule_id, "condition": condition, "value": value, "review": review,
                        "limit": limit, "not_amount": not_amount}}
     saved = save(client, track, {k: v for k, v in new.items() if k not in ("version", "created_at", "cause")}, cause)

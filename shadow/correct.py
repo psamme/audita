@@ -150,7 +150,7 @@ def _replay_failures(con, pb_new: dict, ops: list[dict], period: str | None) -> 
     for r in trial["rules"]:
         bt = r["backtest"]
         n = bt["support"] + bt["conflicts"]
-        if r["id"] in touched and r.get("executable") and n >= 2 and bt["support"] / n < RULE_FLOOR:
+        if r["id"] in touched and r.get("executable") and not r.get("valid_from") and n >= 2 and bt["support"] / n < RULE_FLOOR:
             bad.append(f"{r['id']} disagrees with {bt['conflicts']} of {n} past items it matched, e.g. {json.dumps(bt['conflict_examples'][:2], default=str)}")
     return "; ".join(bad) or None
 
@@ -168,7 +168,12 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
                 r["open_question"] = None
         bt = r.get("backtest") or {}
         n = bt.get("support", 0) + bt.get("conflicts", 0)
-        if confirmed and status == "approved" and r.get("executable") and n >= 2 and bt["support"] / n < RULE_FLOOR:
+        if r.get("valid_from") and confirmed and n >= 2 and bt["support"] / n < RULE_FLOOR:
+            # A declared change of policy is supposed to disagree with what came before it. The exemption is explicit, dated,
+            # tied to the senior who settled the conflict, and visible in the playbook diff.
+            r["floor_exempt"] = (f"Policy change effective {r['valid_from']}: disagrees with {bt['conflicts']} of {n} earlier items by design. "
+                                 f"Settled as a change of policy by {cause.get('by_role') or 'a senior'}.")
+        elif confirmed and status == "approved" and r.get("executable") and n >= 2 and bt["support"] / n < RULE_FLOOR:
             # Whatever a person said, the rule as WRITTEN replays against the client's own history and gets most of it wrong.
             # Either the patch mistranslated them (a wrong field, a wrong account) or it is a change of policy. It does not
             # execute until someone says which; meanwhile it stays as guidance for the investigator.
@@ -244,7 +249,7 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
         pb_new = _apply_ops(pb_old, patch["ops"], client, f"correction {entry['correction_id']}")
         touched = {op.get("assigned_id") or op.get("rule_id") for op in patch["ops"]}
         for r in pb_new["rules"]:
-            if r["id"] in touched and valid_from:
+            if r["id"] in touched and valid_from and is_senior:
                 r["valid_from"] = valid_from          # precedents before this date stop counting toward its bands
             if r["id"] in touched and not is_senior and (r.get("then") or {}).get("action") != "escalate" and r["status"] == "approved":
                 r |= {"status": "proposed", "human_confirmed": False, "awaiting_senior": True,
