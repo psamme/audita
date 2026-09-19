@@ -2,6 +2,7 @@
    and the correction form. A correction POSTs /api/corrections (10 to 25 s, one
    model call) and comes back as a playbook diff plus the items it now clears. */
 (async function () {
+  if (SO.track === "stage" || new URLSearchParams(location.search).get("track") === "stage") return;
   const { get, usd, cost, day, esc, role, cap, period, reasonPill, bandBar, outcome, verdict, cite, reasoning, ruleBlock, diffBlock } = SO;
   const view = document.getElementById("view"), summary = document.getElementById("summary"), runSel = document.getElementById("run");
   let clients = {}, run = null, queue = [], current = null, resultHtml = "";

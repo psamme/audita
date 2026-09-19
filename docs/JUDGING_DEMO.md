@@ -1,6 +1,6 @@
 # Shadow: the judging demo
 
-Use `demo.html`, not the old illustrative preview at port 8792. The new flow uses freshly model-induced policies learned from January and February ERP history. Eight preparation calls cost $2.262135 as reported by the CLI backend. The live flow needs no model calls.
+Start in `queue.html?track=stage` for the company review workspace. `demo.html` remains the full presentation walkthrough. The new flow uses freshly model-induced policies learned from January and February ERP history. Eight preparation calls cost $2.262135 as reported by the CLI backend. The live flow needs no model calls.
 
 ## Start
 
@@ -11,7 +11,7 @@ uv run python -m sim.build
 uv run python demo_stage.py --port 8795 --data-dir work/judging-final
 ```
 
-Open `http://127.0.0.1:8795/demo.html?track=stage`.
+Open `http://127.0.0.1:8795/queue.html?track=stage`.
 
 The saved induced policies are in `data/A/playbook/stage_learned/v1.json` and the corresponding B path. The launcher copies only agent-visible rows before April into its own sandbox, replays historical support with current code, and adds identical constructed May cases at both clients. It never reads hidden keys or truth databases. It never replaces the working client databases or main playbooks.
 
@@ -62,3 +62,12 @@ Rehearse the spoken demo once with a timer. Decide who operates the laptop and w
 ## Verification on this build
 
 `uv run pytest -q`: 87 passing tests, no expected failures. One warning is a third-party Starlette/AnyIO deprecation. The browser rehearsal exercised explicit sign-off, preview, apply, the changed client decision and undo. The end-to-end test also covers two independent approvals, selective retraction and persistent vendor holds. JavaScript syntax and git whitespace checks pass.
+
+## Queue-first rehearsal
+
+1. Open Workspace setup: inspect the loaded synthetic source history, learned policies and reviewer role; click Start reviewing. This is a readiness walkthrough, not a live accounting connector or authentication flow.
+2. Select Lucky Quarter Holdings. Verification holds appear first. Open the bank-change email to show why an exact match still needs a check.
+3. Select Policy questions, then the shortfall group. Customer names, receipts and $12.40 / $13.10 / $14.20 differences appear together.
+4. Set the limit to 15, approve the displayed rule/account, and Preview what changes. The concise preview shows the new policy and affected cases; the full audit diff is expandable. Approve from the queue.
+5. Switch to Resolved to inspect the cleared cases. Undo latest policy answer reopens them. Search, company switching, reviewer selection and Refresh queue remain available.
+6. Use Walkthrough, Experiment, Playbook and Results for the rest of the presentation. The original run-based correction queue is preserved on non-stage tracks.

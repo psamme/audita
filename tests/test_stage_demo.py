@@ -16,6 +16,8 @@ def test_learned_stage_two_answers_and_selective_undo(monkeypatch):
     left,right=first(a),first(b)
     for field in ('amount','date','description','counterparty','ref'):
         assert left['record'][field]==right['record'][field]
+    assert left['reference_invoice']['amount'] == 4800
+    assert left['reference_invoice']['direction'] == 'AR'
     assert left['resolution']['action']=='match_adjust'
     assert right['resolution']['action']=='escalate'
     assert result['both']['results'][0]['summary']['needs_review']==2

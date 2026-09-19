@@ -34,6 +34,8 @@ def report():
             for item in run['items']:
                 r = rules.get(item['resolution'].get('rule_id'))
                 item['rule'] = r
+                invoices = db.q(con, 'SELECT * FROM invoice WHERE id=?', item['record'].get('ref') or '')
+                item['reference_invoice'] = invoices[0] if invoices else None
                 item['original_rule'] = original_rules.get((r or {}).get('id'))
                 evidence_rule = item['original_rule'] or r
                 item['precedents'] = [historical[p] for p in (evidence_rule or {}).get('precedent_ids', []) if p in historical][:4]
@@ -80,7 +82,7 @@ def report():
             undoable = [e for e in events if e.get('correction_id') in applied_ids
                         and e.get('correction_id') not in retracted and e.get('type') != 'retraction']
             results.append({'client': client, 'name': info['name'], 'chart': info['chart'], 'role': next((g['role'] for g in groups if g['role'] in roles), roles[0] if roles else None),
-                            'version': pb['version'], 'trained_before': pb['trained_before'], 'cause': pb.get('cause'),
+                            'roles': roles, 'version': pb['version'], 'trained_before': pb['trained_before'], 'cause': pb.get('cause'),
                             'origin': cfg['provenance'][client], 'historical_cases': len(historical),
                             'history_bank_lines': db.q(con, 'SELECT COUNT(*) n FROM bank_line WHERE period < ?', pb['trained_before'])[0]['n'],
                             'rules': pb['rules'], 'groups': groups, 'items': run['items'],

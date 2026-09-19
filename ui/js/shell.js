@@ -4,9 +4,10 @@
   const canvas = document.getElementById("slab");
   const SEED = 11, VEINING = 0.75;
 
-  const NAV = [["index.html", "Experiment"], ["index.html#control", "Bank change"], ["queue.html", "Review queue"], ["playbook.html", "Playbook"], ["results.html", "Results"]];
+  const NAV = [["queue.html", "Review queue"], ["demo.html?track=stage", "Walkthrough"], ["index.html", "Experiment"], ["index.html#control", "Bank change"], ["playbook.html", "Playbook"], ["results.html", "Results"]];
   const here = location.pathname.split("/").pop() || "index.html";
   const nav = document.querySelector(".nav");
+  if (SO.track === "stage") document.querySelector(".mark").href = "queue.html?track=stage";
   if (nav) nav.innerHTML = NAV.map(([href, label]) => `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
 
   // Sam picked the white stone (Statuario, medium veining, whole page) as the look. Dark stays a toggle,

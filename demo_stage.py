@@ -80,5 +80,5 @@ if __name__=='__main__':
         shutil.rmtree(args.data_dir)
     prepare(args.data_dir,args.source_track)
     if not args.prepare_only:
-        print(f'Judging demo: http://127.0.0.1:{args.port}/demo.html?track=stage',flush=True)
+        print(f'Judging demo: http://127.0.0.1:{args.port}/queue.html?track=stage',flush=True)
         uvicorn.run('shadow.server:app',host='127.0.0.1',port=args.port)
