@@ -1,0 +1,11 @@
+From: ap@valewoodhealth.example
+To: ar@kestrelinference.example
+Date: 2026-03-16
+Subject: Payment for reviewed invoices
+
+Hi,
+
+The review is done. Today's payment of $6,000.00 covers the invoices dated January 1 that we had on hold. The March invoices follow on the usual schedule.
+
+Best,
+Accounts Payable

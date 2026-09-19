@@ -1,0 +1,10 @@
+From: finance@quarrysidebio.example
+To: ar@kestrelinference.example
+Date: 2026-03-05
+Subject: Prepaid API credits purchase
+
+Hi team,
+
+We'd like to purchase $25,000.00 in prepaid API credits. The wire goes out tomorrow. Please don't apply it to our open invoices; those will be paid on the normal cycle.
+
+Thanks

@@ -1,0 +1,10 @@
+From: ops@umberfieldfinance.example
+To: ar@kestrelinference.example
+Date: 2026-01-10
+Subject: SLA credit refund RF-1020
+
+Hi,
+
+Following the December outage we agreed a refund of $923.00 under the SLA. Reference RF-1020. Please wire it to the account on file.
+
+Thanks

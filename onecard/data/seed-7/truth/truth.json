@@ -1,0 +1,5717 @@
+{
+ "seed": 7,
+ "lines": {
+  "B-2026-01-0001": {
+   "kind": "outflow",
+   "date": "2026-01-02",
+   "amount": -3850000,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3850000,
+    "rent": 3850000
+   },
+   "erp_ids": [
+    "ERP-00332"
+   ]
+  },
+  "B-2026-01-0002": {
+   "kind": "payout",
+   "date": "2026-01-02",
+   "amount": 338339,
+   "traps": [
+    10
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 338339,
+    "stripe_clearing": -338339
+   },
+   "payout_id": "po_0700001"
+  },
+  "B-2026-01-0003": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 281473,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-032",
+   "settles": {
+    "INV-2255": 281473
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 281473,
+    "ar": -281473
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0004": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 1379592,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-040",
+   "settles": {
+    "INV-2319": 504929,
+    "INV-2320": 563176,
+    "INV-2321": 311487
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1379592,
+    "ar": -1379592
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0005": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 359605,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-028",
+   "settles": {
+    "INV-2223": 359605
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 359605,
+    "ar": -359605
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0006": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 660999,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-028",
+   "settles": {
+    "INV-2224": 660999
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 660999,
+    "ar": -660999
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0007": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 331818,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-035",
+   "settles": {
+    "INV-2280": 139849,
+    "INV-2281": 191969
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 331818,
+    "ar": -331818
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0008": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 989368,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-015",
+   "settles": {
+    "INV-2118": 654870,
+    "INV-2119": 334498
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 989368,
+    "ar": -989368
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0009": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 223190,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-027",
+   "settles": {
+    "INV-2215": 223190
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 223190,
+    "ar": -223190
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0010": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 571239,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-011",
+   "settles": {
+    "INV-2087": 571239
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 571239,
+    "ar": -571239
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0011": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 2613506,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-020",
+   "settles": {
+    "INV-2163": 1210161,
+    "INV-2164": 1403345
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2613506,
+    "ar": -2613506
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0012": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 2000000,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2035": 2000000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2000000,
+    "ar": -2000000
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0013": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 888505,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-033",
+   "settles": {
+    "INV-2261": 447888,
+    "INV-2262": 440617
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 888505,
+    "ar": -888505
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0014": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 639361,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2055": 639361
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 639361,
+    "ar": -639361
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0015": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 448934,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2193": 448934
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 448934,
+    "ar": -448934
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0016": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 725343,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2194": 725343
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 725343,
+    "ar": -725343
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0017": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 774138,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2195": 774138
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 774138,
+    "ar": -774138
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0018": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 922096,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-017",
+   "settles": {
+    "INV-2135": 922096
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 922096,
+    "ar": -922096
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0019": {
+   "kind": "receipt",
+   "date": "2026-01-02",
+   "amount": 1326356,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-017",
+   "settles": {
+    "INV-2136": 1326356
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1326356,
+    "ar": -1326356
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0020": {
+   "kind": "outflow",
+   "date": "2026-01-05",
+   "amount": -24154800,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -24154800,
+    "cloud_compute": 24154800
+   },
+   "erp_ids": [
+    "ERP-00333"
+   ]
+  },
+  "B-2026-01-0021": {
+   "kind": "payout",
+   "date": "2026-01-05",
+   "amount": 423026,
+   "traps": [
+    10
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 423026,
+    "stripe_clearing": -423026
+   },
+   "payout_id": "po_0700002"
+  },
+  "B-2026-01-0022": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 395641,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-032",
+   "settles": {
+    "INV-2254": 395641
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 395641,
+    "ar": -395641
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0023": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 169421,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-032",
+   "settles": {
+    "INV-2253": 169421
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 169421,
+    "ar": -169421
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0024": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 713874,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-003",
+   "settles": {
+    "INV-2018": 713874
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 713874,
+    "ar": -713874
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0025": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 635715,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2079": 635715
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 635715,
+    "ar": -635715
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0026": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 347378,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2080": 347378
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 347378,
+    "ar": -347378
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0027": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 417500,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-001",
+   "settles": {
+    "INV-2040": 421000
+   },
+   "residuals": [
+    {
+     "amount": 3500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 417500,
+    "ar": -421000,
+    "bank_fees": 3500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-01-0028": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 2219424,
+   "traps": [
+    8
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-009",
+   "settles": {
+    "INV-2071": 1161298,
+    "INV-2072": 1058126
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2219424,
+    "ar": -2219424
+   },
+   "why": "payer identity beats amount",
+   "hero": false
+  },
+  "B-2026-01-0029": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 1262612,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {
+    "INV-2046": 1262612
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1262612,
+    "ar": -1262612
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0030": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 1206880,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {
+    "INV-2047": 1206880
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1206880,
+    "ar": -1206880
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0031": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 1947830,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2036": 1947830
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1947830,
+    "ar": -1947830
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0032": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 1547997,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2034": 1547997
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1547997,
+    "ar": -1547997
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0033": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 441860,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-025",
+   "settles": {
+    "INV-2202": 441860
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 441860,
+    "ar": -441860
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0034": {
+   "kind": "receipt",
+   "date": "2026-01-05",
+   "amount": 2215951,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-002",
+   "settles": {
+    "INV-2010": 2215951
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2215951,
+    "ar": -2215951
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0035": {
+   "kind": "payout",
+   "date": "2026-01-06",
+   "amount": 672183,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 672183,
+    "stripe_clearing": -672183
+   },
+   "payout_id": "po_0700003"
+  },
+  "B-2026-01-0036": {
+   "kind": "receipt",
+   "date": "2026-01-06",
+   "amount": 1588766,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-026",
+   "settles": {
+    "INV-2207": 1588766
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1588766,
+    "ar": -1588766
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0037": {
+   "kind": "receipt",
+   "date": "2026-01-06",
+   "amount": 2887763,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-026",
+   "settles": {
+    "INV-2209": 2887763
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2887763,
+    "ar": -2887763
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0038": {
+   "kind": "outflow",
+   "date": "2026-01-07",
+   "amount": -3080977,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3080977,
+    "vendors_opex": 3080977
+   },
+   "erp_ids": [
+    "ERP-00339"
+   ]
+  },
+  "B-2026-01-0039": {
+   "kind": "outflow",
+   "date": "2026-01-07",
+   "amount": -1586080,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1586080,
+    "vendors_opex": 1586080
+   },
+   "erp_ids": [
+    "ERP-00343"
+   ]
+  },
+  "B-2026-01-0040": {
+   "kind": "payout",
+   "date": "2026-01-07",
+   "amount": 953789,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 953789,
+    "stripe_clearing": -953789
+   },
+   "payout_id": "po_0700004"
+  },
+  "B-2026-01-0041": {
+   "kind": "receipt",
+   "date": "2026-01-07",
+   "amount": 132340,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2155": 132340
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 132340,
+    "ar": -132340
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0042": {
+   "kind": "receipt",
+   "date": "2026-01-07",
+   "amount": 5379120,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-034",
+   "settles": {
+    "INV-2269": 1740773,
+    "INV-2270": 2105437,
+    "INV-2271": 1532910
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 5379120,
+    "ar": -5379120
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0043": {
+   "kind": "payout",
+   "date": "2026-01-08",
+   "amount": 340461,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 340461,
+    "stripe_clearing": -340461
+   },
+   "payout_id": "po_0700005"
+  },
+  "B-2026-01-0044": {
+   "kind": "receipt",
+   "date": "2026-01-08",
+   "amount": 891905,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-003",
+   "settles": {
+    "INV-2019": 891905
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 891905,
+    "ar": -891905
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0045": {
+   "kind": "receipt",
+   "date": "2026-01-08",
+   "amount": 135762,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2153": 135762
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 135762,
+    "ar": -135762
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0046": {
+   "kind": "receipt",
+   "date": "2026-01-08",
+   "amount": 48561,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2154": 48561
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 48561,
+    "ar": -48561
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0047": {
+   "kind": "receipt",
+   "date": "2026-01-08",
+   "amount": 600000,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-022",
+   "settles": {
+    "INV-2177": 204000,
+    "INV-2178": 396000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 600000,
+    "ar": -600000
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0048": {
+   "kind": "outflow",
+   "date": "2026-01-09",
+   "amount": -2616887,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2616887,
+    "vendors_opex": 2616887
+   },
+   "erp_ids": [
+    "ERP-00345"
+   ]
+  },
+  "B-2026-01-0049": {
+   "kind": "payout",
+   "date": "2026-01-09",
+   "amount": 322012,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 322012,
+    "stripe_clearing": -322012
+   },
+   "payout_id": "po_0700006"
+  },
+  "B-2026-01-0050": {
+   "kind": "receipt",
+   "date": "2026-01-09",
+   "amount": 1595698,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2144": 1595698
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1595698,
+    "ar": -1595698
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0051": {
+   "kind": "receipt",
+   "date": "2026-01-09",
+   "amount": 1076186,
+   "traps": [
+    "contract_discount"
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-031",
+   "settles": {
+    "INV-2247": 525001,
+    "INV-2248": 562055
+   },
+   "residuals": [
+    {
+     "amount": 10870,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "contract_discount"
+    }
+   ],
+   "entry": {
+    "cash": 1076186,
+    "ar": -1087056,
+    "sales_discounts": 10870
+   },
+   "why": "contract allows 1% within 10 days",
+   "hero": false
+  },
+  "B-2026-01-0052": {
+   "kind": "receipt",
+   "date": "2026-01-09",
+   "amount": 1000000,
+   "traps": [
+    7
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 1000000,
+     "reason": "PREPAID_CREDITS",
+     "treatment": "deferred_revenue"
+    }
+   ],
+   "entry": {
+    "cash": 1000000,
+    "deferred_revenue": -1000000
+   },
+   "why": "prepaid credits are deferred revenue",
+   "hero": false
+  },
+  "B-2026-01-0053": {
+   "kind": "receipt",
+   "date": "2026-01-09",
+   "amount": 846619,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-013",
+   "settles": {
+    "INV-2101": 846619
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 846619,
+    "ar": -846619
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0054": {
+   "kind": "outflow",
+   "date": "2026-01-12",
+   "amount": -745518,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -745518,
+    "vendors_opex": 745518
+   },
+   "erp_ids": [
+    "ERP-00347"
+   ]
+  },
+  "B-2026-01-0055": {
+   "kind": "outflow",
+   "date": "2026-01-12",
+   "amount": -92300,
+   "traps": [
+    4
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": -92300,
+    "refunds": 92300
+   },
+   "erp_ids": [
+    "ERP-00349"
+   ]
+  },
+  "B-2026-01-0056": {
+   "kind": "payout",
+   "date": "2026-01-12",
+   "amount": 256074,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 256074,
+    "stripe_clearing": -256074
+   },
+   "payout_id": "po_0700007"
+  },
+  "B-2026-01-0057": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 670000,
+   "traps": [
+    1
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-023",
+   "settles": {
+    "INV-2185": 201000,
+    "INV-2186": 469000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 670000,
+    "ar": -670000
+   },
+   "why": "structured remittance advice names the invoices",
+   "hero": false
+  },
+  "B-2026-01-0058": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 742760,
+   "traps": [
+    2,
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-001",
+   "settles": {
+    "INV-2041": 248000,
+    "INV-2042": 312000,
+    "INV-2043": 187500
+   },
+   "residuals": [
+    {
+     "amount": 3500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    },
+    {
+     "amount": 1240,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "write_off_discount"
+    }
+   ],
+   "entry": {
+    "cash": 742760,
+    "ar": -747500,
+    "bank_fees": 3500,
+    "sales_discounts": 1240
+   },
+   "why": "hidden policy: wire fee and short-pay",
+   "hero": true
+  },
+  "B-2026-01-0059": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 1577034,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2145": 1577034
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1577034,
+    "ar": -1577034
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0060": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 1853852,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-026",
+   "settles": {
+    "INV-2208": 1853852
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1853852,
+    "ar": -1853852
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0061": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 302131,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-030",
+   "settles": {
+    "INV-2237": 177697,
+    "INV-2238": 124434
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 302131,
+    "ar": -302131
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0062": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 1547997,
+   "traps": [
+    5
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-005",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 1547997,
+     "reason": "DUPLICATE_PAYMENT",
+     "treatment": "customer_credit"
+    }
+   ],
+   "entry": {
+    "cash": 1547997,
+    "customer_credits": -1547997
+   },
+   "why": "hidden policy: duplicates",
+   "hero": false
+  },
+  "B-2026-01-0063": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 1732610,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-029",
+   "settles": {
+    "INV-2230": 1732610
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1732610,
+    "ar": -1732610
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0064": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 1114448,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-029",
+   "settles": {
+    "INV-2231": 1114448
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1114448,
+    "ar": -1114448
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0065": {
+   "kind": "receipt",
+   "date": "2026-01-12",
+   "amount": 455342,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-013",
+   "settles": {
+    "INV-2100": 455342
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 455342,
+    "ar": -455342
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0066": {
+   "kind": "outflow",
+   "date": "2026-01-13",
+   "amount": -630323,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -630323,
+    "vendors_opex": 630323
+   },
+   "erp_ids": [
+    "ERP-00340"
+   ]
+  },
+  "B-2026-01-0067": {
+   "kind": "outflow",
+   "date": "2026-01-13",
+   "amount": -1105479,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1105479,
+    "vendors_opex": 1105479
+   },
+   "erp_ids": [
+    "ERP-00342"
+   ]
+  },
+  "B-2026-01-0068": {
+   "kind": "payout",
+   "date": "2026-01-13",
+   "amount": 288848,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 288848,
+    "stripe_clearing": -288848
+   },
+   "payout_id": "po_0700008"
+  },
+  "B-2026-01-0069": {
+   "kind": "outflow",
+   "date": "2026-01-14",
+   "amount": -3241015,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3241015,
+    "vendors_opex": 3241015
+   },
+   "erp_ids": [
+    "ERP-00348"
+   ]
+  },
+  "B-2026-01-0070": {
+   "kind": "payout",
+   "date": "2026-01-14",
+   "amount": 474039,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 474039,
+    "stripe_clearing": -474039
+   },
+   "payout_id": "po_0700009"
+  },
+  "B-2026-01-0071": {
+   "kind": "receipt",
+   "date": "2026-01-14",
+   "amount": 711617,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-004",
+   "settles": {
+    "INV-2027": 347471,
+    "INV-2028": 366646
+   },
+   "residuals": [
+    {
+     "amount": 2500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 711617,
+    "ar": -714117,
+    "bank_fees": 2500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-01-0072": {
+   "kind": "outflow",
+   "date": "2026-01-15",
+   "amount": -13301700,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -13301700,
+    "payroll": 9659000,
+    "payroll_taxes": 3642700
+   },
+   "erp_ids": [
+    "ERP-00334",
+    "ERP-00335"
+   ]
+  },
+  "B-2026-01-0073": {
+   "kind": "payout",
+   "date": "2026-01-15",
+   "amount": 278257,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 278257,
+    "stripe_clearing": -278257
+   },
+   "payout_id": "po_0700010"
+  },
+  "B-2026-01-0074": {
+   "kind": "receipt",
+   "date": "2026-01-15",
+   "amount": 225427,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-012",
+   "settles": {
+    "INV-2092": 225427
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 225427,
+    "ar": -225427
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0075": {
+   "kind": "payout",
+   "date": "2026-01-16",
+   "amount": 142649,
+   "traps": [
+    11
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 142649,
+    "stripe_clearing": -154149,
+    "chargeback_losses": 10000,
+    "dispute_fees": 1500
+   },
+   "payout_id": "po_0700011"
+  },
+  "B-2026-01-0076": {
+   "kind": "outflow",
+   "date": "2026-01-19",
+   "amount": -1575188,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1575188,
+    "vendors_opex": 1575188
+   },
+   "erp_ids": [
+    "ERP-00338"
+   ]
+  },
+  "B-2026-01-0077": {
+   "kind": "payout",
+   "date": "2026-01-19",
+   "amount": 474339,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 474339,
+    "stripe_clearing": -474339
+   },
+   "payout_id": "po_0700012"
+  },
+  "B-2026-01-0078": {
+   "kind": "receipt",
+   "date": "2026-01-19",
+   "amount": 1260000,
+   "traps": [
+    1
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-039",
+   "settles": {
+    "INV-2311": 453600,
+    "INV-2312": 806400
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1260000,
+    "ar": -1260000
+   },
+   "why": "no remittance; oldest-first by controller policy",
+   "hero": false
+  },
+  "B-2026-01-0079": {
+   "kind": "payout",
+   "date": "2026-01-20",
+   "amount": 238416,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 238416,
+    "stripe_clearing": -238416
+   },
+   "payout_id": "po_0700013"
+  },
+  "B-2026-01-0080": {
+   "kind": "receipt",
+   "date": "2026-01-20",
+   "amount": 405900,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2054": 405900
+   },
+   "residuals": [
+    {
+     "amount": 4100,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "leave_open_chase"
+    }
+   ],
+   "entry": {
+    "cash": 405900,
+    "ar": -405900
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-01-0081": {
+   "kind": "payout",
+   "date": "2026-01-21",
+   "amount": 459900,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 459900,
+    "stripe_clearing": -459900
+   },
+   "payout_id": "po_0700014"
+  },
+  "B-2026-01-0082": {
+   "kind": "payout",
+   "date": "2026-01-22",
+   "amount": 106220,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 106220,
+    "stripe_clearing": -106220
+   },
+   "payout_id": "po_0700015"
+  },
+  "B-2026-01-0083": {
+   "kind": "receipt",
+   "date": "2026-01-22",
+   "amount": 3327326,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-014",
+   "settles": {
+    "INV-2108": 1221202,
+    "INV-2109": 1000510,
+    "INV-2110": 1110114
+   },
+   "residuals": [
+    {
+     "amount": 4500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 3327326,
+    "ar": -3331826,
+    "bank_fees": 4500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-01-0084": {
+   "kind": "outflow",
+   "date": "2026-01-23",
+   "amount": -2243828,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2243828,
+    "vendors_opex": 2243828
+   },
+   "erp_ids": [
+    "ERP-00344"
+   ]
+  },
+  "B-2026-01-0085": {
+   "kind": "payout",
+   "date": "2026-01-23",
+   "amount": 372474,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 372474,
+    "stripe_clearing": -372474
+   },
+   "payout_id": "po_0700016"
+  },
+  "B-2026-01-0086": {
+   "kind": "outflow",
+   "date": "2026-01-26",
+   "amount": -3355024,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3355024,
+    "vendors_opex": 3355024
+   },
+   "erp_ids": [
+    "ERP-00341"
+   ]
+  },
+  "B-2026-01-0087": {
+   "kind": "payout",
+   "date": "2026-01-26",
+   "amount": 181307,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 181307,
+    "stripe_clearing": -181307
+   },
+   "payout_id": "po_0700017"
+  },
+  "B-2026-01-0088": {
+   "kind": "outflow",
+   "date": "2026-01-27",
+   "amount": -3863625,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3863625,
+    "vendors_opex": 3863625
+   },
+   "erp_ids": [
+    "ERP-00346"
+   ]
+  },
+  "B-2026-01-0089": {
+   "kind": "payout",
+   "date": "2026-01-27",
+   "amount": 419022,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 419022,
+    "stripe_clearing": -419022
+   },
+   "payout_id": "po_0700018"
+  },
+  "B-2026-01-0090": {
+   "kind": "receipt",
+   "date": "2026-01-27",
+   "amount": 2295880,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-038",
+   "settles": {
+    "INV-2307": 2295880
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2295880,
+    "ar": -2295880
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0091": {
+   "kind": "receipt",
+   "date": "2026-01-27",
+   "amount": 1901409,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-038",
+   "settles": {
+    "INV-2308": 1901409
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1901409,
+    "ar": -1901409
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0092": {
+   "kind": "receipt",
+   "date": "2026-01-27",
+   "amount": 2595026,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-036",
+   "settles": {
+    "INV-2288": 1199319,
+    "INV-2289": 1399207
+   },
+   "residuals": [
+    {
+     "amount": 3500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 2595026,
+    "ar": -2598526,
+    "bank_fees": 3500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-01-0093": {
+   "kind": "payout",
+   "date": "2026-01-28",
+   "amount": 949546,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 949546,
+    "stripe_clearing": -949546
+   },
+   "payout_id": "po_0700019"
+  },
+  "B-2026-01-0094": {
+   "kind": "receipt",
+   "date": "2026-01-28",
+   "amount": 1481752,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-037",
+   "settles": {
+    "INV-2299": 1481752
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1481752,
+    "ar": -1481752
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0095": {
+   "kind": "receipt",
+   "date": "2026-01-28",
+   "amount": 1295360,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-037",
+   "settles": {
+    "INV-2301": 1295360
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1295360,
+    "ar": -1295360
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0096": {
+   "kind": "payout",
+   "date": "2026-01-29",
+   "amount": 481076,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 481076,
+    "stripe_clearing": -481076
+   },
+   "payout_id": "po_0700020"
+  },
+  "B-2026-01-0097": {
+   "kind": "payout",
+   "date": "2026-01-30",
+   "amount": 404487,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 404487,
+    "stripe_clearing": -404487
+   },
+   "payout_id": "po_0700021"
+  },
+  "B-2026-01-0098": {
+   "kind": "receipt",
+   "date": "2026-01-30",
+   "amount": 932469,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-037",
+   "settles": {
+    "INV-2300": 932469
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 932469,
+    "ar": -932469
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-01-0099": {
+   "kind": "outflow",
+   "date": "2026-01-31",
+   "amount": -13050500,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -13050500,
+    "payroll": 9593700,
+    "payroll_taxes": 3456800
+   },
+   "erp_ids": [
+    "ERP-00336",
+    "ERP-00337"
+   ]
+  },
+  "B-2026-02-0001": {
+   "kind": "outflow",
+   "date": "2026-02-02",
+   "amount": -3850000,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3850000,
+    "rent": 3850000
+   },
+   "erp_ids": [
+    "ERP-00351"
+   ]
+  },
+  "B-2026-02-0002": {
+   "kind": "payout",
+   "date": "2026-02-02",
+   "amount": 315275,
+   "traps": [
+    10
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 315275,
+    "stripe_clearing": -315275
+   },
+   "payout_id": "po_0700022"
+  },
+  "B-2026-02-0003": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 221834,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-032",
+   "settles": {
+    "INV-2256": 221834
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 221834,
+    "ar": -221834
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0004": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 401818,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-028",
+   "settles": {
+    "INV-2225": 401818
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 401818,
+    "ar": -401818
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0005": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 367103,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-028",
+   "settles": {
+    "INV-2226": 367103
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 367103,
+    "ar": -367103
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0006": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 341407,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-035",
+   "settles": {
+    "INV-2282": 133521,
+    "INV-2283": 207886
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 341407,
+    "ar": -341407
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0007": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 657423,
+   "traps": [
+    6
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-008",
+   "settles": {
+    "INV-2065": 379759,
+    "INV-2066": 277664
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 657423,
+    "ar": -657423
+   },
+   "why": "email links parent to subsidiary",
+   "hero": false
+  },
+  "B-2026-02-0008": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 456277,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-027",
+   "settles": {
+    "INV-2216": 456277
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 456277,
+    "ar": -456277
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0009": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 212652,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-027",
+   "settles": {
+    "INV-2217": 212652
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 212652,
+    "ar": -212652
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0010": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 285514,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-027",
+   "settles": {
+    "INV-2218": 285514
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 285514,
+    "ar": -285514
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0011": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 778381,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-011",
+   "settles": {
+    "INV-2088": 778381
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 778381,
+    "ar": -778381
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0012": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 479217,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {
+    "INV-2048": 479217
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 479217,
+    "ar": -479217
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0013": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 2000000,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2037": 2000000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2000000,
+    "ar": -2000000
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0014": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 1659741,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-002",
+   "settles": {
+    "INV-2013": 1659741
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1659741,
+    "ar": -1659741
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0015": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 2421725,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-002",
+   "settles": {
+    "INV-2012": 2421725
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2421725,
+    "ar": -2421725
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0016": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 939048,
+   "traps": [
+    8
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-033",
+   "settles": {
+    "INV-2263": 519639,
+    "INV-2264": 419409
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 939048,
+    "ar": -939048
+   },
+   "why": "payer identity beats amount",
+   "hero": false
+  },
+  "B-2026-02-0017": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 518703,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2056": 518703
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 518703,
+    "ar": -518703
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0018": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 595984,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2057": 595984
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 595984,
+    "ar": -595984
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0019": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 654868,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2058": 654868
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 654868,
+    "ar": -654868
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0020": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 617767,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2196": 617767
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 617767,
+    "ar": -617767
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0021": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 1028862,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2197": 1028862
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1028862,
+    "ar": -1028862
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0022": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 289379,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-021",
+   "settles": {
+    "INV-2171": 289379
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 289379,
+    "ar": -289379
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0023": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 1298149,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-017",
+   "settles": {
+    "INV-2137": 1298149
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1298149,
+    "ar": -1298149
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0024": {
+   "kind": "receipt",
+   "date": "2026-02-02",
+   "amount": 819961,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-017",
+   "settles": {
+    "INV-2138": 819961
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 819961,
+    "ar": -819961
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0025": {
+   "kind": "payout",
+   "date": "2026-02-03",
+   "amount": 378150,
+   "traps": [
+    10
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 378150,
+    "stripe_clearing": -378150
+   },
+   "payout_id": "po_0700023"
+  },
+  "B-2026-02-0026": {
+   "kind": "receipt",
+   "date": "2026-02-03",
+   "amount": 265636,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-040",
+   "settles": {
+    "INV-2322": 265636
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 265636,
+    "ar": -265636
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0027": {
+   "kind": "receipt",
+   "date": "2026-02-03",
+   "amount": 3360026,
+   "traps": [
+    6
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-016",
+   "settles": {
+    "INV-2126": 931868,
+    "INV-2127": 1164739,
+    "INV-2128": 1263419
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 3360026,
+    "ar": -3360026
+   },
+   "why": "email links parent to subsidiary",
+   "hero": false
+  },
+  "B-2026-02-0028": {
+   "kind": "receipt",
+   "date": "2026-02-03",
+   "amount": 807112,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-025",
+   "settles": {
+    "INV-2203": 807112
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 807112,
+    "ar": -807112
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0029": {
+   "kind": "receipt",
+   "date": "2026-02-03",
+   "amount": 299287,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-025",
+   "settles": {
+    "INV-2204": 299287
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 299287,
+    "ar": -299287
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0030": {
+   "kind": "outflow",
+   "date": "2026-02-04",
+   "amount": -2114255,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2114255,
+    "vendors_opex": 2114255
+   },
+   "erp_ids": [
+    "ERP-00361"
+   ]
+  },
+  "B-2026-02-0031": {
+   "kind": "outflow",
+   "date": "2026-02-04",
+   "amount": -850229,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -850229,
+    "vendors_opex": 850229
+   },
+   "erp_ids": [
+    "ERP-00368"
+   ]
+  },
+  "B-2026-02-0032": {
+   "kind": "payout",
+   "date": "2026-02-04",
+   "amount": 996663,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 996663,
+    "stripe_clearing": -996663
+   },
+   "payout_id": "po_0700024"
+  },
+  "B-2026-02-0033": {
+   "kind": "receipt",
+   "date": "2026-02-04",
+   "amount": 191683,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-032",
+   "settles": {
+    "INV-2257": 191683
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 191683,
+    "ar": -191683
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0034": {
+   "kind": "receipt",
+   "date": "2026-02-04",
+   "amount": 2647890,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-036",
+   "settles": {
+    "INV-2290": 1363380,
+    "INV-2291": 1284510
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2647890,
+    "ar": -2647890
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0035": {
+   "kind": "receipt",
+   "date": "2026-02-04",
+   "amount": 373125,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-002",
+   "settles": {
+    "INV-2011": 375000
+   },
+   "residuals": [
+    {
+     "amount": 1875,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "write_off_discount"
+    }
+   ],
+   "entry": {
+    "cash": 373125,
+    "ar": -375000,
+    "sales_discounts": 1875
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-02-0036": {
+   "kind": "outflow",
+   "date": "2026-02-05",
+   "amount": -1747406,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1747406,
+    "vendors_opex": 1747406
+   },
+   "erp_ids": [
+    "ERP-00362"
+   ]
+  },
+  "B-2026-02-0037": {
+   "kind": "outflow",
+   "date": "2026-02-05",
+   "amount": -304654,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -304654,
+    "vendors_opex": 304654
+   },
+   "erp_ids": [
+    "ERP-00367"
+   ]
+  },
+  "B-2026-02-0038": {
+   "kind": "outflow",
+   "date": "2026-02-05",
+   "amount": -2094420,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2094420,
+    "vendors_opex": 2094420
+   },
+   "erp_ids": [
+    "ERP-00358"
+   ]
+  },
+  "B-2026-02-0039": {
+   "kind": "outflow",
+   "date": "2026-02-05",
+   "amount": -25250700,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -25250700,
+    "cloud_compute": 25250700
+   },
+   "erp_ids": [
+    "ERP-00352"
+   ]
+  },
+  "B-2026-02-0040": {
+   "kind": "payout",
+   "date": "2026-02-05",
+   "amount": 155120,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 155120,
+    "stripe_clearing": -155120
+   },
+   "payout_id": "po_0700025"
+  },
+  "B-2026-02-0041": {
+   "kind": "receipt",
+   "date": "2026-02-05",
+   "amount": 294029,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2081": 294029
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 294029,
+    "ar": -294029
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0042": {
+   "kind": "receipt",
+   "date": "2026-02-05",
+   "amount": 722192,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2082": 722192
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 722192,
+    "ar": -722192
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0043": {
+   "kind": "receipt",
+   "date": "2026-02-05",
+   "amount": 1622996,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-009",
+   "settles": {
+    "INV-2073": 901658,
+    "INV-2074": 721338
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1622996,
+    "ar": -1622996
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0044": {
+   "kind": "receipt",
+   "date": "2026-02-05",
+   "amount": 639954,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {
+    "INV-2049": 639954
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 639954,
+    "ar": -639954
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0045": {
+   "kind": "payout",
+   "date": "2026-02-06",
+   "amount": 520977,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 520977,
+    "stripe_clearing": -520977
+   },
+   "payout_id": "po_0700026"
+  },
+  "B-2026-02-0046": {
+   "kind": "receipt",
+   "date": "2026-02-06",
+   "amount": 1444422,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2148": 1444422
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1444422,
+    "ar": -1444422
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0047": {
+   "kind": "receipt",
+   "date": "2026-02-06",
+   "amount": 729969,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-015",
+   "settles": {
+    "INV-2120": 731469
+   },
+   "residuals": [
+    {
+     "amount": 1500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 729969,
+    "ar": -731469,
+    "bank_fees": 1500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-02-0048": {
+   "kind": "outflow",
+   "date": "2026-02-09",
+   "amount": -3866172,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3866172,
+    "vendors_opex": 3866172
+   },
+   "erp_ids": [
+    "ERP-00365"
+   ]
+  },
+  "B-2026-02-0049": {
+   "kind": "outflow",
+   "date": "2026-02-09",
+   "amount": -3921696,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3921696,
+    "vendors_opex": 3921696
+   },
+   "erp_ids": [
+    "ERP-00364"
+   ]
+  },
+  "B-2026-02-0050": {
+   "kind": "payout",
+   "date": "2026-02-09",
+   "amount": 278227,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 278227,
+    "stripe_clearing": -278227
+   },
+   "payout_id": "po_0700027"
+  },
+  "B-2026-02-0051": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 1007584,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-001",
+   "settles": {
+    "INV-2001": 510537,
+    "INV-2002": 300037,
+    "INV-2003": 198000
+   },
+   "residuals": [
+    {
+     "amount": 990,
+     "reason": "DISCOUNT_TAKEN",
+     "on": "INV-2003",
+     "treatment": "write_off_discount"
+    }
+   ],
+   "entry": {
+    "cash": 1007584,
+    "ar": -1008574,
+    "sales_discounts": 990
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-02-0052": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 2219424,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-003",
+   "settles": {
+    "INV-2020": 2219424
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2219424,
+    "ar": -2219424
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0053": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 885104,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-003",
+   "settles": {
+    "INV-2021": 885104
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 885104,
+    "ar": -885104
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0054": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 136087,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2156": 136087
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 136087,
+    "ar": -136087
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0055": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 119051,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2157": 119051
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 119051,
+    "ar": -119051
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0056": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 62465,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2158": 62465
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 62465,
+    "ar": -62465
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0057": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 1437368,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2146": 1437368
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1437368,
+    "ar": -1437368
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0058": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 1024443,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2147": 1024443
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1024443,
+    "ar": -1024443
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0059": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 427324,
+   "traps": [
+    "contract_discount"
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-031",
+   "settles": {
+    "INV-2249": 431640
+   },
+   "residuals": [
+    {
+     "amount": 4316,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "contract_discount"
+    }
+   ],
+   "entry": {
+    "cash": 427324,
+    "ar": -431640,
+    "sales_discounts": 4316
+   },
+   "why": "contract allows 1% within 10 days",
+   "hero": false
+  },
+  "B-2026-02-0060": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 2200613,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-026",
+   "settles": {
+    "INV-2211": 2200613
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2200613,
+    "ar": -2200613
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0061": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 249691,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-030",
+   "settles": {
+    "INV-2239": 152231,
+    "INV-2240": 97460
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 249691,
+    "ar": -249691
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0062": {
+   "kind": "receipt",
+   "date": "2026-02-09",
+   "amount": 2990734,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-034",
+   "settles": {
+    "INV-2272": 1541984,
+    "INV-2273": 1448750
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2990734,
+    "ar": -2990734
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0063": {
+   "kind": "payout",
+   "date": "2026-02-10",
+   "amount": 256350,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 256350,
+    "stripe_clearing": -256350
+   },
+   "payout_id": "po_0700028"
+  },
+  "B-2026-02-0064": {
+   "kind": "receipt",
+   "date": "2026-02-10",
+   "amount": 294029,
+   "traps": [
+    5
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-010",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 294029,
+     "reason": "DUPLICATE_PAYMENT",
+     "treatment": "customer_credit"
+    }
+   ],
+   "entry": {
+    "cash": 294029,
+    "customer_credits": -294029
+   },
+   "why": "hidden policy: duplicates",
+   "hero": false
+  },
+  "B-2026-02-0065": {
+   "kind": "receipt",
+   "date": "2026-02-10",
+   "amount": 1260000,
+   "traps": [
+    1
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-039",
+   "settles": {
+    "INV-2313": 529200,
+    "INV-2314": 730800
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1260000,
+    "ar": -1260000
+   },
+   "why": "no remittance; oldest-first by controller policy",
+   "hero": false
+  },
+  "B-2026-02-0066": {
+   "kind": "receipt",
+   "date": "2026-02-10",
+   "amount": 1017195,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-013",
+   "settles": {
+    "INV-2102": 1017195
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1017195,
+    "ar": -1017195
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0067": {
+   "kind": "payout",
+   "date": "2026-02-11",
+   "amount": 943523,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 943523,
+    "stripe_clearing": -943523
+   },
+   "payout_id": "po_0700029"
+  },
+  "B-2026-02-0068": {
+   "kind": "receipt",
+   "date": "2026-02-11",
+   "amount": 500000,
+   "traps": [
+    7
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 500000,
+     "reason": "PREPAID_CREDITS",
+     "treatment": "deferred_revenue"
+    }
+   ],
+   "entry": {
+    "cash": 500000,
+    "deferred_revenue": -500000
+   },
+   "why": "prepaid credits are deferred revenue",
+   "hero": false
+  },
+  "B-2026-02-0069": {
+   "kind": "payout",
+   "date": "2026-02-12",
+   "amount": 206343,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 206343,
+    "stripe_clearing": -206343
+   },
+   "payout_id": "po_0700030"
+  },
+  "B-2026-02-0070": {
+   "kind": "receipt",
+   "date": "2026-02-12",
+   "amount": 1598963,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-029",
+   "settles": {
+    "INV-2232": 1598963
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1598963,
+    "ar": -1598963
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0071": {
+   "kind": "receipt",
+   "date": "2026-02-12",
+   "amount": 1502296,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-029",
+   "settles": {
+    "INV-2233": 1502296
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1502296,
+    "ar": -1502296
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0072": {
+   "kind": "outflow",
+   "date": "2026-02-13",
+   "amount": -188900,
+   "traps": [
+    4
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": -188900,
+    "refunds": 188900
+   },
+   "erp_ids": [
+    "ERP-00369"
+   ]
+  },
+  "B-2026-02-0073": {
+   "kind": "payout",
+   "date": "2026-02-13",
+   "amount": 58924,
+   "traps": [
+    11
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 58924,
+    "stripe_clearing": -110424,
+    "chargeback_losses": 50000,
+    "dispute_fees": 1500
+   },
+   "payout_id": "po_0700031"
+  },
+  "B-2026-02-0074": {
+   "kind": "receipt",
+   "date": "2026-02-13",
+   "amount": 670000,
+   "traps": [
+    1
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-023",
+   "settles": {
+    "INV-2187": 247900,
+    "INV-2188": 422100
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 670000,
+    "ar": -670000
+   },
+   "why": "structured remittance advice names the invoices",
+   "hero": false
+  },
+  "B-2026-02-0075": {
+   "kind": "receipt",
+   "date": "2026-02-13",
+   "amount": 1239667,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-004",
+   "settles": {
+    "INV-2029": 396806,
+    "INV-2030": 374124,
+    "INV-2031": 471237
+   },
+   "residuals": [
+    {
+     "amount": 2500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 1239667,
+    "ar": -1242167,
+    "bank_fees": 2500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-02-0076": {
+   "kind": "receipt",
+   "date": "2026-02-13",
+   "amount": 600000,
+   "traps": [
+    1
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-022",
+   "settles": {
+    "INV-2181": 162000,
+    "INV-2182": 438000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 600000,
+    "ar": -600000
+   },
+   "why": "email thread directs payment to the February-dated invoices",
+   "hero": false
+  },
+  "B-2026-02-0077": {
+   "kind": "outflow",
+   "date": "2026-02-16",
+   "amount": -2032179,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2032179,
+    "vendors_opex": 2032179
+   },
+   "erp_ids": [
+    "ERP-00357"
+   ]
+  },
+  "B-2026-02-0078": {
+   "kind": "outflow",
+   "date": "2026-02-16",
+   "amount": -13480800,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -13480800,
+    "payroll": 9817700,
+    "payroll_taxes": 3663100
+   },
+   "erp_ids": [
+    "ERP-00353",
+    "ERP-00354"
+   ]
+  },
+  "B-2026-02-0079": {
+   "kind": "outflow",
+   "date": "2026-02-16",
+   "amount": -1836053,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1836053,
+    "vendors_opex": 1836053
+   },
+   "erp_ids": [
+    "ERP-00366"
+   ]
+  },
+  "B-2026-02-0080": {
+   "kind": "outflow",
+   "date": "2026-02-16",
+   "amount": -510871,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -510871,
+    "vendors_opex": 510871
+   },
+   "erp_ids": [
+    "ERP-00359"
+   ]
+  },
+  "B-2026-02-0081": {
+   "kind": "payout",
+   "date": "2026-02-16",
+   "amount": 450094,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 450094,
+    "stripe_clearing": -450094
+   },
+   "payout_id": "po_0700032"
+  },
+  "B-2026-02-0082": {
+   "kind": "receipt",
+   "date": "2026-02-16",
+   "amount": 236542,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-012",
+   "settles": {
+    "INV-2093": 236542
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 236542,
+    "ar": -236542
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0083": {
+   "kind": "receipt",
+   "date": "2026-02-16",
+   "amount": 135796,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-012",
+   "settles": {
+    "INV-2094": 135796
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 135796,
+    "ar": -135796
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-02-0084": {
+   "kind": "outflow",
+   "date": "2026-02-17",
+   "amount": -3008519,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3008519,
+    "vendors_opex": 3008519
+   },
+   "erp_ids": [
+    "ERP-00363"
+   ]
+  },
+  "B-2026-02-0085": {
+   "kind": "payout",
+   "date": "2026-02-17",
+   "amount": 209256,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 209256,
+    "stripe_clearing": -209256
+   },
+   "payout_id": "po_0700033"
+  },
+  "B-2026-02-0086": {
+   "kind": "receipt",
+   "date": "2026-02-17",
+   "amount": 687719,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-020",
+   "settles": {
+    "INV-2165": 690719
+   },
+   "residuals": [
+    {
+     "amount": 3000,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 687719,
+    "ar": -690719,
+    "bank_fees": 3000
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-02-0087": {
+   "kind": "payout",
+   "date": "2026-02-18",
+   "amount": 1050123,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 1050123,
+    "stripe_clearing": -1050123
+   },
+   "payout_id": "po_0700034"
+  },
+  "B-2026-02-0088": {
+   "kind": "receipt",
+   "date": "2026-02-18",
+   "amount": 437800,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-026",
+   "settles": {
+    "INV-2210": 440000
+   },
+   "residuals": [
+    {
+     "amount": 2200,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "write_off_discount"
+    }
+   ],
+   "entry": {
+    "cash": 437800,
+    "ar": -440000,
+    "sales_discounts": 2200
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-02-0089": {
+   "kind": "payout",
+   "date": "2026-02-19",
+   "amount": 352209,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 352209,
+    "stripe_clearing": -352209
+   },
+   "payout_id": "po_0700035"
+  },
+  "B-2026-02-0090": {
+   "kind": "payout",
+   "date": "2026-02-20",
+   "amount": 79062,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 79062,
+    "stripe_clearing": -79062
+   },
+   "payout_id": "po_0700036"
+  },
+  "B-2026-02-0091": {
+   "kind": "receipt",
+   "date": "2026-02-20",
+   "amount": 4292533,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-014",
+   "settles": {
+    "INV-2111": 2433563,
+    "INV-2112": 1863470
+   },
+   "residuals": [
+    {
+     "amount": 4500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 4292533,
+    "ar": -4297033,
+    "bank_fees": 4500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-02-0092": {
+   "kind": "payout",
+   "date": "2026-02-23",
+   "amount": 413196,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 413196,
+    "stripe_clearing": -413196
+   },
+   "payout_id": "po_0700037"
+  },
+  "B-2026-02-0093": {
+   "kind": "outflow",
+   "date": "2026-02-24",
+   "amount": -2379090,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2379090,
+    "vendors_opex": 2379090
+   },
+   "erp_ids": [
+    "ERP-00360"
+   ]
+  },
+  "B-2026-02-0094": {
+   "kind": "payout",
+   "date": "2026-02-24",
+   "amount": 356149,
+   "traps": [
+    11
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 356149,
+    "stripe_clearing": -367649,
+    "chargeback_losses": 10000,
+    "dispute_fees": 1500
+   },
+   "payout_id": "po_0700038"
+  },
+  "B-2026-02-0095": {
+   "kind": "payout",
+   "date": "2026-02-25",
+   "amount": 873701,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 873701,
+    "stripe_clearing": -873701
+   },
+   "payout_id": "po_0700039"
+  },
+  "B-2026-02-0096": {
+   "kind": "payout",
+   "date": "2026-02-26",
+   "amount": 406861,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 406861,
+    "stripe_clearing": -406861
+   },
+   "payout_id": "po_0700040"
+  },
+  "B-2026-02-0097": {
+   "kind": "payout",
+   "date": "2026-02-27",
+   "amount": 511237,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 511237,
+    "stripe_clearing": -511237
+   },
+   "payout_id": "po_0700041"
+  },
+  "B-2026-02-0098": {
+   "kind": "outflow",
+   "date": "2026-02-28",
+   "amount": -13471100,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -13471100,
+    "payroll": 9858800,
+    "payroll_taxes": 3612300
+   },
+   "erp_ids": [
+    "ERP-00355",
+    "ERP-00356"
+   ]
+  },
+  "B-2026-03-0001": {
+   "kind": "outflow",
+   "date": "2026-03-02",
+   "amount": -3850000,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3850000,
+    "rent": 3850000
+   },
+   "erp_ids": [
+    "ERP-00372"
+   ]
+  },
+  "B-2026-03-0002": {
+   "kind": "payout",
+   "date": "2026-03-02",
+   "amount": 207404,
+   "traps": [
+    10
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 207404,
+    "stripe_clearing": -207404
+   },
+   "payout_id": "po_0700042"
+  },
+  "B-2026-03-0003": {
+   "kind": "receipt",
+   "date": "2026-03-02",
+   "amount": 1333331,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-038",
+   "settles": {
+    "INV-2309": 1333331
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1333331,
+    "ar": -1333331
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0004": {
+   "kind": "receipt",
+   "date": "2026-03-02",
+   "amount": 1512774,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-037",
+   "settles": {
+    "INV-2302": 1512774
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1512774,
+    "ar": -1512774
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0005": {
+   "kind": "receipt",
+   "date": "2026-03-02",
+   "amount": 892210,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-037",
+   "settles": {
+    "INV-2303": 892210
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 892210,
+    "ar": -892210
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0006": {
+   "kind": "outflow",
+   "date": "2026-03-03",
+   "amount": -2251339,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2251339,
+    "vendors_opex": 2251339
+   },
+   "erp_ids": [
+    "ERP-00379"
+   ]
+  },
+  "B-2026-03-0007": {
+   "kind": "payout",
+   "date": "2026-03-03",
+   "amount": 423967,
+   "traps": [
+    10
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 423967,
+    "stripe_clearing": -423967
+   },
+   "payout_id": "po_0700043"
+  },
+  "B-2026-03-0008": {
+   "kind": "receipt",
+   "date": "2026-03-03",
+   "amount": 413440,
+   "traps": [
+    6
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-008",
+   "settles": {
+    "INV-2067": 232417,
+    "INV-2068": 181023
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 413440,
+    "ar": -413440
+   },
+   "why": "email links parent to subsidiary",
+   "hero": false
+  },
+  "B-2026-03-0009": {
+   "kind": "receipt",
+   "date": "2026-03-03",
+   "amount": 1337889,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-021",
+   "settles": {
+    "INV-2172": 319970,
+    "INV-2173": 622737,
+    "INV-2174": 395182
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1337889,
+    "ar": -1337889
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0010": {
+   "kind": "payout",
+   "date": "2026-03-04",
+   "amount": 1024682,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 1024682,
+    "stripe_clearing": -1024682
+   },
+   "payout_id": "po_0700044"
+  },
+  "B-2026-03-0011": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 828792,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-040",
+   "settles": {
+    "INV-2323": 320609,
+    "INV-2324": 264252,
+    "INV-2325": 243931
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 828792,
+    "ar": -828792
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0012": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 551980,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-028",
+   "settles": {
+    "INV-2227": 551980
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 551980,
+    "ar": -551980
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0013": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 553684,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-028",
+   "settles": {
+    "INV-2228": 553684
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 553684,
+    "ar": -553684
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0014": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 472686,
+   "traps": [
+    8
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-035",
+   "settles": {
+    "INV-2284": 127069,
+    "INV-2285": 345617
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 472686,
+    "ar": -472686
+   },
+   "why": "payer identity beats amount",
+   "hero": false
+  },
+  "B-2026-03-0015": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 609775,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {
+    "INV-2051": 609775
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 609775,
+    "ar": -609775
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0016": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 2804969,
+   "traps": [
+    6
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-016",
+   "settles": {
+    "INV-2129": 1289282,
+    "INV-2130": 965914,
+    "INV-2131": 549773
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2804969,
+    "ar": -2804969
+   },
+   "why": "email links parent to subsidiary",
+   "hero": false
+  },
+  "B-2026-03-0017": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 911514,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-033",
+   "settles": {
+    "INV-2265": 561186,
+    "INV-2266": 350328
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 911514,
+    "ar": -911514
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0018": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 1089213,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-017",
+   "settles": {
+    "INV-2139": 1089213
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1089213,
+    "ar": -1089213
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0019": {
+   "kind": "receipt",
+   "date": "2026-03-04",
+   "amount": 1686287,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-017",
+   "settles": {
+    "INV-2140": 1686287
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1686287,
+    "ar": -1686287
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0020": {
+   "kind": "outflow",
+   "date": "2026-03-05",
+   "amount": -940805,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -940805,
+    "vendors_opex": 940805
+   },
+   "erp_ids": [
+    "ERP-00383"
+   ]
+  },
+  "B-2026-03-0021": {
+   "kind": "outflow",
+   "date": "2026-03-05",
+   "amount": -23909200,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -23909200,
+    "cloud_compute": 23909200
+   },
+   "erp_ids": [
+    "ERP-00373"
+   ]
+  },
+  "B-2026-03-0022": {
+   "kind": "payout",
+   "date": "2026-03-05",
+   "amount": 595654,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 595654,
+    "stripe_clearing": -595654
+   },
+   "payout_id": "po_0700045"
+  },
+  "B-2026-03-0023": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 932362,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-015",
+   "settles": {
+    "INV-2121": 462613,
+    "INV-2122": 471749
+   },
+   "residuals": [
+    {
+     "amount": 2000,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 932362,
+    "ar": -934362,
+    "bank_fees": 2000
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-03-0024": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 387875,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-027",
+   "settles": {
+    "INV-2220": 387875
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 387875,
+    "ar": -387875
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0025": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 939048,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-011",
+   "settles": {
+    "INV-2089": 939048
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 939048,
+    "ar": -939048
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0026": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 2000000,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2039": 2000000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2000000,
+    "ar": -2000000
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0027": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 298500,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-002",
+   "settles": {
+    "INV-2014": 300000
+   },
+   "residuals": [
+    {
+     "amount": 1500,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "write_off_discount"
+    }
+   ],
+   "entry": {
+    "cash": 298500,
+    "ar": -300000,
+    "sales_discounts": 1500
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-03-0028": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 319996,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2060": 319996
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 319996,
+    "ar": -319996
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0029": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 660136,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-007",
+   "settles": {
+    "INV-2059": 660136
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 660136,
+    "ar": -660136
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0030": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 563784,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2198": 563784
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 563784,
+    "ar": -563784
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0031": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 935454,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2199": 935454
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 935454,
+    "ar": -935454
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0032": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 655188,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {
+    "INV-2200": 655188
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 655188,
+    "ar": -655188
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0033": {
+   "kind": "receipt",
+   "date": "2026-03-05",
+   "amount": 3800891,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-014",
+   "settles": {
+    "INV-2113": 2326128,
+    "INV-2114": 1474763
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 3800891,
+    "ar": -3800891
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0034": {
+   "kind": "payout",
+   "date": "2026-03-06",
+   "amount": 457772,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 457772,
+    "stripe_clearing": -457772
+   },
+   "payout_id": "po_0700046"
+  },
+  "B-2026-03-0035": {
+   "kind": "receipt",
+   "date": "2026-03-06",
+   "amount": 2000000,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2038": 2000000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2000000,
+    "ar": -2000000
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0036": {
+   "kind": "receipt",
+   "date": "2026-03-06",
+   "amount": 1411133,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-005",
+   "settles": {
+    "INV-2044": 1411133
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1411133,
+    "ar": -1411133
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0037": {
+   "kind": "receipt",
+   "date": "2026-03-06",
+   "amount": 1769456,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-002",
+   "settles": {
+    "INV-2015": 1769456
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1769456,
+    "ar": -1769456
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0038": {
+   "kind": "receipt",
+   "date": "2026-03-06",
+   "amount": 2500000,
+   "traps": [
+    7
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-024",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 2500000,
+     "reason": "PREPAID_CREDITS",
+     "treatment": "deferred_revenue"
+    }
+   ],
+   "entry": {
+    "cash": 2500000,
+    "deferred_revenue": -2500000
+   },
+   "why": "prepaid credits are deferred revenue",
+   "hero": false
+  },
+  "B-2026-03-0039": {
+   "kind": "outflow",
+   "date": "2026-03-09",
+   "amount": -133900,
+   "traps": [
+    4
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": -133900,
+    "refunds": 133900
+   },
+   "erp_ids": [
+    "ERP-00387"
+   ]
+  },
+  "B-2026-03-0040": {
+   "kind": "payout",
+   "date": "2026-03-09",
+   "amount": 184190,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 184190,
+    "stripe_clearing": -184190
+   },
+   "payout_id": "po_0700047"
+  },
+  "B-2026-03-0041": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 780949,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-001",
+   "settles": {
+    "INV-2004": 291137,
+    "INV-2005": 265937,
+    "INV-2006": 223875
+   },
+   "residuals": [
+    {
+     "amount": 1125,
+     "reason": "DISCOUNT_TAKEN",
+     "on": "INV-2006",
+     "treatment": "leave_open_chase"
+    }
+   ],
+   "entry": {
+    "cash": 780949,
+    "ar": -780949
+   },
+   "why": "hidden policy: third short-pay in the quarter",
+   "hero": false
+  },
+  "B-2026-03-0042": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 1049486,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-003",
+   "settles": {
+    "INV-2022": 1049486
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1049486,
+    "ar": -1049486
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0043": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 559726,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-003",
+   "settles": {
+    "INV-2023": 559726
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 559726,
+    "ar": -559726
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0044": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 642367,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2083": 642367
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 642367,
+    "ar": -642367
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0045": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 342226,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2084": 342226
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 342226,
+    "ar": -342226
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0046": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 651974,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-010",
+   "settles": {
+    "INV-2085": 651974
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 651974,
+    "ar": -651974
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0047": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 1245385,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2149": 1245385
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1245385,
+    "ar": -1245385
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0048": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 2143935,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-009",
+   "settles": {
+    "INV-2075": 1075122,
+    "INV-2076": 1068813
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2143935,
+    "ar": -2143935
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0049": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 1140599,
+   "traps": [
+    "contract_discount"
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-031",
+   "settles": {
+    "INV-2250": 289348,
+    "INV-2251": 419264,
+    "INV-2252": 443507
+   },
+   "residuals": [
+    {
+     "amount": 11520,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "contract_discount"
+    }
+   ],
+   "entry": {
+    "cash": 1140599,
+    "ar": -1152119,
+    "sales_discounts": 11520
+   },
+   "why": "contract allows 1% within 10 days",
+   "hero": false
+  },
+  "B-2026-03-0050": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 659287,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-006",
+   "settles": {
+    "INV-2050": 659287
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 659287,
+    "ar": -659287
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0051": {
+   "kind": "receipt",
+   "date": "2026-03-09",
+   "amount": 310523,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-025",
+   "settles": {
+    "INV-2205": 310523
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 310523,
+    "ar": -310523
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0052": {
+   "kind": "payout",
+   "date": "2026-03-10",
+   "amount": 224912,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 224912,
+    "stripe_clearing": -224912
+   },
+   "payout_id": "po_0700048"
+  },
+  "B-2026-03-0053": {
+   "kind": "receipt",
+   "date": "2026-03-10",
+   "amount": 487550,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-027",
+   "settles": {
+    "INV-2219": 490000
+   },
+   "residuals": [
+    {
+     "amount": 2450,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "write_off_discount"
+    }
+   ],
+   "entry": {
+    "cash": 487550,
+    "ar": -490000,
+    "sales_discounts": 2450
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-03-0054": {
+   "kind": "receipt",
+   "date": "2026-03-10",
+   "amount": 4602967,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-034",
+   "settles": {
+    "INV-2274": 1146949,
+    "INV-2275": 1850841,
+    "INV-2276": 1605177
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 4602967,
+    "ar": -4602967
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0055": {
+   "kind": "payout",
+   "date": "2026-03-11",
+   "amount": 567351,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 567351,
+    "stripe_clearing": -567351
+   },
+   "payout_id": "po_0700049"
+  },
+  "B-2026-03-0056": {
+   "kind": "receipt",
+   "date": "2026-03-11",
+   "amount": 133379,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-019",
+   "settles": {
+    "INV-2159": 133379
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 133379,
+    "ar": -133379
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0057": {
+   "kind": "receipt",
+   "date": "2026-03-11",
+   "amount": 743563,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-018",
+   "settles": {
+    "INV-2150": 743563
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 743563,
+    "ar": -743563
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0058": {
+   "kind": "receipt",
+   "date": "2026-03-11",
+   "amount": 681085,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-013",
+   "settles": {
+    "INV-2104": 681085
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 681085,
+    "ar": -681085
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0059": {
+   "kind": "receipt",
+   "date": "2026-03-11",
+   "amount": 830466,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-013",
+   "settles": {
+    "INV-2105": 830466
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 830466,
+    "ar": -830466
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0060": {
+   "kind": "outflow",
+   "date": "2026-03-12",
+   "amount": -3676661,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3676661,
+    "vendors_opex": 3676661
+   },
+   "erp_ids": [
+    "ERP-00382"
+   ]
+  },
+  "B-2026-03-0061": {
+   "kind": "payout",
+   "date": "2026-03-12",
+   "amount": 384977,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 384977,
+    "stripe_clearing": -384977
+   },
+   "payout_id": "po_0700050"
+  },
+  "B-2026-03-0062": {
+   "kind": "receipt",
+   "date": "2026-03-12",
+   "amount": 685484,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-013",
+   "settles": {
+    "INV-2103": 685484
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 685484,
+    "ar": -685484
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0063": {
+   "kind": "receipt",
+   "date": "2026-03-12",
+   "amount": 261537,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-004",
+   "settles": {
+    "INV-2032": 264037
+   },
+   "residuals": [
+    {
+     "amount": 2500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 261537,
+    "ar": -264037,
+    "bank_fees": 2500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-03-0064": {
+   "kind": "payout",
+   "date": "2026-03-13",
+   "amount": 663654,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 663654,
+    "stripe_clearing": -663654
+   },
+   "payout_id": "po_0700051"
+  },
+  "B-2026-03-0065": {
+   "kind": "receipt",
+   "date": "2026-03-13",
+   "amount": 2313127,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-026",
+   "settles": {
+    "INV-2212": 2313127
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 2313127,
+    "ar": -2313127
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0066": {
+   "kind": "outflow",
+   "date": "2026-03-16",
+   "amount": -301244,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -301244,
+    "vendors_opex": 301244
+   },
+   "erp_ids": [
+    "ERP-00378"
+   ]
+  },
+  "B-2026-03-0067": {
+   "kind": "outflow",
+   "date": "2026-03-16",
+   "amount": -3925931,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -3925931,
+    "vendors_opex": 3925931
+   },
+   "erp_ids": [
+    "ERP-00386"
+   ]
+  },
+  "B-2026-03-0068": {
+   "kind": "outflow",
+   "date": "2026-03-16",
+   "amount": -13666500,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -13666500,
+    "payroll": 10268600,
+    "payroll_taxes": 3397900
+   },
+   "erp_ids": [
+    "ERP-00374",
+    "ERP-00375"
+   ]
+  },
+  "B-2026-03-0069": {
+   "kind": "outflow",
+   "date": "2026-03-16",
+   "amount": -1162762,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1162762,
+    "vendors_opex": 1162762
+   },
+   "erp_ids": [
+    "ERP-00385"
+   ]
+  },
+  "B-2026-03-0070": {
+   "kind": "payout",
+   "date": "2026-03-16",
+   "amount": 524771,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 524771,
+    "stripe_clearing": -524771
+   },
+   "payout_id": "po_0700052"
+  },
+  "B-2026-03-0071": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 670000,
+   "traps": [
+    1
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-023",
+   "settles": {
+    "INV-2189": 261300,
+    "INV-2190": 408700
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 670000,
+    "ar": -670000
+   },
+   "why": "structured remittance advice names the invoices",
+   "hero": false
+  },
+  "B-2026-03-0072": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 135072,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-012",
+   "settles": {
+    "INV-2095": 135072
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 135072,
+    "ar": -135072
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0073": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 265795,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-012",
+   "settles": {
+    "INV-2096": 265795
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 265795,
+    "ar": -265795
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0074": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 1260000,
+   "traps": [
+    1
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-039",
+   "settles": {
+    "INV-2315": 403200,
+    "INV-2316": 856800
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1260000,
+    "ar": -1260000
+   },
+   "why": "no remittance; oldest-first by controller policy",
+   "hero": false
+  },
+  "B-2026-03-0075": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 310523,
+   "traps": [
+    5
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-025",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 310523,
+     "reason": "DUPLICATE_PAYMENT",
+     "treatment": "customer_credit"
+    }
+   ],
+   "entry": {
+    "cash": 310523,
+    "customer_credits": -310523
+   },
+   "why": "hidden policy: duplicates",
+   "hero": false
+  },
+  "B-2026-03-0076": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 980072,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-029",
+   "settles": {
+    "INV-2234": 980072
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 980072,
+    "ar": -980072
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0077": {
+   "kind": "receipt",
+   "date": "2026-03-16",
+   "amount": 600000,
+   "traps": [
+    1
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-022",
+   "settles": {
+    "INV-2179": 246000,
+    "INV-2180": 354000
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 600000,
+    "ar": -600000
+   },
+   "why": "email thread releases the January-dated invoices",
+   "hero": false
+  },
+  "B-2026-03-0078": {
+   "kind": "outflow",
+   "date": "2026-03-17",
+   "amount": -2587115,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -2587115,
+    "vendors_opex": 2587115
+   },
+   "erp_ids": [
+    "ERP-00384"
+   ]
+  },
+  "B-2026-03-0079": {
+   "kind": "payout",
+   "date": "2026-03-17",
+   "amount": 266787,
+   "traps": [
+    11
+   ],
+   "needs_human": false,
+   "entry": {
+    "cash": 266787,
+    "stripe_clearing": -278287,
+    "chargeback_losses": 10000,
+    "dispute_fees": 1500
+   },
+   "payout_id": "po_0700053"
+  },
+  "B-2026-03-0080": {
+   "kind": "receipt",
+   "date": "2026-03-17",
+   "amount": 597000,
+   "traps": [
+    3
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-032",
+   "settles": {
+    "INV-2258": 597000
+   },
+   "residuals": [
+    {
+     "amount": 3000,
+     "reason": "DISCOUNT_TAKEN",
+     "treatment": "leave_open_chase"
+    }
+   ],
+   "entry": {
+    "cash": 597000,
+    "ar": -597000
+   },
+   "why": "hidden policy: short-pays",
+   "hero": false
+  },
+  "B-2026-03-0081": {
+   "kind": "outflow",
+   "date": "2026-03-18",
+   "amount": -1055531,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -1055531,
+    "vendors_opex": 1055531
+   },
+   "erp_ids": [
+    "ERP-00380"
+   ]
+  },
+  "B-2026-03-0082": {
+   "kind": "outflow",
+   "date": "2026-03-18",
+   "amount": -765753,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -765753,
+    "vendors_opex": 765753
+   },
+   "erp_ids": [
+    "ERP-00381"
+   ]
+  },
+  "B-2026-03-0083": {
+   "kind": "payout",
+   "date": "2026-03-18",
+   "amount": 955182,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 955182,
+    "stripe_clearing": -955182
+   },
+   "payout_id": "po_0700054"
+  },
+  "B-2026-03-0084": {
+   "kind": "receipt",
+   "date": "2026-03-18",
+   "amount": 2553712,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-020",
+   "settles": {
+    "INV-2166": 1051121,
+    "INV-2167": 1507591
+   },
+   "residuals": [
+    {
+     "amount": 5000,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 2553712,
+    "ar": -2558712,
+    "bank_fees": 5000
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-03-0085": {
+   "kind": "payout",
+   "date": "2026-03-19",
+   "amount": 453007,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 453007,
+    "stripe_clearing": -453007
+   },
+   "payout_id": "po_0700055"
+  },
+  "B-2026-03-0086": {
+   "kind": "receipt",
+   "date": "2026-03-19",
+   "amount": 1000000,
+   "traps": [
+    7
+   ],
+   "needs_human": false,
+   "customer_id": "CUST-040",
+   "settles": {},
+   "residuals": [
+    {
+     "amount": 1000000,
+     "reason": "PREPAID_CREDITS",
+     "treatment": "deferred_revenue"
+    }
+   ],
+   "entry": {
+    "cash": 1000000,
+    "deferred_revenue": -1000000
+   },
+   "why": "prepaid credits are deferred revenue",
+   "hero": false
+  },
+  "B-2026-03-0087": {
+   "kind": "payout",
+   "date": "2026-03-20",
+   "amount": 409282,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 409282,
+    "stripe_clearing": -409282
+   },
+   "payout_id": "po_0700056"
+  },
+  "B-2026-03-0088": {
+   "kind": "payout",
+   "date": "2026-03-23",
+   "amount": 208345,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 208345,
+    "stripe_clearing": -208345
+   },
+   "payout_id": "po_0700057"
+  },
+  "B-2026-03-0089": {
+   "kind": "payout",
+   "date": "2026-03-24",
+   "amount": 282171,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 282171,
+    "stripe_clearing": -282171
+   },
+   "payout_id": "po_0700058"
+  },
+  "B-2026-03-0090": {
+   "kind": "receipt",
+   "date": "2026-03-24",
+   "amount": 390768,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-030",
+   "settles": {
+    "INV-2241": 79011,
+    "INV-2242": 175259,
+    "INV-2243": 136498
+   },
+   "residuals": [
+    {
+     "amount": 6500,
+     "reason": "BANK_FEE",
+     "treatment": "leave_open_chase"
+    }
+   ],
+   "entry": {
+    "cash": 390768,
+    "ar": -390768
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-03-0091": {
+   "kind": "payout",
+   "date": "2026-03-25",
+   "amount": 906455,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 906455,
+    "stripe_clearing": -906455
+   },
+   "payout_id": "po_0700059"
+  },
+  "B-2026-03-0092": {
+   "kind": "receipt",
+   "date": "2026-03-25",
+   "amount": 1115090,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-038",
+   "settles": {
+    "INV-2310": 1115090
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 1115090,
+    "ar": -1115090
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0093": {
+   "kind": "payout",
+   "date": "2026-03-26",
+   "amount": 377299,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 377299,
+    "stripe_clearing": -377299
+   },
+   "payout_id": "po_0700060"
+  },
+  "B-2026-03-0094": {
+   "kind": "receipt",
+   "date": "2026-03-26",
+   "amount": 2739873,
+   "traps": [
+    2
+   ],
+   "needs_human": true,
+   "customer_id": "CUST-036",
+   "settles": {
+    "INV-2292": 1474980,
+    "INV-2293": 1268393
+   },
+   "residuals": [
+    {
+     "amount": 3500,
+     "reason": "BANK_FEE",
+     "treatment": "absorb_bank_fee"
+    }
+   ],
+   "entry": {
+    "cash": 2739873,
+    "ar": -2743373,
+    "bank_fees": 3500
+   },
+   "why": "hidden policy: wire fees",
+   "hero": false
+  },
+  "B-2026-03-0095": {
+   "kind": "payout",
+   "date": "2026-03-27",
+   "amount": 502468,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 502468,
+    "stripe_clearing": -502468
+   },
+   "payout_id": "po_0700061"
+  },
+  "B-2026-03-0096": {
+   "kind": "payout",
+   "date": "2026-03-30",
+   "amount": 192639,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 192639,
+    "stripe_clearing": -192639
+   },
+   "payout_id": "po_0700062"
+  },
+  "B-2026-03-0097": {
+   "kind": "receipt",
+   "date": "2026-03-30",
+   "amount": 969205,
+   "traps": [],
+   "needs_human": false,
+   "customer_id": "CUST-037",
+   "settles": {
+    "INV-2304": 969205
+   },
+   "residuals": [],
+   "entry": {
+    "cash": 969205,
+    "ar": -969205
+   },
+   "why": "",
+   "hero": false
+  },
+  "B-2026-03-0098": {
+   "kind": "outflow",
+   "date": "2026-03-31",
+   "amount": -13581800,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": -13581800,
+    "payroll": 10054600,
+    "payroll_taxes": 3527200
+   },
+   "erp_ids": [
+    "ERP-00376",
+    "ERP-00377"
+   ]
+  },
+  "B-2026-03-0099": {
+   "kind": "payout",
+   "date": "2026-03-31",
+   "amount": 220571,
+   "traps": [],
+   "needs_human": false,
+   "entry": {
+    "cash": 220571,
+    "stripe_clearing": -220571
+   },
+   "payout_id": "po_0700063"
+  }
+ },
+ "balances": {
+  "2026-01": {
+   "cash": 241351886,
+   "ar": 57134913,
+   "stripe_clearing": 1277923,
+   "opening_equity": -301425279,
+   "revenue": -74795700,
+   "processing_fees": 282900,
+   "refunds": 279300,
+   "rent": 3850000,
+   "cloud_compute": 24154800,
+   "payroll": 19252700,
+   "payroll_taxes": 7099500,
+   "vendors_opex": 24043944,
+   "bank_fees": 17500,
+   "sales_discounts": 12110,
+   "deferred_revenue": -1000000,
+   "customer_credits": -1547997,
+   "chargeback_losses": 10000,
+   "dispute_fees": 1500
+  },
+  "2026-02": {
+   "cash": 226932844,
+   "ar": 61680389,
+   "stripe_clearing": 1405044,
+   "opening_equity": -301425279,
+   "revenue": -145655590,
+   "processing_fees": 567339,
+   "refunds": 593200,
+   "rent": 7700000,
+   "cloud_compute": 49405500,
+   "payroll": 38929200,
+   "payroll_taxes": 14374900,
+   "vendors_opex": 49224488,
+   "accrued_liabilities": -515000,
+   "bank_fees": 29000,
+   "sales_discounts": 21491,
+   "deferred_revenue": -1500000,
+   "customer_credits": -1842026,
+   "chargeback_losses": 70000,
+   "dispute_fees": 4500
+  },
+  "2026-03": {
+   "cash": 233182935,
+   "ar": 59226988,
+   "stripe_clearing": 965362,
+   "opening_equity": -301425279,
+   "revenue": -217553228,
+   "processing_fees": 872981,
+   "refunds": 924100,
+   "rent": 11550000,
+   "cloud_compute": 73314700,
+   "payroll": 59252400,
+   "payroll_taxes": 21300000,
+   "vendors_opex": 66441629,
+   "accrued_liabilities": -1065000,
+   "bank_fees": 42000,
+   "sales_discounts": 36961,
+   "deferred_revenue": -5000000,
+   "customer_credits": -2152549,
+   "chargeback_losses": 80000,
+   "dispute_fees": 6000
+  }
+ },
+ "traps": [
+  {
+   "trap": 10,
+   "line_id": "B-2026-01-0002"
+  },
+  {
+   "trap": 10,
+   "line_id": "B-2026-01-0021"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-01-0027"
+  },
+  {
+   "trap": 8,
+   "line_id": "B-2026-01-0028"
+  },
+  {
+   "trap": "contract_discount",
+   "line_id": "B-2026-01-0051"
+  },
+  {
+   "trap": 7,
+   "line_id": "B-2026-01-0052"
+  },
+  {
+   "trap": 4,
+   "line_id": "B-2026-01-0055"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-01-0057"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-01-0058"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-01-0058"
+  },
+  {
+   "trap": 5,
+   "line_id": "B-2026-01-0062"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-01-0071"
+  },
+  {
+   "trap": 11,
+   "line_id": "B-2026-01-0075"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-01-0078"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-01-0080"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-01-0083"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-01-0092"
+  },
+  {
+   "trap": 10,
+   "line_id": "B-2026-02-0002"
+  },
+  {
+   "trap": 6,
+   "line_id": "B-2026-02-0007"
+  },
+  {
+   "trap": 8,
+   "line_id": "B-2026-02-0016"
+  },
+  {
+   "trap": 10,
+   "line_id": "B-2026-02-0025"
+  },
+  {
+   "trap": 6,
+   "line_id": "B-2026-02-0027"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-02-0035"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-02-0047"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-02-0051"
+  },
+  {
+   "trap": "contract_discount",
+   "line_id": "B-2026-02-0059"
+  },
+  {
+   "trap": 5,
+   "line_id": "B-2026-02-0064"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-02-0065"
+  },
+  {
+   "trap": 7,
+   "line_id": "B-2026-02-0068"
+  },
+  {
+   "trap": 4,
+   "line_id": "B-2026-02-0072"
+  },
+  {
+   "trap": 11,
+   "line_id": "B-2026-02-0073"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-02-0074"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-02-0075"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-02-0076"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-02-0086"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-02-0088"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-02-0091"
+  },
+  {
+   "trap": 11,
+   "line_id": "B-2026-02-0094"
+  },
+  {
+   "trap": 10,
+   "line_id": "B-2026-03-0002"
+  },
+  {
+   "trap": 10,
+   "line_id": "B-2026-03-0007"
+  },
+  {
+   "trap": 6,
+   "line_id": "B-2026-03-0008"
+  },
+  {
+   "trap": 8,
+   "line_id": "B-2026-03-0014"
+  },
+  {
+   "trap": 6,
+   "line_id": "B-2026-03-0016"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-03-0023"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-03-0027"
+  },
+  {
+   "trap": 7,
+   "line_id": "B-2026-03-0038"
+  },
+  {
+   "trap": 4,
+   "line_id": "B-2026-03-0039"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-03-0041"
+  },
+  {
+   "trap": "contract_discount",
+   "line_id": "B-2026-03-0049"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-03-0053"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-03-0063"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-03-0071"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-03-0074"
+  },
+  {
+   "trap": 5,
+   "line_id": "B-2026-03-0075"
+  },
+  {
+   "trap": 1,
+   "line_id": "B-2026-03-0077"
+  },
+  {
+   "trap": 11,
+   "line_id": "B-2026-03-0079"
+  },
+  {
+   "trap": 3,
+   "line_id": "B-2026-03-0080"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-03-0084"
+  },
+  {
+   "trap": 7,
+   "line_id": "B-2026-03-0086"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-03-0090"
+  },
+  {
+   "trap": 2,
+   "line_id": "B-2026-03-0094"
+  }
+ ],
+ "control_breaches": [
+  {
+   "erp_id": "ERP-00370",
+   "breach": "preparer_is_approver"
+  },
+  {
+   "erp_id": "ERP-00371",
+   "breach": "preparer_is_approver"
+  },
+  {
+   "erp_id": "ERP-00389",
+   "breach": "preparer_is_approver"
+  }
+ ],
+ "duplicate_entries": [
+  {
+   "erp_id": "ERP-00350",
+   "duplicate_of": "ERP-00349"
+  },
+  {
+   "erp_id": "ERP-00370",
+   "duplicate_of": "ERP-00369"
+  },
+  {
+   "erp_id": "ERP-00388",
+   "duplicate_of": "ERP-00387"
+  }
+ ],
+ "payer_profiles": {
+  "CUST-001": {
+   "role": "hero",
+   "lag": 5,
+   "style": "batch"
+  },
+  "CUST-002": {
+   "role": "disc",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-003": {
+   "role": "plain",
+   "lag": 7,
+   "style": "per_invoice"
+  },
+  "CUST-004": {
+   "role": "fee",
+   "lag": 7,
+   "style": "batch"
+  },
+  "CUST-005": {
+   "role": "dup",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-006": {
+   "role": "prepaid",
+   "lag": 3,
+   "style": "per_invoice"
+  },
+  "CUST-007": {
+   "role": "disc",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-008": {
+   "role": "sub",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-009": {
+   "role": "look",
+   "lag": 5,
+   "style": "batch"
+  },
+  "CUST-010": {
+   "role": "dup",
+   "lag": 5,
+   "style": "per_invoice"
+  },
+  "CUST-011": {
+   "role": "plain",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-012": {
+   "role": "semi",
+   "lag": 5,
+   "style": "per_invoice"
+  },
+  "CUST-013": {
+   "role": "plain",
+   "lag": 9,
+   "style": "per_invoice"
+  },
+  "CUST-014": {
+   "role": "fee",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-015": {
+   "role": "fee",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-016": {
+   "role": "sub",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-017": {
+   "role": "plain",
+   "lag": 1,
+   "style": "per_invoice"
+  },
+  "CUST-018": {
+   "role": "prepaid",
+   "lag": 8,
+   "style": "per_invoice"
+  },
+  "CUST-019": {
+   "role": "plain",
+   "lag": 7,
+   "style": "per_invoice"
+  },
+  "CUST-020": {
+   "role": "fee",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-021": {
+   "role": "plain",
+   "lag": 1,
+   "style": "batch"
+  },
+  "CUST-022": {
+   "role": "amb_r",
+   "lag": 8,
+   "style": "batch"
+  },
+  "CUST-023": {
+   "role": "amb_q",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-024": {
+   "role": "prepaid",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-025": {
+   "role": "dup",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-026": {
+   "role": "disc",
+   "lag": 8,
+   "style": "per_invoice"
+  },
+  "CUST-027": {
+   "role": "disc",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-028": {
+   "role": "plain",
+   "lag": 1,
+   "style": "per_invoice"
+  },
+  "CUST-029": {
+   "role": "slow12",
+   "lag": 12,
+   "style": "per_invoice"
+  },
+  "CUST-030": {
+   "role": "fee",
+   "lag": 8,
+   "style": "batch"
+  },
+  "CUST-031": {
+   "role": "contract",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-032": {
+   "role": "disc",
+   "lag": 2,
+   "style": "per_invoice"
+  },
+  "CUST-033": {
+   "role": "look",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-034": {
+   "role": "plain",
+   "lag": 7,
+   "style": "batch"
+  },
+  "CUST-035": {
+   "role": "look",
+   "lag": 2,
+   "style": "batch"
+  },
+  "CUST-036": {
+   "role": "fee",
+   "lag": 5,
+   "style": "batch"
+  },
+  "CUST-037": {
+   "role": "plain",
+   "lag": -2,
+   "style": "per_invoice"
+  },
+  "CUST-038": {
+   "role": "plain",
+   "lag": -4,
+   "style": "per_invoice"
+  },
+  "CUST-039": {
+   "role": "amb_p",
+   "lag": 7,
+   "style": "batch"
+  },
+  "CUST-040": {
+   "role": "prepaid",
+   "lag": 2,
+   "style": "batch"
+  }
+ }
+}

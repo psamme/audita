@@ -1,0 +1,29 @@
+{
+ "BANK_FEE": {
+  "treatment": "absorb_bank_fee",
+  "max_amount": 5000,
+  "else": "leave_open_chase",
+  "say": "We absorb receiving-bank wire fees up to $50. Not worth a customer conversation.",
+  "say_else": "Over $50 is not a bank fee we eat. Leave it open and chase."
+ },
+ "DISCOUNT_TAKEN": {
+  "treatment": "write_off_discount",
+  "max_amount": 2500,
+  "max_per_customer_per_quarter": 2,
+  "else": "leave_open_chase",
+  "say": "Under $25 is not worth chasing.",
+  "say_else": "Over $25, or a third time in a quarter: leave it open and chase."
+ },
+ "DUPLICATE_PAYMENT": {
+  "treatment": "customer_credit",
+  "say": "Hold duplicate payments as customer credit."
+ },
+ "PREPAID_CREDITS": {
+  "treatment": "deferred_revenue",
+  "say": "Prepaid credits are deferred revenue until used."
+ },
+ "AMBIGUOUS_ALLOCATION": {
+  "treatment": "oldest_first",
+  "say": "No remittance: apply oldest first."
+ }
+}
