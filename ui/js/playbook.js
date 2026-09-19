@@ -63,6 +63,7 @@
   }
 
   async function answerBand(kind, amount) {
+    undoResult = "";
     const q = bandQs[0], note = document.getElementById("askNote");
     const controls = document.querySelectorAll(".ask button, .ask input");
     controls.forEach((c) => { c.disabled = true; });
@@ -81,6 +82,8 @@
       }
       const applied = r.diff != null;
       note.textContent = applied ? `Recorded. The playbook is now version ${r.new_version}.` : "Recorded, not applied.";
+      // The question is answered, so the headline becomes the answer. That also keeps the payoff on the first screen.
+      document.querySelector(".ask .ask-q").textContent = SO.cap(said) + ".";
       // The card holds its answered state (band closed, item cleared) until the presenter moves on.
       document.querySelector(".ask .answers").innerHTML = `${SO.reranBlock(r.reran, client, true)}
         ${r.held ? `<p class="held"><span class="state state-carry">Recorded, not applied</span> ${esc(SO.cap(r.held))}</p>` : ""}
@@ -104,10 +107,10 @@
   // Unlearning: every input the playbook received can be undone. Deterministic, no model call.
   const INPUT = { correction: "Correction", interview: "Answer", band: "Yes or no", conflict: "Conflict raised", conflict_resolved: "Conflict settled", retraction: "Undo" };
   function inputsBlock() {
-    if (!inputs.length && !undoResult) return "";
+    if (!inputs.length) return "";
     // an undone input is not flagged on its own entry: the retraction entries name what they undid
     const undone = new Set(inputs.filter((c) => c.type === "retraction").map((c) => c.retracted));
-    return `${undoResult}<section class="panel"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
+    return `<section class="panel" id="taught"><div class="panel-head"><h3>Everything this playbook was taught</h3><span class="faint small">Any input can be undone. The rule reverts and every resolution that leaned on it is checked again.</span></div>
       ${inputs.map((c) => `<div class="rule-row input-row"><div><p>${esc(c.summary || c.note || c.answer || INPUT[c.type] || c.type)}</p>
         <div class="rule-meta"><span class="cite">${esc(c.correction_id)}</span><span>${esc(INPUT[c.type] || cap(c.type))}</span>${c.at ? `<span>${when(c.at)}</span>` : ""}${c.role || c.by_role ? `<span>${esc(cap(String(c.role || c.by_role).replace(/_/g, " ")))}</span>` : ""}${undone.has(c.correction_id) ? `<span class="state state-carry">Undone</span>` : ""}${c.status === "held" ? `<span class="state state-carry">Recorded, not applied</span>` : ""}</div></div>
         ${["correction", "interview"].includes(c.type) && !undone.has(c.correction_id) && c.status !== "held" ? `<button class="btn btn-secondary btn-sm undo" data-id="${esc(c.correction_id)}">Undo</button>` : ""}</div>`).join("")}</section>`;
@@ -123,10 +126,11 @@
       undoResult = `<section class="panel"><div class="panel-body stack">
         <div class="label">${esc(r.retracted)} undone · playbook version ${esc(r.new_version)}</div>
         <h2 class="ask-q"><span class="num">${r.resolutions_checked}</span> past item${r.resolutions_checked === 1 ? "" : "s"} checked, <span class="num">${re.length}</span> re-opened</h2>
-        ${diffBlock(r.diff, { client })}
         ${re.length ? `<div class="table-wrap"><table class="grid tight"><tbody>${re.map((x) => `<tr><td>${cite(client, x.item_id)}</td><td class="wrap">${esc((x.record || {}).description || (x.record || {}).memo || "")}</td><td class="r">${x.record ? usd(x.record.amount) : ""}</td><td class="wrap">Rule withdrawn, back in the queue</td></tr>`).join("")}</tbody></table></div>` : `<p class="muted">Nothing already resolved depended on it.</p>`}
+        ${diffBlock(r.diff, { client })}
       </div></section>`;
       await load();
+      scrollTo({ top: 0 });
     } catch (e) { btn.disabled = false; btn.dataset.armed = ""; btn.textContent = "Undo did not go through. Try again"; }
   }
 
@@ -167,12 +171,13 @@
     if (openId === null && asks.length) openId = asks[0].id;
     summary.innerHTML = `<span><b class="num">${live.length}</b> rules</span><span><b class="num">${approved.length}</b> approved</span><span><b class="num">${asks.length}</b> waiting on an answer</span><span><b class="num">${live.filter((r) => r.executable).length}</b> run as code at $0.00</span><span>Version <b class="num">${pb.version}</b></span>`;
     view.innerHTML = `<div class="stack">
+      ${undoResult}
       ${bandCard()}
+      ${inputsBlock()}
       ${asks.length ? `<section class="panel"><div class="panel-head"><h3>Questions for you</h3><span class="faint small">The agent asks before it assumes. Each answer becomes a rule change you can read.</span></div>${asks.map(question).join("")}</section>` : ""}
       <section class="panel"><div class="panel-head"><h3>Approved rules</h3><span class="faint small">${approved.length} in force</span></div>${approved.map(ruleRow).join("") || `<div class="panel-body muted">None yet. Answer a question above to approve the first one.</div>`}</section>
       ${other.length ? `<section class="panel"><div class="panel-head"><h3>Proposed, no question</h3></div>${other.map(ruleRow).join("")}</section>` : ""}
       ${findingsBlock()}
-      ${inputsBlock()}
       <section class="panel"><div class="panel-head"><h3>Versions</h3><span class="faint small">Every change has a cause</span></div>
         <div class="panel-body stack"><div class="versions">${pb.versions.map((v) => `<button class="vrow" data-v="${v.version}"><span class="num">v${v.version}</span><span>${esc(CAUSE[(v.cause || {}).type] || cap((v.cause || {}).type || "change"))}</span><span class="faint">${when(v.created_at)}</span></button>`).join("")}</div><div id="vdiff"></div></div></section>
     </div>`;

@@ -144,7 +144,9 @@
     const pos = (v) => Math.min(100, (Math.abs(v) / max) * 100);
     const lo = band.lo == null ? 0 : pos(band.lo), hi = band.hi == null ? 100 : pos(band.hi);
     const c = opts.client;
-    const end = (at, value, precedent) => `<span class="band-end ${at < 8 ? "at-start" : at > 92 ? "at-end" : ""}" style="left: ${at}%"><b class="num">${money(value)}</b>${precedent && c ? cite(c, precedent) : ""}</span>`;
+    // a stated number was given by a person, so it cites the person, not the old precedent the server still carries
+    const stated = band.source === "stated";
+    const end = (at, value, precedent) => `<span class="band-end ${at < 8 ? "at-start" : at > 92 ? "at-end" : ""}" style="left: ${at}%"><b class="num">${money(value)}</b>${stated ? `<span class="faint">Stated by a person</span>` : precedent && c ? cite(c, precedent) : ""}</span>`;
     return `<div class="band" data-max="${max}">
       <div class="band-track">
         <span class="band-seg acts ${upper ? "" : "right"}" style="left: ${upper ? 0 : hi}%; width: ${upper ? lo : 100 - hi}%"></span>

@@ -192,3 +192,6 @@ main.compact .summary { padding-block: 10px; }
 .payoff-head { font-size: var(--t-xl); font-weight: 500; letter-spacing: -0.02em; }
 table.grid.tight.big td { font-size: var(--t-md); padding-block: 12px; }
 .held { flex: 1 1 100%; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: center; }
+table.grid.tight.big td.wrap:last-child { min-width: 300px; }
+table.grid.tight.big td.wrap:nth-child(2) { width: 40%; }
+.payoff + .btn, .held + .btn { margin-top: 2px; }
