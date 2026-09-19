@@ -98,6 +98,28 @@ def test_company_id_is_validated_before_it_reaches_the_filesystem():
         make(client="../escape")
 
 
+def test_removing_someone_the_history_refers_to_needs_confirming():
+    """Seniority is read off the user row a trail entry points at. Dropping a person who appears
+    in the history silently changes what the agent can learn, so it takes a second save."""
+    c = build_trailless_copy("ACTORS")
+    coldstart.derive_links(c, "ana")                      # ana now appears in the trail
+    only_sam = [{"id": "sam", "name": "Sam Okafor", "role": "controller", "senior": True}]
+    with pytest.raises(ValueError, match="appear in your imported history"):
+        company.set_users(c, only_sam)
+    company.set_users(c, only_sam, force=True)            # deliberate removal still works
+    con = db.connect(c, readonly=True)
+    assert {u["id"] for u in db.q(con, "SELECT * FROM user")} == {"sam"}
+    con.close()
+
+
+def test_a_roster_change_that_keeps_everyone_needs_no_confirmation():
+    c = build_trailless_copy("ACTORS2")
+    coldstart.derive_links(c, "ana")
+    out = company.set_users(c, ROSTER + [
+        {"id": "new", "name": "New Hire", "role": "clerk", "senior": False}])
+    assert len(out["users"]) == 3
+
+
 def test_creating_a_company_does_not_delete_an_existing_database():
     make()
     do_import(CO, "bank_lines", ["date", "amount", "description"],

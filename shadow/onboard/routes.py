@@ -67,12 +67,14 @@ def get_company():
 class Roster(BaseModel):
     users: list[Person]
     reconciler: str | None = None
+    force: bool = False
 
 
 @router.post("/users")
 def set_users(r: Roster):
     try:
-        return company.set_users(_client(), [p.model_dump() for p in r.users], r.reconciler)
+        return company.set_users(_client(), [p.model_dump() for p in r.users], r.reconciler,
+                                 force=r.force)
     except ValueError as e:
         raise HTTPException(400, str(e))
 

@@ -387,6 +387,10 @@
     const act = document.getElementById("act").value;
     const it = queue[at];
     const box = document.getElementById("extra");
+    // Keep whatever account was already chosen: picking a different candidate should not silently
+    // reset where the difference goes.
+    const keepAcct = (document.getElementById("acct") || {}).value;
+    const keepTo = (document.getElementById("to") || {}).value;
     const picked = it.candidates.filter((c) => chosen.has(c.id));
     const total = picked.reduce((s, c) => s + c.amount, 0);
     const diff = Math.round((total - it.item.amount) * 100) / 100;
@@ -410,6 +414,10 @@
     } else {
       box.innerHTML = "";
     }
+    const acct = document.getElementById("acct");
+    if (acct && keepAcct && [...acct.options].some((o) => o.value === keepAcct)) acct.value = keepAcct;
+    const to = document.getElementById("to");
+    if (to && keepTo && [...to.options].some((o) => o.value === keepTo)) to.value = keepTo;
   }
 
   async function save() {
