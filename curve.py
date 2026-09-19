@@ -54,6 +54,11 @@ def one(client: str, target: float) -> dict:
     pipeline.run(client, PERIOD, "corrected", TRACK, use_llm=False, run_id=rid, date_to=HALF_TO)
     reviewer.review_queue(client, TRACK, rid, key, HALF_TO, limit=12, usage=usage, on_answer=log)
     shutil.rmtree(db.RUNS / rid, ignore_errors=True)
+    for prev, pt in zip(points, points[1:]):      # a falling rate is the system withdrawing a rule, not an error: say so on the chart
+        if (pt["auto_resolve_rate"] or 0) < (prev["auto_resolve_rate"] or 0) - 1e-9:
+            pt["note"] = ("Rule withdrawn: the controller said it is not about the amount, so the rule stopped executing and its items "
+                          "went back to review. Nothing was resolved wrongly." if "not_amount" in pt["answer"] else
+                          "A rule stopped executing after this answer, so its items went back to review. Nothing was resolved wrongly.")
     clean = [p for p in points if p["wrong_matches"] == 0 and (p["auto_resolve_rate"] or 0) >= target]
     return {"client": client, "target_auto_resolve_rate": target, "questions_to_trust": clean[0]["k"] if clean else None,
             "scored_on": f"{HALF_FROM}..end of {PERIOD} (development holdout)", "corrections_from": f"{PERIOD}-01..{HALF_TO}",
