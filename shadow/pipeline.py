@@ -98,12 +98,8 @@ def run(client: str, period: str, condition: str, track: str = "main", version: 
             return item, kind, fl, {"resolution": blank(escalate_to=roles[0] if roles else None, confidence=0.0, reason="no_rule",
                                                         rationale="Not cleared by the matcher or a playbook rule. Left for review (model tier disabled)."),
                                     "trace": [], "usage": dict(ZERO)}
-        try:
-            return item, kind, fl, investigator.investigate(db.connect(client, readonly=True, path=db_file), info, period, item, kind, set(ctx.used), pb, fl, rule)
-        except Exception as e:  # a failed investigation must never drop an item
-            return item, kind, fl, {"resolution": blank(escalate_to=roles[0] if roles else None, confidence=0.0, reason="no_rule",
-                                                        rationale=f"Investigation failed ({type(e).__name__}: {e}). Left for review."),
-                                    "trace": [], "usage": dict(ZERO)}
+        return item, kind, fl, investigator.investigate_safely(db.connect(client, readonly=True, path=db_file), info, period, item, kind,
+                                                               set(ctx.used), pb, fl, rule, roles=roles)
 
     def drain():
         jobs, queue[:] = list(queue), []

@@ -8,7 +8,7 @@ CACHE = db.RUNS / "experiment.json"
 
 
 def _one(client: str, track: str, version: int | None) -> dict:
-    from sim.experiment_data import demo_db, inject   # demo fixture, identical for both clients
+    from shadow.demo_fixture import demo_db, inject   # demo fixture, identical for both clients
     path = demo_db(client)
     ids = inject(client, path)
     rid = f"experiment_{client}" + (f"_v{version}" if version else "")
@@ -28,7 +28,7 @@ def run(track: str = "main", fresh: bool = False, version: int | None = None) ->
     cache = CACHE.with_name(f"experiment_v{version}.json") if version else CACHE
     if not fresh:
         return json.loads(cache.read_text()) if cache.exists() else None
-    from sim.experiment_data import TXN
+    from shadow.demo_fixture import TXN
     with ThreadPoolExecutor(2) as ex:
         a, b = ex.map(lambda c: _one(c, track, version), ("A", "B"))
     out = {"transaction": TXN, "results": {"A": a, "B": b}}
@@ -41,7 +41,7 @@ def bank_change(track: str = "main", fresh: bool = False) -> dict:
     cache = CACHE.with_name("experiment_bank_change.json")
     if not fresh:
         return json.loads(cache.read_text()) if cache.exists() else None
-    from sim.experiment_data import demo_db, inject_bank_change
+    from shadow.demo_fixture import demo_db, inject_bank_change
     path = demo_db("B")
     ids = inject_bank_change(path)
     pipeline.run("B", "2026-05", "playbook", track, only={ids["bank_line"]}, run_id="experiment_bank_change", label="control demo", db_file=path)

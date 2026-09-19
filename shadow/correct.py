@@ -21,7 +21,9 @@ PATCH_SCHEMA = {
 }
 
 SYSTEM = """You maintain a client's reconciliation playbook. Someone at the client has just told you something: either \
-they corrected how an item was handled, or they answered a question the playbook had left open. Turn what they said \
+they corrected how an item was handled, or they answered a question the playbook had left open. When they answer a \
+question, act on what they actually said: approve the rule only if they confirmed it, modify it if they gave a \
+different threshold, account or addressee, retire it if they said that is not how they work. Turn what they said \
 into the smallest change to the playbook that makes it true from now on.
 
 - Generalise exactly as far as their words justify. "That supplier always rounds to whole units, anything under one unit goes to the \
@@ -206,8 +208,8 @@ def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.U
            "current_playbook": [{k: r.get(k) for k in ("id", "status", "executable", "text", "when", "then")} for r in pb_old["rules"] if r["status"] != "retired"]}
     reply = llm.call(SYSTEM, [{"role": "user", "content": json.dumps(ask, indent=1, default=str)}], schema=PATCH_SCHEMA, max_tokens=8000, usage=usage)
     patch = json.loads(reply.text)
-    if not patch["ops"]:
-        patch["ops"] = [{"op": "approve", "rule_id": rule_id}]
+    if not patch["ops"]:       # no explicit change: the rule stays exactly as it was, still proposed
+        return {"correction_id": entry["correction_id"], "diff": None, "new_version": pb_old["version"], "explanation": patch["explanation"]}
     pb_new = _apply_ops(pb_old, patch["ops"], client, f"interview {entry['correction_id']}")
     cause = {"type": "interview", "correction_id": entry["correction_id"], "rule_id": rule_id, "note": answer_text,
              "explanation": patch["explanation"],

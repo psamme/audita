@@ -17,6 +17,8 @@ CONFLICT_SHARE = 0.12   # tolerated disagreement with a noisy trail before a rul
 
 
 def pb_dir(client: str, track: str):
+    if not re.fullmatch(r"[A-Za-z0-9_]{1,32}", track) or not re.fullmatch(r"[A-Za-z0-9_]{1,8}", client):
+        raise ValueError("bad client or track name")
     return db.DATA / client / "playbook" / track
 
 
@@ -26,7 +28,7 @@ def versions(client: str, track: str = "main") -> list[int]:
 
 def load(client: str, track: str = "main", version: int | None = None) -> dict | None:
     vs = versions(client, track)
-    if not vs:
+    if not vs or (version and version not in vs):
         return None
     return json.loads((pb_dir(client, track) / f"v{version or vs[-1]}.json").read_text())
 
@@ -63,6 +65,7 @@ def render(pb: dict, chart: dict | None = None) -> str:
 def cases(con, before: str) -> list[dict]:
     """One compact case per non-routine item the ERP trail shows, in periods before `before`."""
     users = {u["id"]: u["role"] for u in db.q(con, "SELECT * FROM user")}
+    senior_roles = {u["role"] for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
     out = []
     for o in history.observe(con, before):
         if o["routine"]:
@@ -75,6 +78,7 @@ def cases(con, before: str) -> list[dict]:
              "booked": [{"account": a["account"], "amount": a["amount"], "memo": a["memo"], "by": users.get(a["by"], a["by"])}
                         for a in o["adjustments"]],
              "approvals": o["approvals"]}
+        c["senior_involved"] = bool(o["approvals"]) or any(r in senior_roles for r in c["handled_by"])
         if o["ledger"]:
             total = sum(e["amount"] for e in o["ledger"])
             c |= {"linked_ledger": [{"id": e["id"], "amount": e["amount"], "account": e["account"], "memo": e["memo"],
@@ -92,7 +96,7 @@ def clusters(cs: list[dict], examples: int = 6) -> list[dict]:
     groups = defaultdict(list)
     for c in cs:
         shape = re.sub(r"[A-Z]*\d[\w-]*", "#", c["text"] or "")
-        senior = any(r not in ("bookkeeper", "part-time clerk", "staff accountant") for r in c["handled_by"]) or bool(c["approvals"])
+        senior = c["senior_involved"]
         sig = (c["item_kind"], shape, tuple(sorted({b["account"] for b in c["booked"]})), len(c.get("linked_ledger", [])) > 1,
                senior, c["left_open"])
         groups[sig].append(c)
@@ -173,7 +177,9 @@ contract term, whether evidence exists). A non-executable rule still needs a `wh
 a matching non-executable rule sends the item to an investigator with your text attached.
 - evidence_ids: ids of the bank lines or ledger entries from the examples that show this convention.
 - confidence: 0 to 1, your honest estimate that the controller would confirm this rule as written.
-- open_question: null when the trail is clear. Otherwise the one question you would ask the controller to settle it, \
+- open_question: null when the trail is clear. A rule with an open question does not execute until someone answers \
+it, so ask only when the answer could change the rule's action, account, threshold or addressee, never out of \
+curiosity. Otherwise the one question you would ask the controller to settle it, \
 stating what you saw ("I see 2 of these, both posted by the controller 3+ days later. Is controller approval \
 required?"). Thin evidence (one or two cases), conflicting handling, or a threshold you had to guess all warrant one.
 
@@ -269,10 +275,11 @@ def backtest(con, pb: dict) -> dict:
         bt = r["backtest"]
         n = bt["support"] + bt["conflicts"]
         r["confidence"] = round((bt["support"] + 1) / (n + 2) * (1 if n else 0.5), 3)   # smoothed agreement with the trail
-        r["precedent_ids"] = bt["supported_by"][:12] or r["precedent_ids"]
+        r["precedent_ids"] = bt["supported_by"][:12]         # only precedents the replay confirmed
         r["precedent_count"] = bt["support"]
         bt["supported_by"] = len(bt["supported_by"])
-        trusted = bt["support"] >= APPROVE_MIN_SUPPORT and bt["conflicts"] <= CONFLICT_SHARE * n
+        trusted = (bt["support"] >= APPROVE_MIN_SUPPORT and bt["conflicts"] <= CONFLICT_SHARE * n
+                   and not (r.get("open_question") and not r.get("human_confirmed")))     # an unanswered question blocks execution
         if r["executable"] and not trusted and n:
             r["executable_if_approved"] = True
         r["status"] = "approved" if trusted else "proposed"

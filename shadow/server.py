@@ -16,15 +16,17 @@ TRACK = "main"
 
 
 def _run_dir(run_id: str):
+    if not run_id.replace("-", "").replace("_", "").isalnum():
+        raise HTTPException(404, "no such run")
     d = db.RUNS / run_id
     if not (d / "run.json").exists():
         raise HTTPException(404, "no such run")
     return d
 
 
-def _items(run_id: str) -> list[dict]:
+def _items(run_id: str, grades: bool = False) -> list[dict]:
     d = _run_dir(run_id)
-    grades = json.loads((d / "grades.json").read_text()) if (d / "grades.json").exists() else {}
+    grades = json.loads((d / "grades.json").read_text()) if grades and (d / "grades.json").exists() else {}
     meta = json.loads((d / "run.json").read_text())
     pb = pbmod.load(meta["client"], meta.get("track") or TRACK, meta.get("playbook_version")) if meta.get("playbook_version") else None
     by_id = {r["id"]: r for r in (pb or {}).get("rules", [])}   # the playbook version this run actually used
@@ -41,6 +43,8 @@ def _summary(run_id: str) -> dict:
     d = _run_dir(run_id)
     s = json.loads((d / "run.json").read_text())
     s["metrics"] = json.loads((d / "metrics.json").read_text()) if (d / "metrics.json").exists() else None
+    if s["metrics"]:
+        s["metrics"].pop("by_category", None)      # category names describe the hidden test
     return s
 
 
@@ -60,18 +64,25 @@ def runs():
 
 
 @app.get("/api/runs/{run_id}")
-def run(run_id: str):
-    return _summary(run_id) | {"items": _items(run_id)}
+def run(run_id: str, grades: bool = False):
+    """grades=true attaches the grader's verdict per item (off by default: it reveals the answer key item by item)."""
+    return _summary(run_id) | {"items": _items(run_id, grades)}
 
 
 @app.get("/api/runs/{run_id}/queue")
-def queue(run_id: str):
-    return [it for it in reversed(_items(run_id)) if it["resolution"]["action"] == "escalate"]
+def queue(run_id: str, grades: bool = False):
+    return [it for it in reversed(_items(run_id, grades)) if it["resolution"]["action"] == "escalate"]
+
+
+def _con(client: str):
+    if client not in CLIENTS or not db.db_path(client).exists():
+        raise HTTPException(404, "no such client")
+    return db.connect(client, readonly=True)
 
 
 @app.get("/api/record/{client}/{record_id}")
 def record(client: str, record_id: str):
-    con = db.connect(client, readonly=True)
+    con = _con(client)
     for table in ("bank_line", "ledger_entry", "invoice", "document", "reconcile_link", "journal_entry", "approval"):
         r = db.q(con, f"SELECT * FROM {table} WHERE id=?", record_id)
         if r:
@@ -81,7 +92,13 @@ def record(client: str, record_id: str):
 
 @app.get("/api/playbook/{client}")
 def get_playbook(client: str, version: int | None = None, track: str = TRACK):
-    pb = pbmod.load(client, track, version)
+    _con(client)
+    try:
+        if version and version not in pbmod.versions(client, track):
+            raise HTTPException(404, "no such version")
+        pb = pbmod.load(client, track, version)
+    except ValueError:
+        raise HTTPException(404, "no such track")
     if not pb:
         return {"client": client, "version": 0, "versions": [], "rules": []}
     vs = [{"version": v, "created_at": p["created_at"], "cause": p["cause"]}

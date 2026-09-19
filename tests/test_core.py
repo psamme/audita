@@ -20,7 +20,7 @@ def test_agent_code_never_touches_truth_or_keys():
             if isinstance(node, (ast.ImportFrom, ast.Import)):
                 names = [node.module or ""] if isinstance(node, ast.ImportFrom) else [a.name for a in node.names]
                 for name in names:
-                    assert not name.startswith("sim") or (path.name == "experiment.py" and name == "sim.experiment_data")  # demo fixtures only, (path.name, name)
+                    assert not name.startswith("sim"), (path.name, name)
 
 
 def test_agent_db_has_no_resolution_table():

@@ -208,8 +208,12 @@ class Desk:
         return cf
 
 
-def investigate(con, client_info: dict, period: str, item: dict, kind: str, used: set[str], pb: dict | None,
-                flags: list, rule: dict | None) -> dict:
+def investigate(*args, **kw) -> dict:
+    return _investigate(*args, **kw)
+
+
+def _investigate(con, client_info: dict, period: str, item: dict, kind: str, used: set[str], pb: dict | None,
+                 flags: list, rule: dict | None, _usage_box: dict | None = None) -> dict:
     """Returns {"resolution", "trace", "usage"} for one item."""
     with_history = pb is not None
     desk = Desk(con, period, used, with_history)
@@ -218,6 +222,8 @@ def investigate(con, client_info: dict, period: str, item: dict, kind: str, used
     system = SYSTEM.format(name=client_info["name"], blurb=client_info["blurb"], playbook_block=block,
                            chart=json.dumps(client_info["chart"]), roles=roles, period=period)
     usage, trace = llm.Usage(), []
+    if _usage_box is not None:
+        _usage_box["usage"] = usage
     cf = desk.case_file(item, kind, flags, rule)
     trace.append({"step": 1, "kind": "case_file", "label": "case file assembled (no model call)", "input": {},
                   "output": f"{len(cf['open_ledger_candidates'])} ledger candidates, {len(cf['documents'])} documents, "
@@ -238,7 +244,7 @@ def investigate(con, client_info: dict, period: str, item: dict, kind: str, used
         results = []
         for call in reply.tool_calls:
             if call["name"] == "submit_resolution":
-                complaint = validate(call["input"], item, kind, desk, client_info)
+                complaint = validate(call["input"], item, kind, desk, client_info, roles)
                 if complaint and turn < MAX_TURNS - 1:
                     results.append({"type": "tool_result", "tool_use_id": call["id"], "content": "Rejected: " + complaint, "is_error": True})
                     trace.append({"step": len(trace) + 1, "kind": "check", "label": "resolution rejected by code", "input": call["input"], "output": complaint, "ids": []})
@@ -268,6 +274,19 @@ def investigate(con, client_info: dict, period: str, item: dict, kind: str, used
     return {"resolution": res, "trace": trace, "usage": usage.as_dict()}
 
 
+def investigate_safely(*args, roles: list[str]) -> dict:
+    """A failed investigation never drops an item and never hides what it spent."""
+    box = {}
+    try:
+        return _investigate(*args, _usage_box=box)
+    except Exception as e:
+        spent = box["usage"].as_dict() if "usage" in box else None
+        return {"resolution": {"action": "escalate", "ledger_ids": [], "adjustments": [], "escalate_to": roles[0] if roles else None,
+                               "rationale": f"Investigation failed ({type(e).__name__}: {e}). Left for review.", "rule_id": None,
+                               "precedent_ids": [], "evidence_ids": [], "confidence": 0.0, "reason": "no_rule", "questions": [], "proposed": None},
+                "trace": [], "usage": spent or {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cache_creation_tokens": 0, "cost_usd": 0.0, "llm_calls": 0}}
+
+
 def grounded(res: dict, pb: dict, desk: "Desk", roles: list[str]) -> dict:
     """With a playbook in play, an entry is only booked on the client's own authority: an approved rule, or at least
     three past items it can point to. Otherwise the item is escalated, whatever confidence the model reported."""
@@ -283,9 +302,14 @@ def grounded(res: dict, pb: dict, desk: "Desk", roles: list[str]) -> dict:
                                f"signed-off rule. Proposed: {res['rationale']}"}
 
 
-def validate(r: dict, item: dict, kind: str, desk: Desk, info: dict) -> str | None:
+ACTIONS = {"match", "match_adjust", "book", "carry_forward", "escalate"}
+
+
+def validate(r: dict, item: dict, kind: str, desk: Desk, info: dict, roles: list[str] = ()) -> str | None:
     action = r.get("action")
-    ids = r.get("ledger_ids") or []
+    if action not in ACTIONS:
+        return f"action must be one of {sorted(ACTIONS)}"
+    r["ledger_ids"] = ids = list(dict.fromkeys(r.get("ledger_ids") or []))      # a repeated id must not be summed twice
     adj = r.get("adjustments") or []
     if action in ("match", "match_adjust"):
         if kind != "bank" or not ids:
@@ -307,8 +331,10 @@ def validate(r: dict, item: dict, kind: str, desk: Desk, info: dict) -> str | No
             return f"book adjustments must sum to {-item['amount']}"
     if action in ("match_adjust", "book") and any(a["account"] not in info["chart"] for a in adj):
         return "an adjustment account is not in the chart of accounts"
-    if action == "escalate" and not r.get("escalate_to"):
-        return "escalate needs escalate_to"
+    if action == "escalate" and r.get("escalate_to") not in roles:
+        return f"escalate_to must be one of {list(roles)}"
+    if action == "carry_forward" and kind == "bank":
+        return "a bank line cannot be carried forward: the cash has already moved. Match it, book it or escalate it"
     return None
 
 
@@ -326,6 +352,8 @@ def finalize(final: dict | None, complaint: str | None, flags: list, roles: list
     if res["action"] != "escalate" and res["confidence"] < CONFIDENCE_FLOOR:
         return res | {"action": "escalate", "ledger_ids": [], "adjustments": [], "proposed": final, "escalate_to": final.get("escalate_to") or base["escalate_to"],
                       "rationale": f"Confidence {res['confidence']:.2f} is under the floor. Proposed: {res['rationale']}"}
+    if res["action"] == "escalate":
+        res["ledger_ids"], res["adjustments"] = [], []      # an escalated item claims nothing
     if res["action"] != "escalate":
         res["escalate_to"] = res["reason"] = None
     elif any(f["flag"] in HARD_FLAGS for f in flags):

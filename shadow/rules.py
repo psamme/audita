@@ -12,17 +12,20 @@ when (bank items unless item_kind says otherwise):
   counterparty_regex   case-insensitive
   amount_min, amount_max          on the absolute amount
   candidate            how to find the ledger side: {"by": "ref" | "ref_in_description" | "counterparty" | "amount_near",
-                       "window_days": 10, "account": "4000", "max_entries": 1}; omitted means the rule expects none
+                       "window_days": 10, "account": "<ledger_account>", "max_entries": 1}; omitted means the rule expects none
   diff_min, diff_max   signed, diff = ledger total - bank amount (positive: bank received less / paid more)
   diff_abs_max, diff_pct_min, diff_pct_max   pct is |diff| / |ledger total| * 100
-  doc                  {"type": "processor_report", "net_diff_abs_min": 0, "net_diff_abs_max": 0}: a document of that
-                       type whose meta.batch_id equals the bank ref; net_diff = meta.net - bank amount
+  invoice_age_days_max days from the matched entry's invoice date to the bank date (terms that only hold inside a window);
+                       invoice_age_days_min is the mirror
+  doc                  {"type": "<document_type>", "net_diff_abs_min": 0, "net_diff_abs_max": 0}: a structured document of
+                       that type whose meta.batch_id equals the bank ref; net_diff = meta.net - bank amount
   age_days_max         ledger items: days between the entry date and period end
   posted_after_close   ledger items: true when posted more than close_days after the end of the entry's own month
 then:
   action               match | match_adjust | book | escalate | carry_forward
   account              where the diff goes (match_adjust) or the whole amount goes (book)
-  adjust_from_doc      {"fees": "6120", ...}: document meta fields booked to accounts; with remainder_account for net_diff
+  adjust_from_doc      {"<meta_field>": "<account>", ...}: document meta fields booked to accounts
+  remainder_account    with adjust_from_doc: where any net_diff left over goes
   escalate_to          role
 """
 import re
@@ -192,6 +195,11 @@ def _evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
         ledger = hits[0]
         diff = round(sum(e["amount"] for e in ledger) - item["amount"], 2)
         evidence += [e["id"] for e in ledger]
+        if "invoice_age_days_max" in when or "invoice_age_days_min" in when:
+            ages = [days_between(item["date"], inv[0]["date"]) for e in ledger
+                    for inv in [db.q(ctx.con, "SELECT date FROM invoice WHERE id=?", e["invoice_id"] or "")] if inv]
+            if len(ages) != len(ledger) or max(ages) > when.get("invoice_age_days_max", 10**6) or min(ages) < when.get("invoice_age_days_min", -10**6):
+                return None
     elif any(k.startswith("diff_") for k in when):
         return None
     if when.get("doc"):
@@ -217,14 +225,16 @@ def _evaluate(rule: dict, item: dict, kind: str, ctx: Ctx) -> dict | None:
         res["ledger_ids"] = sorted(e["id"] for e in ledger)
         if action == "match_adjust":
             if doc and then.get("adjust_from_doc"):
-                for field, account in then["adjust_from_doc"].items():
+                fields = dict(then["adjust_from_doc"])
+                remainder = then.get("remainder_account") or fields.pop("remainder_account", None)   # accept either placement
+                for field, account in fields.items():
                     if doc["meta"].get(field):
                         res["adjustments"].append({"account": account, "amount": round(doc["meta"][field], 2)})
                 rest = round(diff - sum(a["amount"] for a in res["adjustments"]), 2)
                 if abs(rest) > 0.004:
-                    if not then.get("remainder_account"):
+                    if not remainder:
                         return None
-                    res["adjustments"].append({"account": then["remainder_account"], "amount": rest})
+                    res["adjustments"].append({"account": remainder, "amount": rest})
             elif then.get("account") and abs(diff) > 0.004:
                 res["adjustments"] = [{"account": then["account"], "amount": diff}]
             else:
