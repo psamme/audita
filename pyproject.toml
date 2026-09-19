@@ -1,0 +1,9 @@
+[project]
+name = "shadow-onboarding"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "anthropic>=1.7.0",
+    "fastapi>=0.141.1",
+    "uvicorn>=0.53.0",
+]
