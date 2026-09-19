@@ -28,15 +28,18 @@ def policy_for(client: str) -> str:
     return own + "\n\n" + next(p for p in parts if p.startswith("Universal"))
 
 
-YESNO = {"type": "object", "properties": {"review": {"type": "boolean"}}, "required": ["review"], "additionalProperties": False}
+BAND_ANSWER = {"type": "object", "additionalProperties": False, "required": ["kind", "limit"], "properties": {
+    "kind": {"type": "string", "enum": ["limit", "review", "usual", "not_amount"]}, "limit": {"type": ["number", "null"]}}}
 
 
-def band_answer(client: str, question: dict, usage: llm.Usage | None = None) -> bool:
-    """The controller answers one hypothetical: would you want an item at this value sent for review?"""
-    a = llm.call(CONTROLLER.format(policy=policy_for(client)) + "\nAnswer review=true if an item at that value should go to someone "
-                 "for review under your policy, review=false if your team handles it the usual way without review.",
-                 [{"role": "user", "content": question["text"]}], schema=YESNO, max_tokens=1000, usage=usage)
-    return bool(json.loads(a.text)["review"])
+def band_answer(client: str, question: dict, usage: llm.Usage | None = None) -> dict:
+    """The controller answers a band question the way the UI offers it: state the limit, yes review, no usual, or not about the amount."""
+    a = llm.call(CONTROLLER.format(policy=policy_for(client)) + "\nYou are answering a multiple-choice card. kind=limit with the number if "
+                 "your policy has a limit for this (a real controller knows their limit); kind=review if an item at the asked value "
+                 "should go to someone; kind=usual if your team handles it without review and you have no number to give; "
+                 "kind=not_amount if how these are handled does not depend on the amount at all.",
+                 [{"role": "user", "content": question["text"]}], schema=BAND_ANSWER, max_tokens=1000, usage=usage)
+    return json.loads(a.text)
 
 
 def band_interview(client: str, track: str, limit: int = 8, usage: llm.Usage | None = None, on_answer=None) -> list[dict]:
@@ -47,11 +50,13 @@ def band_interview(client: str, track: str, limit: int = 8, usage: llm.Usage | N
             break
         q = qs[0]
         asked.add(q["rule_id"] + q["condition"])       # one question per band is enough to show the mechanism
-        review = band_answer(client, q, usage)
-        res = correct.answer_band(client, track, q["rule_id"], q["condition"], q["value"], review)
-        out.append({"question": q["text"], "review": review, "band": res["band"], "new_version": res["new_version"]})
+        ans = band_answer(client, q, usage)
+        kind = ans["kind"] if not (ans["kind"] == "limit" and ans["limit"] is None) else "usual"
+        res = correct.answer_band(client, track, q["rule_id"], q["condition"], q["value"], review={"review": True, "usual": False}.get(kind),
+                                  limit=ans["limit"] if kind == "limit" else None, not_amount=kind == "not_amount")
+        out.append({"question": q["text"], "answer": ans, "band": res.get("band"), "held": res.get("held"), "new_version": res.get("new_version")})
         if on_answer:
-            on_answer("band", q["text"], "yes, review" if review else "no, usual way")
+            on_answer("band", q["text"], f"the limit is {ans['limit']}" if kind == "limit" else kind)
     return out
 
 

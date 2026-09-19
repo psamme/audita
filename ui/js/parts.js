@@ -153,6 +153,14 @@
 
   // Questions-to-trust: one client, one line. x is answers given (ordered), y is the share of items
   // resolved without a model or a person. Stepped, because each answer is a discrete event.
+  // marker shape says what kind of answer it was, so the lift can be traced to its cause without colour
+  function marker(kind, cx, cy) {
+    if (kind === "band") return `<circle cx="${cx}" cy="${cy}" r="4.5" class="dot hollow"/>`;
+    if (kind === "correction") return `<rect x="${cx - 4.5}" y="${cy - 4.5}" width="9" height="9" class="dot"/>`;
+    if (kind === "induction") return `<circle cx="${cx}" cy="${cy}" r="3" class="dot"/>`;
+    return `<circle cx="${cx}" cy="${cy}" r="5" class="dot"/>`;
+  }
+
   function curveChart(c, id) {
     const pts = (c.points || []).slice().sort((x, y) => x.k - y.k);
     if (!pts.length) return "";
@@ -171,10 +179,13 @@
         <path d="${d}" class="line" fill="none"/>
         <text x="${x(pts[0].k) + 8}" y="${y(pts[0].auto_resolve_rate) + 18}" text-anchor="start" class="axis strong">${(pts[0].auto_resolve_rate * 100).toFixed(1)}%</text>
         <text x="${x(pts[pts.length - 1].k)}" y="${y(pts[pts.length - 1].auto_resolve_rate) + 18}" text-anchor="end" class="axis strong">${(pts[pts.length - 1].auto_resolve_rate * 100).toFixed(1)}%</text>
-        ${pts.map((p, i) => `<circle cx="${x(p.k)}" cy="${y(p.auto_resolve_rate)}" r="${p.k === reached ? 6 : 4}" class="dot ${p.k === reached ? "reached" : ""}" data-i="${i}"/>`).join("")}
+        ${reached != null ? pts.filter((p) => p.k === reached).map((p) => `<circle cx="${x(p.k)}" cy="${y(p.auto_resolve_rate)}" r="10" class="ring"/>`).join("") : ""}
+        ${pts.map((p) => marker(p.answer_kind, x(p.k), y(p.auto_resolve_rate))).join("")}
         ${pts.map((p, i) => `<rect x="${x(p.k) - 14}" y="${T}" width="28" height="${H - T - Bm}" fill="transparent" class="hit" data-i="${i}"/>`).join("")}
       </svg>
       <div class="curve-x axis-label">Answers given by a person</div>
+      <div class="legend">${[["open_question", "A question answered in words"], ["band", "A yes or no on a band"], ["correction", "A queue correction"]].filter(([k]) => pts.some((p) => p.answer_kind === k))
+        .map(([k, label]) => `<span><svg width="14" height="14" viewBox="0 0 14 14">${marker(k, 7, 7)}</svg>${label}</span>`).join("")}${reached != null ? `<span><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" class="ring"/></svg>Crosses the trust line</span>` : ""}</div>
       <div class="tip" hidden></div>
     </div>`;
   }

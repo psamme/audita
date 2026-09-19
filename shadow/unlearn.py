@@ -27,7 +27,8 @@ def _replay(client: str, base: dict, patches: list[dict], dropped: str | None) -
             continue
         patch = cause["patch"]
         if patch["kind"] == "band":
-            if pbmod.apply_band_answer(pb, patch["rule_id"], patch["condition"], patch["value"], patch["review"]) is None:
+            if pbmod.apply_band_answer(pb, patch["rule_id"], patch["condition"], patch["value"], patch["review"],
+                                      patch.get("limit"), patch.get("not_amount", False)) is None:
                 notes.append(f"{cause.get('correction_id')}: band answer no longer has a rule to apply to; skipped")
             continue
         ids = {r["id"] for r in pb["rules"]}

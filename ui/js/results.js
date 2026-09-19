@@ -51,11 +51,13 @@
     const any = curve[ids[0]];
     return `<section class="panel"><div class="panel-head"><h3>Questions to trust</h3><span class="state state-proposed">Development holdout</span></div>
       <div class="panel-body stack">
+        ${(() => { const all = ids.flatMap((id) => curve[id].points), bad = all.reduce((n, p) => n + (p.wrong_auto || 0), 0), steps = Math.max(...ids.map((id) => curve[id].points.length));
+          return `<h2 class="ask-q" style="max-width: 40ch;"><span class="num">${bad}</span> silent wrong resolution${bad === 1 ? "" : "s"}, across ${steps} steps of teaching, for ${ids.length === 2 ? "both clients" : "this client"}.</h2>`; })()}
         <p class="muted" style="max-width: 78ch;">Each step is one answer from a person. The line is the share of exceptions the free tiers, matcher plus playbook rules, got right with no model call: resolved the way the truth says, or escalated when the truth says escalate. Scored on 16 to 31 March, never the hidden month.</p>
         <div class="charts">${ids.map((id) => { const c = curve[id], pts = c.points, last = pts[pts.length - 1], first = pts[0];
           const silent = pts.reduce((n, p) => n + (p.wrong_auto || 0), 0);
           return `<div class="chart"><div class="chart-head"><h3>${esc(name[id] || id)}</h3>
-            <span class="faint small">${c.questions_to_trust != null ? `Crosses the ${Math.round(c.target_auto_resolve_rate * 100)}% trust line after ${c.questions_to_trust} answer${c.questions_to_trust === 1 ? "" : "s"}` : `Reaches ${(Math.max(...pts.map((p) => p.auto_resolve_rate)) * 100).toFixed(1)}%, short of the ${Math.round((c.target_auto_resolve_rate || 0) * 100)}% trust line`}</span></div>
+            <span class="faint small">${c.questions_to_trust != null ? `Crosses the ${Math.round(c.target_auto_resolve_rate * 100)}% trust line after ${c.questions_to_trust} answer${c.questions_to_trust === 1 ? "" : "s"}` : `Reaches ${(Math.max(...pts.map((p) => p.auto_resolve_rate)) * 100).toFixed(1)}%, trust line of ${Math.round((c.target_auto_resolve_rate || 0) * 100)}% not reached in ${pts.length - 1} answers`}</span></div>
             ${SO.curveChart(c, "curve-" + id)}
             <div class="rule-meta"><span>Left for the model or a person: <b class="num">${first.left_for_model_or_human}</b> to <b class="num">${last.left_for_model_or_human}</b></span><span>Silent wrong resolutions at any step: <b class="num">${silent}</b></span>${last.est_llm_cost_usd != null ? `<span>Est. model cost: <b class="num">${usd(first.est_llm_cost_usd)}</b> to <b class="num">${usd(last.est_llm_cost_usd)}</b></span>` : ""}</div></div>`; }).join("")}</div>
         ${any.cost_note ? `<p class="faint small">${esc(cap(any.cost_note))}. A yes or no that changes nothing means no item in the scoring window fell inside that band.</p>` : ""}

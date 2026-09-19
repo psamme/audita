@@ -58,6 +58,9 @@ def one(client: str, target: float) -> dict:
     return {"client": client, "target_auto_resolve_rate": target, "questions_to_trust": clean[0]["k"] if clean else None,
             "scored_on": f"{HALF_FROM}..end of {PERIOD} (development holdout)", "corrections_from": f"{PERIOD}-01..{HALF_TO}",
             "metric_note": "auto_resolve_rate = share of scored exceptions the $0 tiers got right (resolved as the truth says, or escalated when the truth says escalate); wrong_auto = silent wrong resolutions",
+            "reviewer_note": "answers come from a simulated controller: a model given the client's full written policy. It answers "
+                             "band cards with a stated limit when the policy has one, and answers open questions in free text, where it "
+                             "may volunteer limits beyond what was asked. questions_to_trust depends on that behaviour.",
             "cost_note": "model cost is estimated: items left after the $0 tiers times the measured cost per investigated item",
             "per_item_cost_usd": round(per_item, 4), "learning_cost_usd": usage.as_dict()["cost_usd"], "points": points}
 

@@ -48,6 +48,10 @@ def _summary(e: dict) -> str:
     if t == "correction":
         return f"Corrected {e.get('item_id')}: {e.get('note')}"
     if t == "interview" and "condition" in e:
+        if e.get("not_amount"):
+            return f"{e['rule_id']}: it is not about the amount"
+        if e.get("limit") is not None:
+            return f"{e['rule_id']}: the limit is {e['limit']:,.2f}"
         return f"Asked about {e['value']:,.2f} on {e['rule_id']}: " + ("send for review" if e["review"] else "handle the usual way")
     if t == "interview":
         return f"Answered {e.get('rule_id')}: {e.get('answer')}"
@@ -140,11 +144,18 @@ def _finish(con, client, track, pb_old, pb_new, cause, period=None):
     return saved, pbmod.diff(pb_old | {"version": pb_old.get("version", 0)}, saved)
 
 
-def answer_band(client: str, track: str, rule_id: str, condition: str, value: float, review: bool) -> dict:
-    """Yes/no answer to a band question. Instant: no model call."""
-    entry = _log(client, {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition,
-                          "value": value, "review": review})
-    return pbmod.answer_band(client, track, rule_id, condition, value, review, entry["correction_id"]) | {"correction_id": entry["correction_id"]}
+def answer_band(client: str, track: str, rule_id: str, condition: str, value: float | None = None, review: bool | None = None,
+                limit: float | None = None, not_amount: bool = False, role: str | None = None) -> dict:
+    """Answer to a band question: a stated limit, yes/no at the asked value, or "it is not about the amount".
+    Instant, no model call. Only a senior role may move a band."""
+    con = db.connect(client, readonly=True)
+    seniors = {u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
+    entry = _log(client, {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition, "value": value,
+                          "review": review, "limit": limit, "not_amount": not_amount, "by_role": role})
+    if role is not None and role not in seniors:
+        return {"correction_id": entry["correction_id"], "diff": None, "held": f"{role} cannot move a limit; a senior role has to answer this"}
+    return pbmod.answer_band(client, track, rule_id, condition, value, review, entry["correction_id"], limit, not_amount) \
+        | {"correction_id": entry["correction_id"]}
 
 
 def correct(client: str, track: str, item: dict, human: dict, note: str, run_id: str = "", usage: llm.Usage | None = None,

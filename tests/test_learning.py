@@ -61,6 +61,28 @@ def test_band_answer_then_retraction_restores_the_band(fee_playbook):
         unlearn.retract("A", TRACK, correction_id="A-COR-9999")
 
 
+def test_stated_limit_closes_the_band_and_not_amount_blocks_the_rule(fee_playbook):
+    con, pb = fee_playbook
+    ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=25.0)
+    assert (ans["band"]["lo"], ans["band"]["hi"], ans["band"]["source"]) == (25.0, 25.01, "stated")
+    assert playbook.band_questions(playbook.load("A", TRACK)) == []
+    held = correct.answer_band("A", TRACK, "A-R-001", "amount_max", limit=90.0, role="bookkeeper")
+    assert held["diff"] is None and "senior" in held["held"]
+    correct.answer_band("A", TRACK, "A-R-001", "amount_max", not_amount=True)
+    rule = playbook.load("A", TRACK)["rules"][0]
+    assert rule["status"] == "proposed" and rule["open_question"]
+
+
+def test_usual_way_does_not_widen_a_rule_with_an_open_question(fee_playbook):
+    con, pb = fee_playbook
+    d = playbook.load("A", TRACK)
+    d["rules"][0]["open_question"] = "Is this about the amount?"
+    playbook.save("A", TRACK, {k: v for k, v in d.items() if k not in ("version", "created_at", "cause")}, {"type": "test"})
+    lo = d["rules"][0]["bands"]["amount_max"]["lo"]
+    ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", value=lo + 10, review=False)
+    assert ans["held"] and ans["band"]["lo"] == lo
+
+
 def test_stale_evidence_is_noticed(tmp_path):
     copy = tmp_path / "client.db"
     shutil.copy(db.db_path("A"), copy)

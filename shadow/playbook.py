@@ -279,6 +279,10 @@ def backtest(con, pb: dict) -> dict:
         r["precedent_ids"] = bt["supported_by"][:12]         # only precedents the replay confirmed
         r["precedent_count"] = bt["support"]
         bt["supported_by"] = len(bt["supported_by"])
+        odd = [b for b in (r.get("bands") or {}).values() if b.get("categorical") and b.get("source") == "trail"]
+        if odd and not r.get("open_question") and not r.get("human_confirmed"):
+            r["open_question"] = ("Every case I saw was one of a few round amounts, which looks like a fee schedule rather than a range. "
+                                  "Is this about the amount at all, or about something else, such as whether the charge is evidenced?")
         trusted = (bt["support"] >= APPROVE_MIN_SUPPORT and bt["conflicts"] <= CONFLICT_SHARE * n
                    and not (r.get("open_question") and not r.get("human_confirmed")))     # an unanswered question blocks execution
         if r["executable"] and not trusted and n:
@@ -364,6 +368,8 @@ def compute_bands(con, pb: dict, observed: dict | None = None) -> None:
                     "hi_precedent": near[2] if near else None}
             if not upper and band["hi"] is None:
                 band["hi"] = float(rules.get_cond(rule["when"], cond))   # nothing seen on the action side: keep the written line
+            distinct = sorted({x[0] for x in known})
+            band["categorical"] = len(known) >= 2 and len(distinct) <= 3 and all(abs(v / 5 - round(v / 5)) < 1e-9 for v in distinct)
             bands[cond] = band | {"side": "upper" if upper else "lower", "n_known": len(known), "n_other": len(other),
                                   "written": rules.get_cond(rule["when"], cond), "source": "trail", "beyond": beyond[:5]}
         rule["bands"] = bands
@@ -376,7 +382,7 @@ def band_questions(pb: dict, limit: int = 8) -> list[dict]:
         if r.get("status") == "retired" or (r.get("then") or {}).get("action") == "escalate":
             continue
         for cond, b in (r.get("bands") or {}).items():
-            if b.get("side") != "upper" or b.get("source") == "stated" or not b.get("n_known"):
+            if b.get("side") != "upper" or b.get("source") in ("stated", "rejected") or not b.get("n_known"):
                 continue
             lo, hi = b["lo"], b["hi"]
             width = None if hi is None else (hi - lo) / max(lo, 1.0)
@@ -386,42 +392,71 @@ def band_questions(pb: dict, limit: int = 8) -> list[dict]:
             unit = "%" if "pct" in cond else ""
             fmt = (lambda x: f"{x:,.2f}%") if unit else (lambda x: f"${x:,.2f}")
             seen = f"I have seen your team do this up to {fmt(lo)}" + (f" and handle it differently from {fmt(hi)}." if hi is not None else " and never seen a larger one.")
-            out.append({"question_id": f"{r['id']}:{cond}", "rule_id": r["id"], "condition": cond, "value": mid,
-                        "lo": lo, "hi": hi, "relative_width": width, "rule_text": r["text"],
-                        "text": f"{r['text']} {seen} If one came in at {fmt(mid)}, would you want it sent to someone for review?"})
+            ask = "limit" if hi is None else "yes_no"
+            text = (f"{r['text']} {seen} Up to what amount does your team handle these without review?" if ask == "limit" else
+                    f"{r['text']} {seen} If one came in at {fmt(mid)}, would you want it sent to someone for review?")
+            out.append({"question_id": f"{r['id']}:{cond}", "rule_id": r["id"], "condition": cond, "value": mid, "ask": ask,
+                        "answers": ["limit", "review", "usual", "not_amount"],
+                        "lo": lo, "hi": hi, "relative_width": width, "rule_text": r["text"], "text": text})
     out.sort(key=lambda q: -(q["relative_width"] if q["relative_width"] is not None else 1e9))
     return out[:limit]
 
 
-def apply_band_answer(new: dict, rule_id: str, condition: str, value: float, review: bool) -> dict | None:
-    """Move one band in place. Returns the band before the move, or None when the rule or band no longer exists."""
+def apply_band_answer(new: dict, rule_id: str, condition: str, value: float | None, review: bool | None = None,
+                      limit: float | None = None, not_amount: bool = False) -> dict | None:
+    """Move one band in place. Returns {"before": band, "held": reason | None}, or None when the rule or band is gone.
+
+    limit       "the limit is $X": the band closes at X in one answer.
+    review      True pulls hi down to the asked value. False ("handle as usual") may only push lo up when the rule has no
+                open question and its back-test has no disagreements; otherwise the answer is recorded and nothing widens.
+    not_amount  "it is not about the amount": the rule stops executing and the band question becomes an open question.
+    """
     rule = next((r for r in new["rules"] if r["id"] == rule_id), None)
     if not rule or condition not in (rule.get("bands") or {}):
         return None
     band = rule["bands"][condition]
-    before_band = dict(band)
-    band |= ({"hi": value} if review else {"lo": value}) | {"source": "interview"}
-    for other in new["rules"]:     # the far side of the same line (the rule that sends larger ones to someone) moves with it
-        for c, ob in (other.get("bands") or {}).items():
-            if other is not rule and ob.get("side") == "lower" and rules.BANDED[c][0] == rules.BANDED[condition][0] \
-                    and ob.get("lo") == before_band["lo"] and ob.get("hi") == before_band["hi"]:
-                ob |= ({"hi": value} if review else {"lo": value}) | {"source": "interview"}
-    return before_band
+    before_band, held = dict(band), None
+    upper = band.get("side", "upper") == "upper"
+    if not_amount:
+        band |= {"source": "rejected"}
+        rule |= {"status": "proposed", "human_confirmed": False,
+                 "open_question": "You said this is not about the amount. What does decide how these are handled?"}
+    elif limit is not None:
+        band |= ({"lo": limit, "hi": round(limit + 0.01, 2)} if upper else {"lo": round(limit - 0.01, 2), "hi": limit}) | {"source": "stated"}
+    elif review:
+        band |= {"hi": value, "source": "interview"}
+    elif rule.get("open_question") or (rule.get("backtest") or {}).get("conflicts"):
+        held = "not widened: the rule still has an open question or disagrees with part of the history"
+    else:
+        band |= {"lo": value, "source": "interview"}
+    if not held and not not_amount:
+        for other in new["rules"]:     # the far side of the same line (the rule that sends larger ones to someone) moves with it
+            for c, ob in (other.get("bands") or {}).items():
+                if other is not rule and ob.get("side") == "lower" and rules.BANDED[c][0] == rules.BANDED[condition][0] \
+                        and ob.get("lo") == before_band["lo"] and ob.get("hi") == before_band["hi"]:
+                    ob |= {"lo": band["lo"], "hi": band["hi"], "source": band["source"]}
+    return {"before": before_band, "held": held}
 
 
-def answer_band(client: str, track: str, rule_id: str, condition: str, value: float, review: bool, correction_id: str | None = None) -> dict:
-    """Instant, no model call: 'yes, review it' pulls hi down to the value, 'no' pushes lo up to it."""
+def answer_band(client: str, track: str, rule_id: str, condition: str, value: float | None = None, review: bool | None = None,
+                correction_id: str | None = None, limit: float | None = None, not_amount: bool = False) -> dict:
+    """Instant, no model call. See apply_band_answer for what each kind of answer does."""
     old = load(client, track)
     new = json.loads(json.dumps(old))
-    before_band = apply_band_answer(new, rule_id, condition, value, review)
+    res = apply_band_answer(new, rule_id, condition, value, review, limit, not_amount)
+    if res is None:
+        raise ValueError("no such rule or band")
     band = next(r for r in new["rules"] if r["id"] == rule_id)["bands"][condition]
     unit = "%" if "pct" in condition else "$"
-    cause = {"type": "interview", "source": "interview", "correction_id": correction_id, "rule_id": rule_id, "condition": condition, "value": value,
-             "note": f"Asked about {unit}{value:,.2f}: " + ("send it for review." if review else "handle it the usual way, no review."),
-             "band_before": {"lo": before_band["lo"], "hi": before_band["hi"]}, "band_after": {"lo": band["lo"], "hi": band["hi"]},
-             "patch": {"kind": "band", "rule_id": rule_id, "condition": condition, "value": value, "review": review}}
+    said = ("it is not about the amount." if not_amount else f"the limit is {unit}{limit:,.2f}." if limit is not None
+            else f"asked about {unit}{value:,.2f}: " + ("send it for review." if review else "handle it the usual way, no review."))
+    cause = {"type": "interview", "source": "interview", "correction_id": correction_id, "rule_id": rule_id, "condition": condition,
+             "value": value, "note": said[0].upper() + said[1:] + (f" ({res['held']})" if res["held"] else ""), "held": res["held"],
+             "band_before": {"lo": res["before"]["lo"], "hi": res["before"]["hi"]}, "band_after": {"lo": band["lo"], "hi": band["hi"]},
+             "patch": {"kind": "band", "rule_id": rule_id, "condition": condition, "value": value, "review": review,
+                       "limit": limit, "not_amount": not_amount}}
     saved = save(client, track, {k: v for k, v in new.items() if k not in ("version", "created_at", "cause")}, cause)
-    return {"new_version": saved["version"], "diff": diff(old, saved), "band": band, "cause": cause}
+    return {"new_version": saved["version"], "diff": diff(old, saved), "band": band, "held": res["held"], "cause": cause}
 
 
 # --- precedents as unit tests ----------------------------------------------------------------

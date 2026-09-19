@@ -244,3 +244,8 @@ pre.doc {
 .diff-del .band { opacity: 0.6; }
 .curve .axis.strong { fill: var(--ink); font-weight: 500; font-size: 12px; }
 .rule-meta b { color: var(--ink); font-weight: 500; }
+.curve .dot.hollow { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.curve .ring, .legend .ring { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+.legend .dot { fill: var(--ink); stroke: none; }
+.legend .dot.hollow { fill: var(--surface); stroke: var(--ink); stroke-width: 2; }
+.curve + .legend, .curve .legend { justify-content: center; margin-top: 6px; }
