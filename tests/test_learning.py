@@ -22,6 +22,8 @@ def fee_playbook():
     saved = playbook.save("A", TRACK, pb, {"type": "induction", "before": "2026-03"})
     yield con, saved
     shutil.rmtree(playbook.pb_dir("A", TRACK), ignore_errors=True)
+    for name in (f"corrections_{TRACK}.jsonl", f"reopened_{TRACK}.jsonl"):
+        (db.DATA / "A" / name).unlink(missing_ok=True)
 
 
 def test_band_comes_from_the_trail_not_from_the_written_number(fee_playbook):
@@ -51,11 +53,11 @@ def test_band_answer_then_retraction_restores_the_band(fee_playbook):
     con, pb = fee_playbook
     before = dict(pb["rules"][0]["bands"]["amount_max"])
     value = before["lo"] + 4
-    ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", value, review=False)
-    assert ans["band"]["lo"] == value and ans["band"]["source"] == "interview" and ans["diff"]["changed"]
+    ans = correct.answer_band("A", TRACK, "A-R-001", "amount_max", value, review=True)
+    assert ans["band"]["hi"] == value and ans["band"]["source"] == "interview" and ans["diff"]["changed"]
     out = unlearn.retract("A", TRACK, correction_id=ans["correction_id"])
     now = playbook.load("A", TRACK)
-    assert now["cause"]["type"] == "retraction" and now["rules"][0]["bands"]["amount_max"]["lo"] == before["lo"]
+    assert now["cause"]["type"] == "retraction" and now["rules"][0]["bands"]["amount_max"]["hi"] == before["hi"]
     assert out["rules_changed"] == ["A-R-001"] and "resolutions_checked" in out
     with pytest.raises(ValueError):
         unlearn.retract("A", TRACK, correction_id="A-COR-9999")

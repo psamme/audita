@@ -148,3 +148,23 @@ GETs never run the pipeline or write anything. Everything that costs model calls
 { "retracted": "A-COR-0005", "new_version": 9, "diff": PlaybookDiff /* cause.type = "retraction" */, "rules_changed": ["A-R-021"],
   "resolutions_checked": 14, "reopened": [{run_id, item_id, reason: "rule_retracted", record, before, after}], "replay_notes": [] }
 ```
+
+### Band answers are four-way (replaces the yes/no body above)
+
+`POST /api/playbook/answer-band` body: `{client, rule_id, condition, value, review: bool | null, limit: number | null, not_amount: bool, role: string | null}`.
+Exactly one of the three answers is given:
+
+| Card button | Body | Effect |
+|---|---|---|
+| The limit is $__ | `limit: 25` | band closes at the stated value in one answer (`lo = 25`, `hi = 25.01`, `source: "stated"`) |
+| Yes, review it | `review: true` | `hi` comes down to `value` |
+| No, handle as usual | `review: false` | `lo` goes up to `value`, but only when the rule has no open question and its back-test has no disagreements; otherwise nothing widens and the response carries `held: "<why>"` |
+| It is not about the amount | `not_amount: true` | the rule stops executing (status proposed) and gets an open question asking what does decide it |
+
+A non-senior `role` cannot move a band: the response is `{correction_id, diff: null, held: "..."}`. Response otherwise
+`{correction_id, new_version, diff, band, held, cause}`. BandQuestion gained `ask: "limit" | "yes_no"` (when the band is
+open-ended, `hi` null, the card should lead with the limit input and the text asks "Up to what amount ...") and
+`answers: ["limit", "review", "usual", "not_amount"]`. Bands gained `categorical: bool` (every precedent is one of a few
+round amounts, which looks like a fee schedule; induction then attaches an open question instead of trusting the amount)
+and `source` can also be `"rejected"` after a not-about-the-amount answer.
+Non-main tracks keep their own logs: `corrections_<track>.jsonl`, `reopened_<track>.jsonl`.

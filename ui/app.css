@@ -168,7 +168,7 @@ main:not(.compact) .lede { background: var(--surface); border: 1px solid var(--l
 .panel.empty { padding: var(--s-6) var(--s-5); display: grid; gap: var(--s-3); justify-items: start; }
 
 /* Playbook: the one loud thing is the yes or no */
-.ask-q { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; max-width: 32ch; text-wrap: pretty; }
+.ask-q { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.25; max-width: 46ch; text-wrap: pretty; }
 .panel.ask .btn { height: 48px; padding: 0 24px; }
 .band-wrap { display: grid; gap: 2px; max-width: 640px; margin-top: var(--s-2); }
 .input-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); }
@@ -183,3 +183,8 @@ main.compact .lede { gap: 2px; }
 main.compact .lede h2 { font-size: var(--t-xl); }
 main.compact .summary { padding-block: 10px; }
 .bar { padding-block: var(--s-3); }
+.answers { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); }
+.limit { display: flex; align-items: center; gap: var(--s-3); font-size: var(--t-lg); font-weight: 500; }
+.limit .money { display: inline-flex; align-items: center; gap: 6px; }
+.limit .input { width: 8.5ch; height: 48px; font-size: var(--t-lg); text-align: right; box-sizing: content-box; padding-block: 0; }
+.panel.ask .btn-ghost { text-decoration: underline; text-underline-offset: 3px; }

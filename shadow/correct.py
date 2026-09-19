@@ -64,8 +64,14 @@ def _summary(e: dict) -> str:
     return t or ""
 
 
-def _log(client: str, entry: dict) -> dict:
-    path = db.DATA / client / "corrections.jsonl"
+def log_path(client: str, track: str = "main"):
+    """The main track's inputs live in corrections.jsonl; every other track keeps its own log so rehearsals, the
+    development curve and tests never mix into the record of what the client actually told the system."""
+    return db.DATA / client / ("corrections.jsonl" if track == "main" else f"corrections_{track}.jsonl")
+
+
+def _log(client: str, entry: dict, track: str = "main") -> dict:
+    path = log_path(client, track)
     n = len(path.read_text().splitlines()) if path.exists() else 0
     entry = {"correction_id": f"{client}-COR-{n + 1:04d}", "at": datetime.now().isoformat(timespec="seconds")} | entry
     entry["summary"] = _summary(entry)
@@ -151,7 +157,7 @@ def answer_band(client: str, track: str, rule_id: str, condition: str, value: fl
     con = db.connect(client, readonly=True)
     seniors = {u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT * FROM user WHERE senior=1")}
     entry = _log(client, {"type": "interview", "source": "interview", "rule_id": rule_id, "condition": condition, "value": value,
-                          "review": review, "limit": limit, "not_amount": not_amount, "by_role": role})
+                          "review": review, "limit": limit, "not_amount": not_amount, "by_role": role}, track)
     if role is not None and role not in seniors:
         return {"correction_id": entry["correction_id"], "diff": None, "held": f"{role} cannot move a limit; a senior role has to answer this"}
     return pbmod.answer_band(client, track, rule_id, condition, value, review, entry["correction_id"], limit, not_amount) \
@@ -178,14 +184,14 @@ def correct(client: str, track: str, item: dict, human: dict, note: str, run_id:
         conflict = _log(client, {"type": "conflict", "status": "open", "run_id": run_id, "item": item, "human": human, "note": note,
                                  "by_role": role, "rule_id": fired["id"], "rule_text": fired["text"],
                                  "rule_support": fired["backtest"]["support"],
-                                 "outcomes": ["one_off_exception", "policy_change", "mistake"]})
+                                 "outcomes": ["one_off_exception", "policy_change", "mistake"]}, track)
         return {"correction_id": conflict["correction_id"], "diff": None, "new_version": pb_old.get("version", 0),
                 "conflict": {k: conflict[k] for k in ("correction_id", "rule_id", "rule_text", "rule_support", "note", "by_role", "outcomes")},
                 "explanation": f"This contradicts {fired['id']}, which is signed off and agrees with {fired['backtest']['support']} past items. "
                                "Nothing was changed. A senior needs to say whether this is a one-off exception, a change of policy, or a mistake.",
                 "check": "conflict raised"}
     entry = _log(client, {"type": "correction", "run_id": run_id, "item_id": item["item_id"], "note": note,
-                          "agent": item["resolution"], "human": human, "playbook_version": pb_old.get("version", 0)})
+                          "agent": item["resolution"], "human": human, "playbook_version": pb_old.get("version", 0)}, track)
     info = db.q(con, "SELECT * FROM client")[0]
     ask = {"chart_of_accounts": info["chart"], "item": item["record"], "item_kind": item["item_kind"],
            "what_the_system_did": {k: item["resolution"].get(k) for k in ("action", "ledger_ids", "adjustments", "escalate_to", "rule_id", "rationale")},
@@ -230,7 +236,7 @@ def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.U
     pb_old = pbmod.load(client, track)
     rule = next(r for r in pb_old["rules"] if r["id"] == rule_id)
     entry = _log(client, {"type": "interview", "rule_id": rule_id, "question": rule.get("open_question"), "answer": answer_text,
-                          "playbook_version": pb_old["version"]})
+                          "playbook_version": pb_old["version"]}, track)
     info = db.q(con, "SELECT * FROM client")[0]
     ask = {"chart_of_accounts": info["chart"],
            "rule_in_question": {k: rule.get(k) for k in ("id", "status", "executable", "text", "when", "then")},
@@ -250,7 +256,7 @@ def answer(client: str, track: str, rule_id: str, answer_text: str, usage: llm.U
 
 def resolve_conflict(client: str, track: str, conflict_id: str, outcome: str, role: str | None = None, usage: llm.Usage | None = None) -> dict:
     """A senior settles a conflict: one_off_exception | policy_change | mistake."""
-    path = db.DATA / client / "corrections.jsonl"
+    path = log_path(client, track)
     conflict = next(json.loads(l) for l in path.read_text().splitlines() if json.loads(l).get("correction_id") == conflict_id)
     item = conflict["item"]
     result = {"conflict_id": conflict_id, "outcome": outcome, "diff": None}
@@ -263,5 +269,5 @@ def resolve_conflict(client: str, track: str, conflict_id: str, outcome: str, ro
         saved = pbmod.save(client, track, {k: v for k, v in pb.items() if k not in ("version", "created_at", "cause")},
                            {"type": "one_off_exception", "correction_id": conflict_id, "item_id": item["item_id"], "note": conflict["note"]})
         result["new_version"] = saved["version"]
-    _log(client, {"type": "conflict_resolved", "conflict_id": conflict_id, "outcome": outcome, "by_role": role})
+    _log(client, {"type": "conflict_resolved", "conflict_id": conflict_id, "outcome": outcome, "by_role": role}, track)
     return result

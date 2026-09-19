@@ -31,42 +31,59 @@
     return Object.entries(r.bands || {}).map(([cond, b]) => `<div class="band-wrap"><div class="label">${esc(condLabel(cond))}${b.source === "interview" ? " · narrowed by an answer" : b.source === "stated" ? " · stated by a person" : ""}</div>${bandBar(b, { client })}</div>`).join("");
   }
 
-  // The stage moment: one yes or no, the band narrows, the playbook has a new version. No model call.
+  // The stage moment: one question about one band, four possible answers, no model call.
+  // A real controller knows their number, so stating the limit leads whenever the band is open ended.
+  // The person on stage answers as the client's senior role; a non-senior answer is recorded but held.
+  const SENIOR = { A: "owner", B: "controller" };
   function bandCard() {
     const q = bandQs[0];
     if (!q) return bandResult;
     const rule = pb.rules.find((r) => r.id === q.rule_id), b = (rule && rule.bands && rule.bands[q.condition]) || { side: "upper", lo: q.lo, hi: q.hi };
+    const can = (k) => !q.answers || q.answers.includes(k), limitFirst = q.ask === "limit";
+    const text = q.text.startsWith(q.rule_text) ? q.text.slice(q.rule_text.length).trim() : q.text;
+    const limit = can("limit") ? `<form class="limit" id="limitForm"><label for="limitValue">The limit is</label>
+        <span class="money"><span>$</span><input class="input num" id="limitValue" inputmode="decimal" autocomplete="off" placeholder="${Number(q.value).toFixed(2)}"></span>
+        <button class="btn ${limitFirst ? "btn-primary" : "btn-secondary"}">Set the limit</button></form>` : "";
+    const yesNo = `<div class="runrow">
+        ${can("review") ? `<button class="btn ${limitFirst ? "btn-secondary" : "btn-primary"}" data-answer="review">Yes, review one at ${usd(q.value)}</button>` : ""}
+        ${can("usual") ? `<button class="btn btn-secondary" data-answer="usual">No, ${usd(q.value)} is handled as usual</button>` : ""}
+      </div>`;
     return `<section class="panel ask"><div class="panel-body stack">
-      <div class="label">One question · ${bandQs.length} band${bandQs.length === 1 ? "" : "s"} still open, widest first</div>
-      <h2 class="ask-q">${esc(q.text.startsWith(q.rule_text) ? q.text.slice(q.rule_text.length).trim() : q.text)}</h2>
-      <div id="askBand">${bandBar(b, { client, value: q.value })}</div>
-      <div class="runrow">
-        <button class="btn btn-primary" data-review="true">Yes, send it to a person</button>
-        <button class="btn btn-secondary" data-review="false">No, that is fine on its own</button>
-        <span class="note" id="askNote">Instant. No model call.</span>
-      </div>
+      <div class="label">One question · ${bandQs.length} band${bandQs.length === 1 ? "" : "s"} still open, widest first · answering as ${esc(SO.role(SENIOR[client]))}</div>
+      <h2 class="ask-q">${esc(text)}</h2>
+      <div id="askBand">${bandBar(b, { client, value: q.value })}${b.categorical ? `<span class="state state-proposed" style="margin-top: 8px;">Looks like a fee schedule</span>` : ""}</div>
+      <div class="answers">${limitFirst ? limit + yesNo : yesNo + limit}
+        ${can("not_amount") ? `<button class="btn btn-ghost" data-answer="not_amount">It is not about the amount</button>` : ""}</div>
+      <span class="note" id="askNote">Instant. No model call.</span>
       <div class="rule-text"><span class="label">The rule this belongs to</span><div>${esc(q.rule_text)} <span class="cite">${esc(q.rule_id)}</span></div></div>
     </div></section>${bandResult}`;
   }
 
-  async function answerBand(review) {
+  async function answerBand(kind, amount) {
     const q = bandQs[0], note = document.getElementById("askNote");
-    document.querySelectorAll(".ask button").forEach((b) => { b.disabled = true; });
+    const controls = document.querySelectorAll(".ask button, .ask input");
+    controls.forEach((c) => { c.disabled = true; });
+    const said = { limit: `the limit is ${usd(amount || 0)}`, review: `yes, review one at ${usd(q.value)}`, usual: `no, ${usd(q.value)} is handled as usual`, not_amount: "it is not about the amount" }[kind];
     try {
       const res = await fetch("/api/playbook/answer-band", { method: "POST", headers: { "content-type": "application/json" },
-        body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, review }) });
+        body: SO.body({ client, rule_id: q.rule_id, condition: q.condition, value: q.value, answer: kind, role: SENIOR[client],
+          limit: kind === "limit" ? amount : null, review: kind === "review" ? true : kind === "usual" ? false : null, not_amount: kind === "not_amount" }) });
       if (!res.ok) throw new Error(String(res.status));
       const r = await res.json();
-      // redraw the same bar on the same scale so the narrowing is visible, then move on
-      const max = document.querySelector("#askBand .band").dataset.max;
-      document.getElementById("askBand").innerHTML = bandBar(r.band, { client, value: q.value, max: Number(max) });
-      note.textContent = `Recorded. The playbook is now version ${r.new_version}.`;
-      bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${review ? "yes" : "no"} at ${usd(q.value)}</h3><span class="mono faint">${esc(r.correction_id || "")}</span></div>
-        <div class="panel-body stack"><p class="muted">${esc((r.cause && r.cause.note) || "")}</p>${diffBlock(r.diff, { client })}</div></section>`;
-      setTimeout(() => load().catch(fail), 1600);
+      if (r.band) {
+        // same scale as before the answer, so the band is seen to narrow or collapse to a line
+        const max = Number(document.querySelector("#askBand .band").dataset.max);
+        const fits = Math.max(Math.abs(r.band.lo || 0), Math.abs(r.band.hi || 0)) <= max;
+        document.getElementById("askBand").innerHTML = bandBar(r.band, { client, value: kind === "limit" ? null : q.value, max: fits ? max : undefined });
+      }
+      const applied = r.diff != null;
+      note.textContent = applied ? `Recorded. The playbook is now version ${r.new_version}.` : "Recorded, not applied.";
+      bandResult = `<section class="panel"><div class="panel-head"><h3>Last answer: ${esc(said)}</h3><span class="runrow">${applied ? "" : `<span class="state state-carry">Recorded, not applied</span>`}<span class="mono faint">${esc(r.correction_id || "")}</span></span></div>
+        <div class="panel-body stack">${r.held ? `<p>${esc(SO.cap(r.held))}</p>` : ""}${applied && r.cause && r.cause.note ? `<p class="muted">${esc(r.cause.note)}</p>` : ""}${applied ? diffBlock(r.diff, { client }) : ""}</div></section>`;
+      setTimeout(() => load().catch(fail), applied && r.band ? 1600 : 0);
     } catch (e) {
       note.textContent = "The answer did not go through. Check that the server is running and try again.";
-      document.querySelectorAll(".ask button").forEach((b) => { b.disabled = false; });
+      controls.forEach((c) => { c.disabled = false; });
     }
   }
 
@@ -153,7 +170,14 @@
         <div class="panel-body stack"><div class="versions">${pb.versions.map((v) => `<button class="vrow" data-v="${v.version}"><span class="num">v${v.version}</span><span>${esc(CAUSE[(v.cause || {}).type] || cap((v.cause || {}).type || "change"))}</span><span class="faint">${when(v.created_at)}</span></button>`).join("")}</div><div id="vdiff"></div></div></section>
     </div>`;
 
-    view.querySelectorAll(".ask button[data-review]").forEach((b) => b.addEventListener("click", () => answerBand(b.dataset.review === "true")));
+    view.querySelectorAll(".ask button[data-answer]").forEach((b) => b.addEventListener("click", () => answerBand(b.dataset.answer)));
+    const lf = document.getElementById("limitForm");
+    if (lf) lf.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const amount = parseFloat(document.getElementById("limitValue").value.replace(/[$,\s]/g, ""));
+      if (!(amount > 0)) { document.getElementById("askNote").textContent = "Type the amount first, for example 50."; return; }
+      answerBand("limit", amount);
+    });
     view.querySelectorAll("button.undo").forEach((b) => b.addEventListener("click", () => undo(b)));
     view.querySelectorAll(".qa-head").forEach((b) => b.addEventListener("click", () => { openId = openId === b.dataset.id ? "" : b.dataset.id; paint(); }));
     view.querySelectorAll(".vrow").forEach((b) => b.addEventListener("click", () => versionDiff(pb.versions.find((v) => String(v.version) === b.dataset.v))));

@@ -56,7 +56,7 @@ def retract(client: str, track: str, correction_id: str | None = None, precedent
         if status == "retired" or confirmed:
             r["status"] = status
     pb["findings"] = pbmod.findings(con, pb)
-    entry = correct._log(client, {"type": "retraction", "retracted": correction_id or precedent_id, "note": note})
+    entry = correct._log(client, {"type": "retraction", "retracted": correction_id or precedent_id, "note": note}, track)
     cause = {"type": "retraction", "correction_id": entry["correction_id"], "retracted": correction_id or precedent_id,
              "note": note or f"Retracted {correction_id or precedent_id}", "replay_notes": notes}
     saved = pbmod.save(client, track, {k: v for k, v in pb.items() if k not in ("version", "created_at", "cause")}, cause)
@@ -90,7 +90,7 @@ def blast_radius(client: str, track: str, rule_ids: set[str], precedent_id: str 
                 reopened.append({"run_id": meta["run_id"], "item_id": item_id, "reason": "rule_retracted", "record": before["record"],
                                  "before": {k: before["resolution"].get(k) for k in ("action", "ledger_ids", "adjustments", "rule_id")},
                                  "after": {k: (now or {}).get("resolution", {}).get(k) for k in ("action", "reason", "rule_id", "rationale")}})
-    path = db.DATA / client / "reopened.jsonl"
+    path = db.DATA / client / ("reopened.jsonl" if track == "main" else f"reopened_{track}.jsonl")
     with path.open("a") as f:
         for r in reopened:
             f.write(json.dumps(r, default=str) + "\n")
