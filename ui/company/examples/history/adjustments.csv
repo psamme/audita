@@ -1,0 +1,5 @@
+bank_ref,account,amount,posted_by,posted_at,memo
+h0,6990,2,clerk,2026-01-05,Small customer balance written off
+h1,6990,3,clerk,2026-01-12,Small customer balance written off
+h2,6990,4,clerk,2026-02-03,Small customer balance written off
+h3,6990,3,clerk,2026-02-09,Small customer balance written off

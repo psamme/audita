@@ -39,21 +39,27 @@ def scan(con, period: str) -> dict[str, list[dict]]:
         if not new or b["id"] in reconciled:     # an unfamiliar account only becomes known once a payment to it was cleared by the client
             known.add(m.group(1))
 
-    # 2. a bank-detail change request is on file for the payee: the first payment after it is never auto-cleared (soft)
+    # 2. All payments after an unverified bank-change request remain held (hard).
     requests = [d for d in db.q(con, "SELECT * FROM document WHERE type != 'internal_email' ORDER BY date")
                 if BANK_CHANGE.search(f"{d['subject']} {d['body']}")]
     memos = [e for e in db.q(con, "SELECT * FROM ledger_entry WHERE period <= ? AND amount < 0", period) if BANK_CHANGE.search(e["memo"] or "")]
     for d in requests:
         who = tokens(d["meta"].get("party", ""), d["sender"].split("@")[-1].split(".")[0], d["subject"])
-        after = [b for b in out_all if b["counterparty"] and tokens(b["counterparty"]) & who and 0 <= _days(b["date"], d["date"]) <= CHANGE_WINDOW_DAYS]
-        if after and after[0]["period"] == period:
-            flags.setdefault(after[0]["id"], []).append({
-                "flag": "bank_change_request_on_file",
-                "detail": f"first payment to {after[0]['counterparty']} since {d['id']} ({d['date']}, \"{d['subject']}\") asked for a change of bank details"})
+        after = [b for b in out_all if b["counterparty"] and tokens(b["counterparty"]) & who and 0 <= _days(b["date"], d["date"])]
+        # A payment arriving is not approval of the requested change. Clearance must
+        # name this document and a senior approver, and precede the payment.
+        approved = db.q(con, "SELECT a.date FROM approval a JOIN user u ON "
+                        "(a.approver=u.id OR a.approver=u.name OR a.approver=u.role) "
+                        "WHERE a.subject_id=? AND a.status='approved' AND u.senior=1", d["id"])
+        for b in after:
+            if b["period"] == period and not any(a["date"] >= d["date"] and a["date"] <= b["date"] for a in approved):
+                flags.setdefault(b["id"], []).append({
+                    "flag": "bank_change_request_on_file", "evidence_ids": [d["id"]],
+                    "detail": f"unverified bank change in {d['id']} ({d['date']}) for {b['counterparty']}"})
     for e in memos:
         for b in out_all:
             if b["period"] == period and b["amount"] == e["amount"] and tokens(b["counterparty"]) & tokens(e["counterparty"]) and abs(_days(b["date"], e["date"])) <= 10:
-                flags.setdefault(b["id"], []).append({"flag": "bank_change_request_on_file",
+                flags.setdefault(b["id"], []).append({"flag": "bank_change_request_on_file", "evidence_ids": [e["id"]],
                                                       "detail": f"ledger entry {e['id']} for this payment mentions new bank details: \"{e['memo']}\""})
 
     # 3. the same outgoing payment twice: same payee and amount within ten days, and the business only issued one (soft)

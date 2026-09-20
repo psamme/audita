@@ -1,0 +1,5 @@
+id,date,amount,party,direction
+INV0,2026-01-05,100,Customer 0,AR
+INV1,2026-01-12,200,Customer 1,AR
+INV2,2026-02-03,300,Customer 2,AR
+INV3,2026-02-09,400,Customer 3,AR

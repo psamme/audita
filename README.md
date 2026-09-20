@@ -6,6 +6,13 @@ Bank-to-ledger reconciliation where the agent gets **no per-client configuration
 
 Every client has a different system. The real difference is not schema, it is policy and convention: how each team resolves exceptions. That is what this learns.
 
+## Company workspace
+
+Start `uv run uvicorn shadow.app:app --host 127.0.0.1 --port 8787` and open http://127.0.0.1:8787/.
+Create your company, upload historical decisions, learn its policies, then upload new receipt CSVs with no decisions attached. Shadow reconciles supported cases and sends unresolved items to your review queue. The workspace includes CSV templates and a labelled example pack. See [the company guide](docs/COMPANY_WORKSPACE.md).
+
+The isolated hackathon server uses `uv run python demo_stage.py --data-dir work/judging-final --port 8795`. The original sample demo remains available through the navigation.
+
 ## How it works
 
 1. **Deterministic matcher** clears the easy lines with zero model calls ($0). On our simulated clients that is about half of volume; compiled playbook rules clear roughly another third, also with no model calls.
@@ -63,10 +70,18 @@ unzip -o benchrec.zip && rm benchrec.zip
 - **The agent code must never read the answer key.** Month-4 keys live in `keys/`, which is gitignored. The grader is a standalone script that takes resolutions plus the key and outputs metrics.
 - Secrets go in `.env`, never in code.
 - `runs/` and `*.db` are local output, not committed.
-- Commit small and often to `main`; pull with `git pull --rebase` before pushing.
+- Work in an isolated clone on a `codex/<topic>` branch and open a PR. Do not push to `main`.
 
 ## Cut list
 
 Not building: ledger-as-git, self-play, computer-use ERP, forecasting and accruals, multi-entity onboarding, schema mapping as a headline.
 
 Added on Sunday: an independent auditor agent with an exportable audit file (`shadow/auditor.py`, `audit.html`), a month-end close checklist (`shadow/close.py`, `close.html`), and the real ledger as a client (`benchrec/real.py`, `real.html`).
+
+## Controller approval preview
+
+See [the build and rehearsal guide](docs/BUILD_CODEX.md) for the no-model, isolated preview demo and safety fixes.
+
+## Judging demo
+
+Run `uv run python demo_stage.py --port 8795` and open `/demo.html?track=stage` for the learned-policy flow. Read [the three-minute script and backup instructions](docs/JUDGING_DEMO.md). It uses saved model induction, shows historical evidence, groups policy questions, and demonstrates approval plus selective undo without model calls on stage.

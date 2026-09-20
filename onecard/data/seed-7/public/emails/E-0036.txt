@@ -1,0 +1,10 @@
+From: ap@cindervalemedia.example
+To: ar@kestrelinference.example
+Date: 2026-03-20
+Subject: Invoice copy
+
+Hello,
+
+Please resend last month's invoice PDF; our AP inbox bounced it.
+
+Regards

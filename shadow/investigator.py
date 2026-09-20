@@ -8,12 +8,12 @@ import json
 import re
 from datetime import date, timedelta
 
-from shadow import db, history, llm, playbook as pbmod
+from shadow import db, matcher, history, llm, playbook as pbmod
 from shadow.matcher import days_between, period_end, tokens
 
 MAX_TURNS = 7
 CONFIDENCE_FLOOR = 0.6
-HARD_FLAGS = {"payee_bank_details_changed"}
+HARD_FLAGS = {"payee_bank_details_changed", "bank_change_request_on_file"}
 
 SYSTEM = """You reconcile one bank account for {name}. {blurb}
 
@@ -326,6 +326,8 @@ def validate(r: dict, item: dict, kind: str, desk: Desk, info: dict, roles: list
             return "one of those ledger ids does not exist in this period"
         if any(i in desk.used or i in desk.prior_links for i in ids):
             return "one of those ledger entries is already reconciled to another bank line"
+        if any(matcher.posted_late(e[0], info["close_days"]) for e in entries):
+            return "one of those ledger entries was posted after close"
         total = round(sum(e[0]["amount"] for e in entries), 2)
         want = round(total - item["amount"], 2)
         got = round(sum(a["amount"] for a in adj), 2)

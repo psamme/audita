@@ -70,6 +70,11 @@
       } else if (moved.length) {
         rows.push(`<div class="diff-row"><span class="sign"></span><span>${esc(c.after.text)} <span class="cite">${esc(c.after.id)}</span></span></div>`);
       }
+      for (const [key, label] of Object.entries({ status: "Approval", valid_from: "Effective from", human_confirmed: "Human confirmation", awaiting_senior: "Senior review pending", open_question: "Open question", floor_exempt: "Historical replay exception", below_floor: "Below execution floor" })) {
+        if (JSON.stringify(c.before[key]) !== JSON.stringify(c.after[key])) {
+          rows.push(`<div class="diff-row"><span class="sign">↳</span><span>${label}: ${esc(String(c.before[key] ?? "None"))} → ${esc(String(c.after[key] ?? "None"))}</span></div>`);
+        }
+      }
       for (const k of moved) {
         const before = (c.before.bands || {})[k], after = c.after.bands[k];
         const max = Math.max(...[before && before.lo, before && before.hi, after.lo, after.hi].filter((v) => v != null).map(Math.abs)) * 1.5;

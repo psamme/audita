@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your history · Shadow Onboarding</title>
+  <link rel="stylesheet" href="../design/fonts/fonts.css">
+  <link rel="stylesheet" href="../design/tokens.css">
+  <link rel="stylesheet" href="../design/components.css">
+  <link rel="stylesheet" href="../app.css">
+  <link rel="stylesheet" href="company.css">
+</head>
+<body>
+  <canvas id="slab" aria-hidden="true"></canvas>
+  <div class="page">
+    <header class="wrap bar">
+      <a class="mark" href="setup.html">Shadow Onboarding</a>
+      <nav class="nav" aria-label="Screens"></nav>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="seg" id="stone" aria-label="Stone">
+          <button data-v="statuario">Light</button>
+          <button data-v="nero">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap compact">
+      <ol class="steps">
+        <li class="done">1 Your company</li>
+        <li class="on">2 Your history</li>
+        <li>3 Your playbook</li>
+        <li>4 Reconcile</li>
+      </ol>
+      <div class="lede">
+        <div class="label">Your history</div>
+        <h2>Show us how you have been handling this</h2>
+        <p class="muted">Statements and ledger entries tell us what moved. What teaches the agent
+          is the part that records what your team decided: which line cleared which entry, who
+          cleared it, and where any difference was booked. If you cannot export that, the last
+          step on this page builds it from your own answers instead.</p>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <script src="../design/marble.js"></script>
+  <script src="../js/api.js"></script>
+  <script src="../js/parts.js"></script>
+  <script src="js/shell.js"></script>
+  <script src="js/co.js"></script>
+  <script src="js/import.js"></script>
+</body>
+</html>

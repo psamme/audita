@@ -1,0 +1,13 @@
+From: ap@zephyrinelabs.example
+To: ar@kestrelinference.example
+Date: 2026-01-07
+Subject: Remittance advice 53,791.20
+
+Remittance advice
+Payment date: 2026-01-07
+Amount: 53,791.20
+
+  INV-2269   17,407.73
+  INV-2270   21,054.37
+  INV-2271   15,329.10
+

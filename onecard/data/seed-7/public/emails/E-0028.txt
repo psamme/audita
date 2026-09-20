@@ -1,0 +1,10 @@
+From: ap@lanternfishsecurity.example
+To: ar@kestrelinference.example
+Date: 2026-02-09
+Subject: Usage question
+
+Hi,
+
+Can you break down the fine-tuning line by project? Not disputing, just for our cost centre.
+
+Thanks

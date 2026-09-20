@@ -1,0 +1,10 @@
+From: ap@foxgloveanalytics.example
+To: ar@kestrelinference.example
+Date: 2026-03-17
+Subject: New AP contact
+
+Hi,
+
+Please note our accounts payable contact has changed. Invoices go to ap@ from now on.
+
+Thanks

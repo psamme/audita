@@ -1,0 +1,9 @@
+{
+ "as_of": "2025-12-31",
+ "balances": {
+  "cash": 240000000,
+  "ar": 60419492,
+  "stripe_clearing": 1005787,
+  "opening_equity": -301425279
+ }
+}

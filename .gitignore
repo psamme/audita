@@ -5,3 +5,16 @@ __pycache__/
 keys/
 .env
 runs/
+
+# Isolated demo sandboxes and generated offline replay
+work/
+ui/replay.html
+ui/replay.json
+
+# Local TypeSafe credential (never served by the UI)
+.typesafe-key
+# local company state: uploads, id maps, job records, and which company is configured
+data/company.json
+data/*/import/
+data/*/jobs/
+.gstack/
