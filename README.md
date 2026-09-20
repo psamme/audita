@@ -27,7 +27,7 @@ Both clients receive the **identical ambiguous transaction**. The agent should w
 
 ## Measurement
 
-Months 1 to 3 carry the humans' resolutions (training history). **Month 4 is the hidden test**, with traps built blind by one teammate.
+Months 1 to 3 carry the humans' resolutions (training history). **Month 4 is the hidden test.** The interim month 4 was built by a separate agent; the agent code cannot open its key or the simulator's truth, and a test enforces that. The headline that nobody on this team wrote comes from real data: see BenchRec below.
 
 Three conditions on month 4:
 
@@ -37,7 +37,7 @@ Three conditions on month 4:
 
 Reported for each: resolution accuracy, escalation precision, wrong-match rate, LLM cost per run, share of volume cleared by the deterministic tier.
 
-We also run a deterministic matcher on [BenchRec](https://www.kaggle.com/datasets/benchmarkteam/benchrec-real-world-cash-reconciliation-dataset) (~32k labelled lines from a production cash ledger, CC BY 4.0) so at least one number comes from data we did not create. That matcher (`benchrec/matcher.py`) is a separate implementation tuned on BenchRec's training split only; it never sees the solution file. We report both precision definitions: pair-level (a prediction counts if it is a subset of the labelled allocation) and strict (exact allocation).
+We also run a deterministic matcher on [BenchRec](https://www.kaggle.com/datasets/benchmarkteam/benchrec-real-world-cash-reconciliation-dataset) (~32k labelled lines from a production cash ledger, CC BY 4.0) so the headline comes from data we did not create. It is also a first-class client in the product (`uv run python -m benchrec.real`, page `real.html`): conventions are induced from the analysts' own resolutions in the train split and must pass the same execution floor before they run. That matcher (`benchrec/matcher.py`) is a separate implementation tuned on BenchRec's training split only; it never sees the solution file. We report both precision definitions: pair-level (a prediction counts if it is a subset of the labelled allocation) and strict (exact allocation).
 
 ## Setup
 
@@ -67,4 +67,6 @@ unzip -o benchrec.zip && rm benchrec.zip
 
 ## Cut list
 
-Not building: a third client, ledger-as-git, self-play, computer-use ERP, multi-agent finance team, forecasting / close / accruals, multi-entity onboarding, schema mapping as a headline.
+Not building: ledger-as-git, self-play, computer-use ERP, forecasting and accruals, multi-entity onboarding, schema mapping as a headline.
+
+Added on Sunday: an independent auditor agent with an exportable audit file (`shadow/auditor.py`, `audit.html`), a month-end close checklist (`shadow/close.py`, `close.html`), and the real ledger as a client (`benchrec/real.py`, `real.html`).

@@ -75,3 +75,16 @@ the policy file, or imports from `sim` (the demo fixture is the single exception
 - BenchRec validates the matcher tier only; it has no many-to-one batch structure or exception reasoning.
 - Costs reported under the CLI backend include a fresh prompt-cache write on every call; the SDK backend with a
   shared cached system prompt is cheaper per item.
+
+## Sunday additions
+
+`runs/` is local output, so these pages need their files generated once after a fresh clone:
+
+```sh
+uv run python -m benchrec.real                                      # real ledger (needs data/benchrec), about 35 s, $0
+uv run python -m shadow.auditor --client A --run runs/A_2026-04_corrected   # auditor, about $0.29 per client
+uv run python -m shadow.auditor --client B --run runs/B_2026-04_corrected
+uv run python -m shadow.close A 2026-04                             # close checklist, $0, also served live
+```
+
+Pages: `/close.html`, `/audit.html`, `/real.html`. For the stage, run the server without `--reload`.

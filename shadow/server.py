@@ -9,8 +9,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from shadow import correct, db, experiment, pipeline, playbook as pbmod, stale, unlearn
+from shadow import routes_audit
+from shadow import routes_real
+from shadow import routes_close
 
 app = FastAPI(title="Shadow Onboarding")
+app.include_router(routes_audit.router)
+app.include_router(routes_real.router)
+app.include_router(routes_close.router)
 CLIENTS = ("A", "B")
 TRACK = "main"
 
