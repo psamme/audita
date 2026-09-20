@@ -30,7 +30,7 @@
         <span class="band-seg acts" style="left: 0; width: ${lo}%"></span>
         <span class="band-seg asks" style="left: ${lo}%; width: ${hi - lo}%"></span></div>
       <div class="band-ends">${c.executes ? end(lo, c.applies_to, c.applies_precedent, "precedent") : ""}${end(hi, c.asks_to, c.asks_precedent, "widest seen")}</div>
-      <div class="legend"><span><i class="band-key acts"></i>${c.executes ? "Applies on its own, $0.00" : "Would apply once it runs"}</span><span><i class="band-key asks"></i>Asks a person</span><span><i class="band-key out"></i>Does not apply</span></div></div>`;
+      <div class="legend"><span><i class="band-key acts"></i>${c.executes ? "Applies on its own, $0.00" : "Automatic execution disabled"}</span><span><i class="band-key asks"></i>Asks a person</span><span><i class="band-key out"></i>Does not apply</span></div></div>`;
   }
 
   function convention(c, onEval) {
@@ -71,18 +71,22 @@
   try {
     const [r, pb, ex] = await Promise.all([get("/api/real/results"), get("/api/real/playbook"), get("/api/real/examples")]);
     const t = r.tiers, base = t.shipped_baseline, m = t.matcher, mc = t.matcher_plus_conventions, z = r.residue;
-    summary.innerHTML = `<span class="state state-book">Real data</span><span><b>${int(r.eval.bank_lines)}</b> bank lines, ${esc(day(r.eval.from))} to ${esc(day(r.eval.to))}. Learned from <b>${int(r.train.bank_lines)}</b> earlier lines and <b>${int(r.train.analyst_closed_groups)}</b> matches the bank's own analysts closed by hand. Run once with everything frozen. <b>0</b> model calls, <b>$0.00</b>.</span>`;
+    summary.innerHTML = `<span class="state state-book">Real data</span><span><b>${int(r.eval.bank_lines)}</b> bank lines, ${esc(day(r.eval.from))} to ${esc(day(r.eval.to))}. Learned from <b>${int(r.train.bank_lines)}</b> training lines and <b>${int(r.train.analyst_closed_groups)}</b> matches the bank's own analysts closed by hand. Run once with everything frozen. <b>0</b> model calls, <b>$0.00</b>.</span>`;
     const tierRows = (key) => [{ label: "Reference matcher shipped with the data", value: base[key], base: true }, { label: "Our matcher", value: m[key] }, { label: "Matcher plus induced conventions", value: mc[key] }];
     const other = Object.entries(z.escalated_other).sort((a, b) => b[1] - a[1]);
-    const head = `<section class="panel"><div class="panel-head"><h3>Graded against the bank's analysts</h3><span class="runrow"><span class="faint small">Code ${esc(r.code_commit || "uncommitted")} · ${esc(r.generated_at.slice(0, 16).replace("T", " "))} UTC</span></span></div>
+    const head = `<section class="panel"><div class="panel-head"><h3>BenchRec cash v1.0 · held-out evaluation</h3><span class="runrow"><span class="faint small">Code ${esc(r.code_commit || "uncommitted")} · ${esc(r.generated_at.slice(0, 16).replace("T", " "))} UTC</span></span></div>
       <div class="panel-body stack">
-        <h2 class="ask-q" style="max-width: 44ch;"><span class="num">${pct(mc.match_rate_pair, 1)}</span> of real bank lines matched at <span class="num">${pct(mc.precision_pair, 2)}</span> precision, with no model and no configuration.</h2>
-        <p class="muted" style="max-width: 80ch;">The reference matcher that ships with the dataset reaches ${pct(base.match_rate_pair, 1)} at ${pct(base.precision_pair, 2)}. Correct means every ledger entry we attach belongs to the match the analysts recorded for that bank line. The stricter reading, the exact same set of entries, is shown beside it.</p>
+        <h2 class="ask-q" style="max-width: 44ch;"><span class="num">${pct(mc.match_rate_pair, 1)}</span> of matchable bank lines matched at <span class="num">${pct(mc.precision_pair, 2)}</span> pair-level precision. Zero LLM calls.</h2>
+        <p style="max-width: 85ch;">Tested on <b>${int(r.eval.bank_lines)} real, anonymised bank transactions</b> from BenchRec, a bank-to-ledger reconciliation benchmark. ${int(r.eval.matchable)} have a labelled ledger match. Our benchmark matcher plus learned conventions correctly matched <b>${int(mc.correct_pair)}</b> of those lines and made <b>${int(mc.wrong_pair)} incorrect matches</b> among ${int(mc.matched)} predictions.</p>
+        <p class="muted" style="max-width: 85ch;">Thresholds and conventions were learned from ${int(r.train.bank_lines)} training bank lines, then frozen for evaluation. No hand-entered company policy rules; no LLM inference on this benchmark. The training and evaluation dates overlap, so this is a held-out set of transactions, not a future-period test.</p>
+        <p class="muted" style="max-width: 80ch;">The reference matcher that ships with the dataset reaches ${pct(base.match_rate_pair, 1)} at ${pct(base.precision_pair, 2)}. Correct means every ledger entry we attach belongs to the match the analysts recorded for that bank line. This permits a partial match to a larger group. Requiring the complete, exact set gives ${pct(mc.precision_strict, 2)} precision and ${pct(mc.match_rate_strict, 2)} coverage of matchable lines.</p>
+        <p class="small muted" style="max-width: 85ch;">Scored with our interpretation of the supplied labels, using the same scorer for both systems; this is not an official leaderboard result. It evaluates the BenchRec matching implementation, not the full company-upload or LLM review workflow. <a href="https://www.operartis.com/benchrec" target="_blank" rel="noopener">About the benchmark ↗</a> · <a href="#methodology">Scoring and limitations ↓</a></p>
         <div class="charts">
           ${bars("Bank lines matched correctly", "Share of matchable lines. Scale 0 to 100%", tierRows("match_rate_pair"), 1, (v) => pct(v, 1))}
           ${bars("Wrong matches", "Count, of the matches made. Lower is better", tierRows("wrong_pair"), Math.max(base.wrong_pair, 1), (v) => int(v))}
           ${bars("Precision", "Of the matches made. Scale 0 to 100%", tierRows("precision_pair"), 1, (v) => pct(v, 2))}
-          ${bars("Exact-set reading", "Share of matchable lines, predicted set equals the labelled set", tierRows("match_rate_strict"), 1, (v) => pct(v, 1))}
+          ${bars("Exact-set precision", "Complete labelled group, of predictions made", tierRows("precision_strict"), 1, (v) => pct(v, 2))}
+          ${bars("Exact-set coverage", "Share of matchable lines, predicted set equals the labelled set", tierRows("match_rate_strict"), 1, (v) => pct(v, 1))}
         </div></div></section>`;
     const residue = `<section class="panel"><div class="panel-head"><h3>What the matcher left: ${int(z.bank_lines_left_by_matcher)} lines</h3><span class="runrow"><span class="faint small">${pct(m.left_for_review, 1)} of volume</span></span></div>
       <div class="panel-body stack">
@@ -106,8 +110,8 @@
       ${pb.conventions.map((c) => convention(c, pb.by_convention_on_eval)).join("")}`;
     const exs = `<div class="lede" style="margin-top: var(--s-5);"><div class="label">Evidence</div><h2>${ex.examples.length} lines from the held-out split</h2><p class="muted">A fixed random draw, one miss included wherever a convention has one. Open a line to see both sides and the precedent behind the verdict.</p></div>
       ${ex.examples.map(example).join("")}`;
-    const notes = `<section class="panel"><div class="panel-head"><h3>How this was measured</h3></div><div class="panel-body"><ul class="muted small" style="max-width: 90ch; display: grid; gap: 6px; padding-left: 1.1em;">${r.protocol.concat(r.notes).map((n) => `<li>${esc(n)}</li>`).join("")}<li>${esc(r.dataset)}.</li></ul></div></section>`;
-    view.innerHTML = `<div class="stack">${head}${residue}${ops}${convs}${exs}${notes}</div>`;
+    const notes = `<section class="panel" id="methodology"><div class="panel-head"><h3>How this was measured</h3></div><div class="panel-body"><ul class="muted small" style="max-width: 90ch; display: grid; gap: 6px; padding-left: 1.1em;">${r.protocol.concat(r.notes).map((n) => `<li>${esc(n)}</li>`).join("")}<li>${esc(r.dataset)}.</li></ul></div></section>`;
+    view.innerHTML = `<div class="stack">${head}${residue}${ops}${r.summary_only ? `<section class="panel"><div class="panel-body"><h3>Saved benchmark summary</h3><p>This checkout includes verified aggregate results from ${esc(r.generated_at.slice(0, 10))}. Detailed conventions and transaction examples require the original benchmark report. No evaluation was rerun to display these results.</p></div></section>` : convs + exs}${notes}</div>`;
   } catch (e) {
     view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`;
   }

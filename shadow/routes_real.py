@@ -11,9 +11,10 @@ RESULTS = db.ROOT / "runs" / "real_results.json"
 
 
 def _load() -> dict:
-    if not RESULTS.exists():
-        raise HTTPException(404, "No real-ledger run yet. Run: uv run python -m benchrec.real")
-    return json.loads(RESULTS.read_text())
+    path = RESULTS if RESULTS.exists() else db.ROOT / "benchrec" / "report_summary.json"
+    if not path.exists():
+        raise HTTPException(404, "No saved benchmark report is available.")
+    return json.loads(path.read_text())
 
 
 @router.get("/results")
