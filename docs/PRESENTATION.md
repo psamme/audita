@@ -2,15 +2,15 @@
 
 ## Links to use
 
-Public submission demo: https://audita-hackmit.vercel.app
+Live judging and submission demo: https://audita-hackmit.vercel.app
 
 Public source code: https://github.com/psamme/audita
 
-The public site is a recorded interactive execution with benchmark results. The local app is the live demo where approvals and undo change policies.
+The public site now runs the real review queue: approvals change the sample policy, and undo reopens the affected cases. Each visitor has an isolated workspace. The API runs on the judging laptop through a tunnel, so keep the laptop awake and online. The recorded execution remains an offline fallback.
 
 ## Start here
 
-Open http://127.0.0.1:8795/ in the live presentation. Old tabs on port 8787 redirect here; they are not a second app to demo. It opens the review queue with the shortfall policy selected. Use the three navigation links in order: Review queue, Learned policy, Benchmark. Every other screen remains under More. Company onboarding remains available under More → Workspace.
+Open https://audita-hackmit.vercel.app in the live presentation. The same flow is also available locally at http://127.0.0.1:8795/ if internet connectivity fails. It opens the review queue with the shortfall policy selected. Use the three navigation links in order: Review queue, Learned policy, Benchmark. Every other screen remains under More. Company onboarding remains available under More → Workspace.
 
 Use two people if possible: one talks, one operates. The operator should follow the clicks below without narrating them. With one person, finish each click before speaking again. Rehearse once in three minutes, then undo the answer to restore the queue.
 
@@ -119,7 +119,7 @@ The canonical judging sandbox is work/judging-submission. Earlier work is preser
 
 “Does 99.87% mean the entire accounting task is right?” No. It is pair-level precision for emitted benchmark matches under the stated scorer. Complete-group precision is 96.50%. The number does not cover the upload workflow or every accounting decision.
 
-“Can a company upload its own data?” Yes, the local prototype has company setup, historical CSV import, policy learning, and later undecided receipts. It accepts exports rather than live ERP connectors. The public recording does not accept uploads.
+“Can a company upload its own data?” Yes, the local prototype has company setup, historical CSV import, policy learning, and later undecided receipts. It accepts exports rather than live ERP connectors. The public judging workspace uses sample data and does not accept company uploads.
 
 “Who is allowed to approve?” The prototype checks asserted reviewer roles, but the local role selector is not production authentication. There are no real payment or ledger-posting integrations.
 
@@ -140,7 +140,7 @@ Company onboarding and CSV uploads, the second company, the second deposit-limit
 ## Final submission checklist
 
 - Open the public demo URL in a signed-out browser. It must load without a Vercel login.
-- Put that URL in the website/demo field and describe it as a recorded interactive demo with benchmark results.
+- Put https://audita-hackmit.vercel.app in the website/demo field. It opens the live sample review queue and includes the benchmark.
 - The GitHub repository is public: https://github.com/psamme/audita. Include it in the source-code field.
 - Put the honest benchmark headline and its source in the written submission. Use docs/PLUME.md as the base.
 - Keep the local queue and recorded-demo.html open before judging. Charge the laptop and prevent sleep during the presentation.

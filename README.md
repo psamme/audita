@@ -1,8 +1,8 @@
 # Audita
 
-**HackMIT demo:** [Open the recorded interactive demo](https://audita-hackmit.vercel.app) · [Three-minute presentation guide](docs/PRESENTATION.md).
+**HackMIT demo:** [Open the live review queue](https://audita-hackmit.vercel.app) · [Three-minute presentation guide](docs/PRESENTATION.md).
 
-For the live queue, run `uv run python demo_stage.py --data-dir work/judging-submission --port 8795` and open `http://127.0.0.1:8795/`. The public recording requires no local server.
+For the live queue, run `uv run python demo_stage.py --data-dir work/judging-submission --port 8795` and open `http://127.0.0.1:8795/`. The Vercel site runs the same review queue against isolated sample workspaces. Its live API is served from the judging laptop; keep it awake and online. A standalone recording remains available under More → Recorded fallback.
 
 
 HackMIT 2026, Maximor track: "Agentic Systems for the Office of the CFO."
