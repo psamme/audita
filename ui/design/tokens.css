@@ -1,11 +1,7 @@
-/* Audita design tokens.
-   Two stones: Statuario (white, grey veins) and Nero Marquina (black, white veins).
-   Set data-stone="statuario|nero" on <html> to pin one; otherwise the OS theme picks.
-   Colour is reserved for state. Everything else is ink on stone.
-   --ink-3 is the lightest text allowed and still clears 4.5:1 on --surface in both stones,
-   because this gets read off a projector. */
+/* Audita light design tokens. Colour is reserved for state. */
 
 :root {
+  color-scheme: light;
   --ground: #F3F2EF;
   --surface: #FFFFFF;
   --surface-2: #F7F6F4;
@@ -47,47 +43,6 @@
   --s-6: 40px;
   --s-7: 64px;
   --s-8: 104px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #060607;
-    --surface: #0F0F10;
-    --surface-2: #161618;
-    --ink: #F4F3F0;
-    --ink-2: #B4B5B9;
-    --ink-3: #94959B;
-    --line: rgba(255, 255, 255, 0.10);
-    --line-strong: rgba(255, 255, 255, 0.26);
-    --invert: #F4F3F0;
-    --invert-ink: #0D0D0D;
-    --pos: #6FCF9B;
-    --pos-wash: rgba(111, 207, 155, 0.10);
-    --neg: #F08A80;
-    --neg-wash: rgba(240, 138, 128, 0.10);
-    --warn: #E0B95A;
-    --focus: #F4F3F0;
-  }
-}
-
-:root[data-theme="dark"],
-:root[data-stone="nero"] {
-  --ground: #060607;
-  --surface: #0F0F10;
-  --surface-2: #161618;
-  --ink: #F4F3F0;
-  --ink-2: #B4B5B9;
-  --ink-3: #94959B;
-  --line: rgba(255, 255, 255, 0.10);
-  --line-strong: rgba(255, 255, 255, 0.26);
-  --invert: #F4F3F0;
-  --invert-ink: #0D0D0D;
-  --pos: #6FCF9B;
-  --pos-wash: rgba(111, 207, 155, 0.10);
-  --neg: #F08A80;
-  --neg-wash: rgba(240, 138, 128, 0.10);
-  --warn: #E0B95A;
-  --focus: #F4F3F0;
 }
 
 :root[data-stone="statuario"] {

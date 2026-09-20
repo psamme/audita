@@ -51,15 +51,21 @@ Reported for each: resolution accuracy, escalation precision, wrong-match rate, 
 
 We also run a deterministic matcher on [BenchRec](https://www.kaggle.com/datasets/benchmarkteam/benchrec-real-world-cash-reconciliation-dataset) (~32k labelled lines from a production cash ledger, CC BY 4.0) so the headline comes from data we did not create. It is also a first-class client in the product (`uv run python -m benchrec.real`, page `real.html`): conventions are induced from the analysts' own resolutions in the train split and must pass the same execution floor before they run. That matcher (`benchrec/matcher.py`) is a separate implementation tuned on BenchRec's training split only; it never sees the solution file. We report both precision definitions: pair-level (a prediction counts if it is a subset of the labelled allocation) and strict (exact allocation).
 
+## Model provider
+
+New policy learning, exception investigation and audit calls use OpenAI Responses (`gpt-5.2`, medium reasoning). Add `OPENAI_API_KEY` to the ignored `.env` file and restart the server. Jev / TypeSafe remains a separate reviewer-suggestion integration. Missing OpenAI credentials produce a clear error; there is no silent Claude fallback. The prepared stage policies and recorded demo were generated before this migration with Claude and have not been regenerated or re-evaluated with OpenAI. Deterministic matching, policy previews, approvals, undo and BenchRec need no OpenAI calls.
+
+Legacy backends require explicit `SHADOW_BACKEND=sdk` or `cli` and a matching `SHADOW_MODEL`.
+
 ## Setup
 
 Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
 git clone git@github.com:psamme/audita.git
-cd shadow-onboarding
+cd audita
 uv sync
-cp .env.example .env   # then add your ANTHROPIC_API_KEY
+cp .env.example .env   # then add your OPENAI_API_KEY
 ```
 
 BenchRec is not committed (116 MB). Pull it with:
