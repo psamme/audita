@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Close · Shadow Onboarding</title>
+  <link rel="stylesheet" href="design/fonts/fonts.css">
+  <link rel="stylesheet" href="design/tokens.css">
+  <link rel="stylesheet" href="design/components.css">
+  <link rel="stylesheet" href="app.css">
+  <style>
+    /* One screen at 1280x720: headline and every check without scrolling */
+    main.close { padding-block: var(--s-2) var(--s-6); gap: var(--s-2); }
+    .close .stack { gap: var(--s-2); }
+    .close .headline-panel { padding: 12px var(--s-5); }
+    .close .lede h2 { font-size: var(--t-xl); }
+    .headline { font-size: var(--t-xl); font-weight: 500; letter-spacing: -0.02em; line-height: 1.2; text-wrap: balance; }
+    .headline .sub { display: block; font-size: var(--t-sm); font-weight: 400; letter-spacing: 0; color: var(--ink-2); margin-top: 4px; }
+    table.checks { table-layout: fixed; }
+    table.checks th { padding: 6px var(--s-3); }
+    table.checks td { padding: 3px var(--s-3); line-height: 1.3; }
+    table.checks col.c-status { width: 78px; } table.checks col.c-check { width: 35%; }
+    table.checks col.c-n { width: 64px; } table.checks col.c-usd { width: 132px; } table.checks col.c-go { width: 104px; }
+    table.checks td.what { white-space: normal; }
+    table.checks td.detail { color: var(--ink-2); font-size: var(--t-xs); overflow: hidden; text-overflow: ellipsis; cursor: default; }
+    table.checks tr.wide td.detail { white-space: normal; }
+    table.checks tr.info td { color: var(--ink-2); }
+    .st { display: inline-block; min-width: 52px; text-align: center; font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.04em;
+          padding: 2px 8px; border-radius: var(--r-pill); border: 1px solid var(--line-strong); }
+    .st-PASS { color: var(--pos); border-color: var(--pos); background: var(--pos-wash); }
+    .st-OPEN { color: var(--warn); border-color: var(--warn); }
+    .st-HELD { background: var(--invert); color: var(--invert-ink); border-color: var(--invert); }
+    .st-FAIL { color: var(--neg); border-color: var(--neg); background: var(--neg-wash); }
+    .st-INFO { color: var(--ink-3); border-style: dashed; }
+    .guarantees { display: grid; gap: 6px; font-size: var(--t-sm); color: var(--ink-2); padding: var(--s-4) var(--s-5); }
+    .guarantees b { color: var(--ink); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <canvas id="slab" aria-hidden="true"></canvas>
+  <div class="page">
+    <header class="wrap bar">
+      <a class="mark" href="index.html">Shadow Onboarding</a>
+      <nav class="nav" aria-label="Screens"></nav>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="seg" id="stone" aria-label="Stone">
+          <button data-v="statuario">Light</button>
+          <button data-v="nero">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap compact close">
+      <div class="lede-row">
+        <div class="lede">
+          <div class="label">Month-end close</div>
+          <h2 id="title">What is done and what is stuck</h2>
+        </div>
+        <div class="seg" id="client" aria-label="Client"></div>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <script src="design/marble.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/parts.js"></script>
+  <script src="js/shell.js"></script>
+  <script src="js/close.js"></script>
+</body>
+</html>
