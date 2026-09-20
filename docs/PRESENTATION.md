@@ -1,8 +1,16 @@
 # Audita: the submission and judging guide
 
+## Links to use
+
+Public submission demo: https://audita-hackmit.vercel.app
+
+Public source code: https://github.com/psamme/shadow-onboarding
+
+The public site is a recorded interactive execution with benchmark results. The local app is the live demo where approvals and undo change policies.
+
 ## Start here
 
-Open http://127.0.0.1:8795/ in the live presentation. It opens the review queue with the shortfall policy selected. Use the three navigation links in order: Review queue, Learned policy, Benchmark. Every other screen remains under More. Company onboarding remains available under More → Workspace.
+Open http://127.0.0.1:8795/ in the live presentation. Old tabs on port 8787 redirect here; they are not a second app to demo. It opens the review queue with the shortfall policy selected. Use the three navigation links in order: Review queue, Learned policy, Benchmark. Every other screen remains under More. Company onboarding remains available under More → Workspace.
 
 Use two people if possible: one talks, one operates. The operator should follow the clicks below without narrating them. With one person, finish each click before speaking again. Rehearse once in three minutes, then undo the answer to restore the queue.
 
@@ -117,9 +125,17 @@ The canonical judging sandbox is work/judging-submission. Earlier work is preser
 
 “Why are some conventions held back?” They do not meet the historical agreement floor or lack enough evidence. They become suggestions or review questions instead of automatic decisions.
 
+## Where the AI is used
+
+Claude proposes company policies from historical evidence, investigates unresolved exceptions when enabled, and independently re-performs sampled cases in the audit feature. Deterministic code checks the policies and executes matching, preview, approval, reruns and undo.
+
+Jev, through TypeSafe's jev-latest model, is an optional review assistant. Clicking Get suggestion sends the selected case, policy, source evidence, reviewer roles and optional note. It chooses a reviewer and next step from defined options. Low confidence falls back to manual triage. It cannot approve policies, bypass verification holds or move money. Confidence scores are not measured accuracy.
+
+Pitch line: “Claude learns the company's conventions. Jev suggests the reviewer and next action. Code enforces the policy, and a human controls approval.” The live approval demo needs no new model calls; its policies were learned beforehand. BenchRec uses zero LLM calls.
+
 ## What to show only if asked
 
-Company onboarding and CSV uploads, the second company, the second deposit-limit answer, Jev next-step suggestions, experiment controls, audit and close. These remain in the project. They are not necessary to prove the core story in three minutes. Audit and Close need their prepared reports; the judging sandbox does not contain them.
+Company onboarding and CSV uploads, the second company, the second deposit-limit answer, Jev next-step suggestions, experiment controls, audit and close. These remain in the project. They are not necessary to prove the core story in three minutes. Close shows the May sample period. Audit needs a separately prepared audit report and shows a clear empty state in this sample workspace.
 
 ## Final submission checklist
 

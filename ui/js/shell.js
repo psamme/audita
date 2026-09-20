@@ -7,7 +7,7 @@
   const NAV = [["index.html", "Experiment"], ["index.html#control", "Bank change"], ["queue.html", "Review queue"], ["playbook.html", "Playbook"], ["close.html", "Close"], ["audit.html", "Audit"], ["real.html", "Real ledger"], ["results.html", "Results"]];
   const here = location.pathname.split("/").pop() || "index.html";
   const nav = document.querySelector(".nav");
-  if (SO.track === "stage") document.querySelector(".mark").href = "queue.html?track=stage";
+  if (SO.track === "stage") document.querySelector(".mark").href = "queue.html?track=stage&present=1";
   const extraNav = NAV;
   const primaryNav = SO.presenting ? [["queue.html?track=stage&present=1", "1. Review queue"], ["playbook.html?client=A&track=stage&period=2026-05&present=1", "2. Learned policy"], ["real.html?track=stage&present=1", "3. Benchmark"]] : NAV;
   if (nav) nav.innerHTML = primaryNav.map(([href, label]) => `<a href="${href}"${href.split('?')[0] === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");

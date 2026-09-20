@@ -3,6 +3,7 @@
   const { get, withTrack, usd, esc, day } = SO;
   const view = document.getElementById("view"), seg = document.getElementById("client");
   let client = new URLSearchParams(location.search).get("client") === "B" ? "B" : "A";
+  const selectedPeriod = new URLSearchParams(location.search).get("period") || (SO.track === "stage" ? "2026-05" : "2026-04");
   const month = (p) => new Date(p + "-15T12:00:00").toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
   function row(r) {
@@ -39,7 +40,7 @@
 
   async function load() {
     seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === client)));
-    try { render(await get(withTrack(`/api/close/${client}`))); }
+    try { render(await get(withTrack(`/api/close/${client}?period=${encodeURIComponent(selectedPeriod)}`))); }
     catch (e) { view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`; }
   }
 

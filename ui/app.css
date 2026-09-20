@@ -218,3 +218,5 @@ details.more[open] > summary { border-bottom: 1px solid var(--line); }
 
 /* The judging path keeps every secondary screen in reach. */
 .demo-more{position:relative;font-size:12px}.demo-more summary{cursor:pointer;padding:8px}.demo-more>div{position:absolute;right:0;top:100%;z-index:20;min-width:200px;padding:12px;background:var(--paper,#fff);border:1px solid var(--line,#ccc);border-radius:6px;box-shadow:0 8px 28px #0002;display:grid;gap:4px}.demo-more a{display:block;padding:8px}.demo-cue{padding:16px 20px;margin-bottom:18px;border:1px solid var(--line,#ccc);border-radius:8px;line-height:1.6}.demo-cue p{margin:6px 0}.demo-cue a{margin-right:18px}
+
+.inbox-main .demo-cue{font-size:13px;padding:12px 16px;margin-bottom:10px}.inbox-main .demo-cue a{white-space:nowrap}.inbox-main .demo-cue b{margin-right:8px}
