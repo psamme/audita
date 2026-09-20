@@ -1,0 +1,5 @@
+source_id,date,posted_at,account,amount,memo,counterparty,ref,invoice_id
+l0,2026-01-05,2026-01-05,1200,100,Customer receipt,Customer 0,INV0,INV0
+l1,2026-01-12,2026-01-12,1200,200,Customer receipt,Customer 1,INV1,INV1
+l2,2026-02-03,2026-02-03,1200,300,Customer receipt,Customer 2,INV2,INV2
+l3,2026-02-09,2026-02-09,1200,400,Customer receipt,Customer 3,INV3,INV3

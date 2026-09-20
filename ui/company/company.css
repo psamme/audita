@@ -1,0 +1,94 @@
+/* Layout for the company screens only. Tokens and components come from design/; nothing here
+   redefines them. Colour stays reserved for state, as in the rest of the app. */
+
+.steps { display: flex; gap: var(--s-2); flex-wrap: wrap; margin: 0 0 var(--s-5); padding: 0; list-style: none; }
+.steps li { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-sm); color: var(--ink-3); }
+.steps li + li::before { content: ""; width: 18px; height: 1px; background: var(--line-strong); }
+.steps .on { color: var(--ink); font-weight: 500; }
+.steps .done { color: var(--pos); }
+
+.form { display: grid; gap: var(--s-4); max-width: 46rem; }
+/* Fields inside a panel need their own rhythm, or a label reads as belonging to the control
+   above it rather than the one below. */
+.panel-body > * + * { margin-top: var(--s-5); }
+.panel-body > p.faint + *, .panel-body > .note + * { margin-top: var(--s-4); }
+.field { display: grid; gap: var(--s-1); }
+.field .input, .field .select { max-width: 100%; }
+.field.narrow .input { max-width: 10rem; }
+.field > label { font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.field .hint { font-size: var(--t-sm); color: var(--ink-3); }
+.field textarea.input { min-height: 6rem; resize: vertical; font-family: var(--mono); font-size: var(--t-sm); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+.actions { display: flex; gap: var(--s-3); align-items: center; flex-wrap: wrap; }
+
+.people { width: 100%; border-collapse: collapse; }
+.people th { text-align: left; font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500; padding-bottom: var(--s-2); }
+.people td { padding: var(--s-1) var(--s-2) var(--s-1) 0; vertical-align: middle; }
+.people td:last-child { text-align: right; }
+.people .input { width: 100%; }
+.people label { display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; }
+
+.drop { border: 1px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--s-5);
+  text-align: center; color: var(--ink-3); background: var(--surface-2); }
+.drop.over { border-color: var(--ink); color: var(--ink); }
+.drop input[type="file"] { display: none; }
+
+.roles { display: grid; gap: var(--s-2); }
+.role-row { display: grid; grid-template-columns: 14rem 1fr auto; gap: var(--s-3); align-items: center;
+  padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
+.role-row:last-child { border-bottom: 0; }
+.role-row .want { font-weight: 500; }
+.role-row .req { font-size: var(--t-xs); color: var(--ink-3); }
+.role-row .got { font-family: var(--mono); font-size: var(--t-sm); }
+/* the button IS the file picker; the native control would otherwise sit next to it */
+.role-row label.btn input[type="file"] { display: none; }
+
+.note { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-sm);
+  color: var(--ink-2); margin: var(--s-3) 0; }
+.note.good { color: var(--pos); }
+.note.bad { color: var(--neg); }
+.note .fix { color: var(--ink-3); }
+
+.spin { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line-strong);
+  border-top-color: var(--ink); display: inline-block; animation: co-spin 0.8s linear infinite; }
+@keyframes co-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+.lvl-block td, .lvl-warn td { background: transparent; }
+.grid.tight td .fix { margin-top: 2px; }
+
+.coverage { display: grid; gap: var(--s-2); }
+.cov-row { display: grid; grid-template-columns: 1fr 5rem 7rem; gap: var(--s-3); align-items: center;
+  font-size: var(--t-sm); }
+.cov-row .cov-bar { height: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); overflow: hidden; }
+.cov-row .cov-bar i { display: block; height: 100%; background: var(--ink); }
+.cov-row .shape { font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.labeller { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: var(--s-5); align-items: start; }
+@media (max-width: 68rem) { .labeller { grid-template-columns: 1fr; } }
+.cands { display: grid; gap: var(--s-1); }
+.cand { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s-3); align-items: center;
+  padding: var(--s-2); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface);
+  text-align: left; font: inherit; color: inherit; cursor: pointer; width: 100%; }
+.cand:hover { border-color: var(--line-strong); }
+.cand[aria-pressed="true"] { border-color: var(--ink); }
+.cand .diff { font-family: var(--mono); font-size: var(--t-sm); }
+
+.tiers { display: grid; gap: var(--s-1); margin: var(--s-4) 0; }
+.tier-bar { display: flex; height: 22px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); overflow: hidden; }
+.tier-bar span { display: block; }
+.tier-bar .t-matcher { background: var(--ink); }
+.tier-bar .t-rule { background: var(--ink-3); }
+.tier-bar .t-investigator { background: var(--surface-2); border-left: 1px solid var(--line-strong); }
+.tier-bar .t-guardrail { background: var(--neg-wash); border-left: 1px solid var(--line-strong); }
+.tier-key { display: flex; gap: var(--s-4); flex-wrap: wrap; font-size: var(--t-xs); color: var(--ink-3); }
+.tier-key i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px;
+  border: 1px solid var(--line-strong); }
+
+.stat-row { display: flex; gap: var(--s-6); flex-wrap: wrap; margin: var(--s-4) 0; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-size: var(--t-xl); font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat span { font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+
+.workspace-hero{padding:38px;margin:16px 0 24px}.workspace-hero h1{font-size:42px;line-height:1.1;max-width:700px;margin:18px 0}.workspace-hero p{font-size:17px;line-height:1.6;max-width:680px}.workspace-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}.workspace-card{padding:24px;color:inherit;text-decoration:none}.workspace-card h2{font-size:21px;margin:15px 0}.workspace-card p{line-height:1.6;min-height:100px}.workspace-card:hover{border-color:var(--ink)}@media(max-width:850px){.workspace-cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.workspace-cards{grid-template-columns:1fr}.workspace-hero{padding:24px}.workspace-hero h1{font-size:32px}}

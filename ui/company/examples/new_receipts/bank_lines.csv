@@ -1,0 +1,4 @@
+source_id,date,amount,description,counterparty,ref
+new1,2026-03-05,98,CUSTOMER RECEIPT INVNEW,New customer,INVNEW
+new2,2026-03-05,500,CUSTOMER RECEIPT EXACT,Exact customer,EXACT
+new3,2026-03-06,777,UNIDENTIFIED RECEIPT,,

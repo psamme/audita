@@ -198,9 +198,9 @@ Rule language:
 when (bank items""" + rules.__doc__.split("when (bank items", 1)[1]
 
 
-def induce(client: str, before: str, track: str = "main", usage: llm.Usage | None = None) -> dict:
+def induce(client: str, before: str, track: str = "main", usage: llm.Usage | None = None, db_file=None) -> dict:
     """Induce a playbook from everything the ERP retained in periods before `before`."""
-    con = db.connect(client, readonly=True)
+    con = db.connect(client, readonly=True, path=db_file)
     info = db.q(con, "SELECT * FROM client")[0]
     cl = clusters(cases(con, before))
     mail = [{"date": m["date"], "from": m["sender"], "to": m["meta"].get("to"), "subject": m["subject"], "body": m["body"]}

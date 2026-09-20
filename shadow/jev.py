@@ -33,7 +33,6 @@ class Unavailable(Exception):
 
 
 def key_path():
-    stage.config()  # Credentials belong only to an explicitly prepared local stage workspace.
     return db.DATA.parent / '.typesafe-key'
 
 
@@ -66,8 +65,38 @@ def status():
             'calls_limit': MAX_CALLS, 'confidence_floor': CONFIDENCE_FLOOR}
 
 
+def company_report(client, item_ids):
+    """Read current company source records, independent of the constructed stage cases."""
+    from shadow.onboard import company
+    from shadow import pipeline, playbook
+    if client != company.configured() or not company.exists(client):
+        return None
+    con = db.connect(client, readonly=True)
+    try:
+        periods = {r['period'] for item_id in item_ids for r in db.q(con, 'SELECT period FROM bank_line WHERE id=?', item_id)}
+        if len(periods) != 1:
+            raise ValueError('Choose unresolved receipts from one month.')
+        period = periods.pop()
+        pb = playbook.load(client, 'main')
+        if not pb:
+            raise ValueError('Learn your company policies first.')
+        run = pipeline.run(client, period, 'playbook', use_llm=False, persist=False, con_override=con)
+        rules = {r['id']: r for r in pb['rules']}
+        past = {p['id']: p for p in playbook.cases(con, pb['trained_before'])}
+        for i in run['items']:
+            rule = rules.get(i['resolution'].get('rule_id'))
+            i['rule'] = rule
+            i['precedents'] = [past[p] for p in (rule or {}).get('precedent_ids', []) if p in past][:4]
+            invoices = db.q(con, 'SELECT * FROM invoice WHERE id=?', i['record'].get('ref') or '')
+            i['reference_invoice'] = invoices[0] if invoices else None
+        info = db.q(con, 'SELECT name FROM client')[0]
+        return {'period': period, 'results': [{'client': client, 'name': info['name'], 'version': pb['version'], 'items': run['items']}]}
+    finally:
+        con.close()
+
+
 def context(client, item_ids, note):
-    report = stage.report()
+    report = company_report(client, item_ids) or stage.report()
     company = next((c for c in report['results'] if c['client'] == client), None)
     if company is None:
         raise ValueError('Unknown company.')

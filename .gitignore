@@ -13,3 +13,8 @@ ui/replay.json
 
 # Local TypeSafe credential (never served by the UI)
 .typesafe-key
+# local company state: uploads, id maps, job records, and which company is configured
+data/company.json
+data/*/import/
+data/*/jobs/
+.gstack/
