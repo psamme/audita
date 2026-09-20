@@ -1,0 +1,51 @@
+{
+ "team": {
+  "title": "Three roles, and the auditor never sees the preparer&#39;s reasoning",
+  "preparer": "Matcher, playbook rules and the investigator propose every resolution.",
+  "approver": "The controller signs the playbook and answers what the agent asks.",
+  "auditor": "A second agent gets only the books, re-performs a sample, and tests the controls.",
+  "notes": "Hand-offs like a real team. The auditor never loads the preparer's rationale, trace or confidence, the grades, or the truth. It does get the client's signed playbook as policy, so it is independent of the preparer's reasoning, not of the playbook. Say that if asked.",
+  "stats_title": "It agreed with the work, and still found five problems",
+  "stats": [
+   [
+    "75 of 75",
+    "sampled items re-performed and agreed, 24 of them blind by a model",
+    "INK"
+   ],
+   [
+    "5",
+    "real findings, including a bug in our own agent",
+    "NEG"
+   ],
+   [
+    "$0.58",
+    "total cost of auditing both clients",
+    "POS"
+   ]
+  ],
+  "stats_notes": "Risk-weighted sample, seed 7: 40 items at client A, 35 at B. 16 control and consistency tests per client; 13 of 16 pass at A, 14 of 16 at B. Findings: our preparer escalated to a controller at a client that has no controller; two vendors debited twice against one ledger payment (BevCo $1,864.30, Pagewell $14,260.00); a Helix payment to a new bank account reconciled in history with no approval; client A keeps no approvals log. Disclose: the agreement is mostly on clean exact ties, only 5 model-resolved items were judgement calls, single run. Demo: open Audit, click A-BL-00884, then Download audit file: that is what you hand the auditor."
+ },
+ "real": {
+  "title": "32,048 real bank lines, graded against the bank&#39;s own analysts",
+  "size": 104,
+  "stats": [
+   [
+    "90.5%",
+    "matched at zero model cost. The shipped matcher: 65.0%.",
+    "INK"
+   ],
+   [
+    "37",
+    "wrong matches. The shipped matcher: 114.",
+    "POS"
+   ],
+   [
+    "5 of 6",
+    "induced rules refused by their own history. They only suggest.",
+    "INK"
+   ]
+  ],
+  "line": "The one rule that earned the right to run: small differences up to $15.29 are accepted when the reference ties, from 689 analyst precedents.",
+  "notes": "BenchRec, CC BY 4.0. Learned from 68,975 training lines including 11,054 groups the analysts closed by hand. Answer key opened only by the grader; the shipped matcher is graded by the same function. Our matcher alone: 89.58% at 99.89% precision, 32 wrong. Conventions add about one point and precision dips to 99.87%: do not oversell that. Of the 10.9% residue, 304 cleared by the rule (299 right), 817 go to a person with a suggestion that matches the key 88% of the time, 2,376 go with a stated reason. Do NOT say unseen year or temporal holdout. This dataset is one account, so it does not show two clients differing. No model was run on the real ledger."
+ }
+}

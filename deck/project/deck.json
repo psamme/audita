@@ -1,0 +1,55 @@
+{
+ "v": 4,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-09-20T12:53:22Z"
+ },
+ "title": "Shadow Onboarding Deck",
+ "order": [
+  "cover",
+  "problem",
+  "split",
+  "idea",
+  "how",
+  "bands",
+  "learning",
+  "team",
+  "audit",
+  "real",
+  "results",
+  "curve",
+  "ran",
+  "honest",
+  "close"
+ ],
+ "cover": "cover",
+ "sections": {
+  "s1": {
+   "description": "The problem: every client resolves exceptions differently",
+   "start": "cover"
+  },
+  "s2": {
+   "description": "How the steps, the playbook and safe learning work",
+   "start": "how"
+  },
+  "s3": {
+   "description": "What we measured",
+   "start": "real"
+  },
+  "s4": {
+   "description": "Disclosures and the close",
+   "start": "honest"
+  }
+ },
+ "faces": {
+  "hanken-grotesk": {
+   "family": "Hanken Grotesk",
+   "href": "https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..700&display=swap"
+  },
+  "ibm-plex-mono": {
+   "family": "IBM Plex Mono",
+   "href": "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+  }
+ },
+ "designSystems": []
+}
