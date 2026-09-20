@@ -4,7 +4,7 @@
   const canvas = document.getElementById("slab");
   const SEED = 11, VEINING = 0.75;
 
-  const NAV = [["index.html", "Experiment"], ["index.html#control", "Bank change"], ["queue.html", "Queue"], ["playbook.html", "Playbook"], ["close.html", "Close"], ["audit.html", "Audit"], ["real.html", "Real ledger"], ["company/index.html?track=main", "Company"], ["demo.html?track=stage", "Demo"], ["results.html", "Results"]];
+  const NAV = [["index.html", "Experiment"], ["index.html#control", "Bank change"], ["queue.html", "Review queue"], ["playbook.html", "Playbook"], ["close.html", "Close"], ["audit.html", "Audit"], ["real.html", "Real ledger"], ["results.html", "Results"]];
   const here = location.pathname.split("/").pop() || "index.html";
   const nav = document.querySelector(".nav");
   if (SO.track === "stage") document.querySelector(".mark").href = "queue.html?track=stage";
