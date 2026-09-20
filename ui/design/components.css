@@ -1,4 +1,4 @@
-/* Shadow Onboarding components. Reads tokens.css. Chrome stays flat:
+/* Audita components. Reads tokens.css. Chrome stays flat:
    no blur, no glow, no gradients. The marble is the only texture. */
 
 *, *::before, *::after { box-sizing: border-box; }

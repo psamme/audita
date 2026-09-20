@@ -8,7 +8,7 @@ Maximor told us their hardest problem is that every client is different. We took
 
 ## What it does
 
-Shadow Onboarding reconciles bank activity to the ledger in five tiers, cheapest first, and every tier may refuse.
+Audita reconciles bank activity to the ledger in five tiers, cheapest first, and every tier may refuse.
 
 1. Guardrails. A payment to changed vendor bank details is held however exactly the amount ties.
 2. A deterministic matcher that only matches when the answer is unique. No model, $0.

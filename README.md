@@ -1,4 +1,4 @@
-# Shadow Onboarding
+# Audita
 
 HackMIT 2026, Maximor track: "Agentic Systems for the Office of the CFO."
 

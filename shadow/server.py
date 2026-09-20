@@ -14,7 +14,7 @@ from shadow import routes_audit
 from shadow import routes_real
 from shadow import routes_close
 
-app = FastAPI(title="Shadow Onboarding")
+app = FastAPI(title="Audita")
 app.include_router(routes_audit.router)
 app.include_router(routes_real.router)
 app.include_router(routes_close.router)

@@ -1,4 +1,4 @@
-# Shadow: the submission and judging guide
+# Audita: the submission and judging guide
 
 ## Start here
 
@@ -8,21 +8,21 @@ Use two people if possible: one talks, one operates. The operator should follow 
 
 ## The one-sentence pitch
 
-Shadow learns how a finance team handled past exceptions, turns uncertainty into focused review questions, and applies approved policies to the next related cases with an evidence trail and undo.
+Audita learns how a finance team handled past exceptions, turns uncertainty into focused review questions, and applies approved policies to the next related cases with an evidence trail and undo.
 
 ## The three-minute demo
 
 ### 0:00–0:20 · The problem, already on screen
 
-SAY: “A payment arrives $12.40 short. Should you write it off or chase the customer? The right answer depends on the company. Shadow learns from the team's past decisions and asks a person only where the evidence is not enough.”
+SAY: “A payment arrives $12.40 short. Should you write it off or chase the customer? The right answer depends on the company. Audita learns from the team's past decisions and asks a person only where the evidence is not enough.”
 
 SCREEN: Review queue, Lucky Quarter Holdings, Policy questions, Confirm how to handle shortfalls. The three differences are $12.40, $13.10 and $14.20. The fresh demonstration starts with nine bank transactions to review.
 
 ### 0:20–0:45 · Show the evidence
 
-CLICK: “Why Shadow suggested this”, beneath the policy form. Show one historical example, then collapse it.
+CLICK: “Why Audita suggested this”, beneath the policy form. Show one historical example, then collapse it.
 
-SAY: “These policies came from model induction on historical reconciliation links, adjustment journals, approvals and emails. The history suggests small write-offs, but the account choices conflict. Shadow surfaces that question instead of inventing an answer.”
+SAY: “These policies came from model induction on historical reconciliation links, adjustment journals, approvals and emails. The history suggests small write-offs, but the account choices conflict. Audita surfaces that question instead of inventing an answer.”
 
 DISCLOSURE: “This interactive workflow uses synthetic companies and constructed receipts. We'll show a separate real-data benchmark at the end.”
 
@@ -42,7 +42,7 @@ SAY: “One answer clears three receipts. The policy runs as code, so this rerun
 
 CLICK: Verification. Show the two held vendor payments. Optionally open the source-email link, then return to the queue.
 
-SAY: “A matching amount does not override a bank-change warning. Both payments stay held for independent verification. Shadow does not initiate payments.”
+SAY: “A matching amount does not override a bank-change warning. Both payments stay held for independent verification. Audita does not initiate payments.”
 
 CLICK: “Undo latest policy answer”, then its confirmation. The three receipts reopen. Select Policy questions again if needed.
 
@@ -66,7 +66,7 @@ SAY: “Thresholds and conventions were learned from training data. This benchma
 
 ### 2:45–3:00 · Finish with the product
 
-SAY: “Shadow turns the finance team's prior decisions into reusable policies. People answer the uncertain questions, repeated cases clear, and every change is inspectable and reversible.”
+SAY: “Audita turns the finance team's prior decisions into reusable policies. People answer the uncertain questions, repeated cases clear, and every change is inspectable and reversible.”
 
 STOP. Let judges ask questions. Do not introduce another feature in the final fifteen seconds.
 
@@ -125,7 +125,7 @@ Company onboarding and CSV uploads, the second company, the second deposit-limit
 
 - Open the public demo URL in a signed-out browser. It must load without a Vercel login.
 - Put that URL in the website/demo field and describe it as a recorded interactive demo with benchmark results.
-- The GitHub repository is private. Invite judges if the submission requires access, or explicitly choose to make the code public. The demo deployment does not change repository visibility.
+- The GitHub repository is public: https://github.com/psamme/shadow-onboarding. Include it in the source-code field.
 - Put the honest benchmark headline and its source in the written submission. Use docs/PLUME.md as the base.
 - Keep the local queue and recorded-demo.html open before judging. Charge the laptop and prevent sleep during the presentation.
 - If the submission form requires a video, record the three-minute walkthrough separately. The HTML replay is not a video upload.
