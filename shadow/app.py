@@ -36,6 +36,9 @@ from fastapi.responses import RedirectResponse
 
 @app.get('/')
 def company_home():
+    from shadow import db
+    if (db.DATA.parent / 'stage.json').exists():
+        return RedirectResponse('/queue.html?track=stage&present=1')
     return RedirectResponse('/company/index.html?track=main')
 
 app.router.routes.extend(_mounts)          # the catch-all static mount stays last

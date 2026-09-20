@@ -40,6 +40,7 @@ if __name__=='__main__':
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     record=capture()
+    record["benchmark"] = json.loads(Path("benchrec/report_summary.json").read_text())
     template=Path('scripts/templates/replay.html').read_text()
     data=json.dumps(record).replace('<','\\u003c')
     args.output.parent.mkdir(parents=True,exist_ok=True)

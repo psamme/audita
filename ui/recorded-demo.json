@@ -1,0 +1,35 @@
+{
+  "validation": "3 receipts cleared; 4 deposits cleared; 2 vendor payments held; undo reopened 3 and preserved the 4 deposits.",
+  "induction_sources": {
+    "A": {
+      "track": "stage_learned",
+      "version": 1,
+      "sha256": "98d882aa112d3dd06504260c255ae3284958f1c977b38bb9b20983a580ab1f8c",
+      "method": "Model induction from ERP links, journal adjustments, approvals and emails",
+      "training_window": "January and February 2026"
+    },
+    "B": {
+      "track": "stage_learned",
+      "version": 1,
+      "sha256": "d8cb0c5d94c2d65dc00aa4d4ab18197ee6e703e403f5c4f245b847dd68af5998",
+      "method": "Model induction from ERP links, journal adjustments, approvals and emails",
+      "training_window": "January and February 2026"
+    }
+  },
+  "before": {
+    "bank_items": 9,
+    "bank_exceptions": 9,
+    "automatic_exceptions": 0,
+    "needs_review": 9,
+    "automatic_bank_items": 0
+  },
+  "after_two_answers": {
+    "bank_items": 9,
+    "bank_exceptions": 9,
+    "automatic_exceptions": 7,
+    "needs_review": 2,
+    "automatic_bank_items": 7
+  },
+  "undo_checked": 7,
+  "undo_reopened": 3
+}
