@@ -15,6 +15,13 @@
     track = clean(sessionStorage.getItem("so-track"));
   } catch (e) { const v = new URLSearchParams(location.search).get("track"); track = v && v !== "main" && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : ""; }
   // any track other than main is a rehearsal: "dev" for practice, or a named one such as "curve"
+  let presenting = new URLSearchParams(location.search).get("present") === "1";
+  try {
+    const mode = new URLSearchParams(location.search).get("present");
+    if (mode !== null) sessionStorage.setItem("so-present", mode === "1" ? "1" : "0");
+    if (location.pathname.startsWith("/company/")) sessionStorage.setItem("so-present", "0");
+    presenting = sessionStorage.getItem("so-present") === "1";
+  } catch (e) {}
   const rehearsal = track !== "";
   const withTrack = (path) => (rehearsal ? path + (path.includes("?") ? "&" : "?") + "track=" + track : path);
   const body = (obj) => JSON.stringify(rehearsal ? { ...obj, track } : obj);
@@ -49,5 +56,5 @@
   const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  window.SO = { get, track, rehearsal, withTrack, body, usd, cost, day, esc, get usedFixture() { return usedFixture; } };
+  window.SO = { get, track, presenting, rehearsal, withTrack, body, usd, cost, day, esc, get usedFixture() { return usedFixture; } };
 })();
