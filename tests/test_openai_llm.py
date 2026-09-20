@@ -39,6 +39,7 @@ def test_structured_output_validates_and_accounts_for_cached_tokens(monkeypatch)
     assert reply.usage['cost_usd'] == pytest.approx(.000392)
     assert requests[0]['store'] is False
     assert requests[0]['text']['format']['type'] == 'json_object'
+    assert 'JSON' in requests[0]['input'][0]['content']
 
 
 def test_tool_roundtrip_preserves_reasoning_and_call_id(monkeypatch):

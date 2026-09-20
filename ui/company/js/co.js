@@ -90,7 +90,7 @@
   function err(e) {
     return `<section class="panel"><div class="panel-body"><h3>Something went wrong</h3>
       <p class="muted">${esc(e.message || e)}</p>
-      <p class="faint">If the server is not running: <code>uv run uvicorn shadow.app:app --port 8787</code></p>
+      <p class="faint">Refresh to reconnect, or <a href="../queue.html?track=stage&present=1">open the prepared review queue</a>.</p>
       </div></section>`;
   }
 

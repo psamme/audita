@@ -10,7 +10,7 @@ The public site now runs the real review queue: approvals change the sample poli
 
 ## Start here
 
-Open https://audita-hackmit.vercel.app in the live presentation. The same flow is also available locally at http://127.0.0.1:8795/ if internet connectivity fails. It opens the review queue with the shortfall policy selected. Use the three navigation links in order: Review queue, Learned policy, Benchmark. Every other screen remains under More. Company onboarding remains available under More → Workspace.
+Open https://audita-hackmit.vercel.app and choose View the demo. For a direct presentation link, use https://audita-hackmit.vercel.app/queue.html?track=stage&present=1. The same flow is also available locally at http://127.0.0.1:8795/ if internet connectivity fails. It opens the review queue with the shortfall policy selected. Use the navigation links in order: Review queue, Learned policies, Benchmark. Every other screen remains under More. Company onboarding is available through Your company in the same navigation.
 
 Use two people if possible: one talks, one operates. The operator should follow the clicks below without narrating them. With one person, finish each click before speaking again. Rehearse once in three minutes, then undo the answer to restore the queue.
 
@@ -119,7 +119,7 @@ The canonical judging sandbox is work/judging-submission. Earlier work is preser
 
 “Does 99.87% mean the entire accounting task is right?” No. It is pair-level precision for emitted benchmark matches under the stated scorer. Complete-group precision is 96.50%. The number does not cover the upload workflow or every accounting decision.
 
-“Can a company upload its own data?” Yes, the local prototype has company setup, historical CSV import, policy learning, and later undecided receipts. It accepts exports rather than live ERP connectors. The public judging workspace uses sample data and does not accept company uploads.
+“Can a company upload its own data?” Yes. Set up your company opens the full flow on the public site: company and reviewer setup, historical CSV import, policy learning, then later undecided receipts and review. Each visitor has an isolated workspace. It accepts exports rather than live ERP connectors. The sample review queue remains separate.
 
 “Who is allowed to approve?” The prototype checks asserted reviewer roles, but the local role selector is not production authentication. There are no real payment or ledger-posting integrations.
 
