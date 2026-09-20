@@ -7,7 +7,8 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from shadow import db, jobs, llm, pipeline, playbook as pbmod
-from shadow.onboard import coldstart, company, importer, mapping, preflight, staging, boundary
+from shadow.onboard import (boundary, classify, coldstart, company, contract, importer,
+                            mapping, preflight, staging)
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 jobs_router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -152,6 +153,113 @@ def start_import(i: ImportIn):
 def undo_import(import_id: str):
     try:
         return importer.undo(_client(), import_id)
+    except ValueError as e:
+        raise HTTPException(409, str(e))
+
+
+# --- drop a folder in ----------------------------------------------------------------------
+@router.post("/identify")
+async def identify(request: Request, filename: str = Query("upload.csv"),
+                   purpose: str = Query("history"), role: str = Query(None),
+                   use_llm: bool = Query(False)):
+    """One dropped file: read it, decide what it is, stage it and propose its columns.
+
+    The person still confirms, but they confirm a filled-in answer instead of starting from a
+    menu. `role` forces a kind when they disagree; `use_llm` is the one paid escape hatch, for a
+    file the column names alone cannot place.
+    """
+    client = _client()
+    raw = await request.body()
+    if not raw:
+        raise HTTPException(400, "empty upload")
+    try:
+        parsed = staging.read(raw)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    columns = staging.profile(parsed["header"], parsed["rows"])
+
+    # Classify against every kind even on the new-receipts page. Narrowing the field first would
+    # force a reconciliation export into the nearest permitted shape and report a vague failure,
+    # when the useful answer is that this file is history and belongs on the other page.
+    usage = llm.Usage()
+    if role:
+        if role not in contract.SPECS:
+            raise HTTPException(400, f"unknown upload kind {role}")
+        found = classify.score(role, columns, filename)
+        verdict = {"role": role, "label": found["label"], "confidence": 1.0, "close": False,
+                   "source": "you", "why": "You chose this kind.", "alternatives": [],
+                   "mapping": found["mapping"],
+                   "ranked": classify.classify(columns, filename)["ranked"]}
+    elif use_llm:
+        verdict = classify.propose(columns, filename, usage=usage)
+    else:
+        verdict = classify.classify(columns, filename)
+
+    card = {"filename": filename, "purpose": purpose, "rows": len(parsed["rows"]),
+            "header": parsed["header"], "usage": usage.as_dict(), **verdict}
+    if not verdict["role"]:
+        card["blocked"] = "We could not tell what this file is. Choose a kind."
+        return card
+    if purpose == "incoming" and verdict["role"] not in boundary.INCOMING_ROLES:
+        card["blocked"] = (f"This reads as {verdict['label'].lower()}, which records a decision "
+                           "your team already made. New receipts carry source records only.")
+        return card
+    try:
+        up = staging.store(client, verdict["role"], filename, raw, purpose)
+    except ValueError as e:
+        card["blocked"] = str(e)
+        return card
+    card["upload_id"] = up["upload_id"]
+    card["encoding"], card["delimiter"] = up["encoding"], up["delimiter"]
+    card["skipped_preamble"] = up["skipped_preamble"]
+    card["duplicate_of"] = up["duplicate_of"]
+    card["check"] = mapping.validate(verdict["role"], verdict["mapping"], parsed)
+    return card
+
+
+class BatchImport(BaseModel):
+    files: list[ImportIn]
+
+
+@router.post("/import/batch")
+def start_batch_import(b: BatchImport):
+    """Import several staged files in one job, parents first.
+
+    Order is not a nicety here. A reconciliation row resolves its bank and ledger references
+    against records that must already exist, so importing the trail before the statement leaves
+    every row dangling and reports nothing but unresolved references.
+    """
+    client = _client()
+    if not b.files:
+        raise HTTPException(400, "nothing to import")
+    try:
+        staged = [(staging.load(client, f.upload_id), f) for f in b.files]
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    staged.sort(key=lambda pair: classify.ORDER.index(pair[0]["role"]))
+
+    def work(job):
+        with jobs.client_lock(client):
+            reports, failed = [], []
+            for i, (up, f) in enumerate(staged):
+                job.phase(f"{up['filename']} ({i + 1} of {len(staged)})")
+                try:
+                    reports.append(importer.run_import(
+                        client, f.upload_id, f.mapping, f.mode, f.date_from, f.date_to,
+                        f.cash_accounts, job=None))
+                except (ValueError, KeyError) as e:
+                    failed.append({"filename": up["filename"], "role": up["role"],
+                                   "error": str(e)})
+            return {"imported": reports, "failed": failed,
+                    "inserted": sum(r["inserted"] for r in reports),
+                    "updated": sum(r["updated"] for r in reports),
+                    "warnings": [w for r in reports for w in r["warnings"]],
+                    "order": [up["role"] for up, _ in staged]}
+
+    try:
+        return jobs.submit("import", client, work,
+                           meta={"files": len(staged)}, estimate_s=20 * len(staged),
+                           exclusive=False)
     except ValueError as e:
         raise HTTPException(409, str(e))
 

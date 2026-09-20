@@ -1,8 +1,11 @@
-/* Step 2. Upload files, confirm what each column is, then fill any gap in the trail by hand.
+/* Step 2. Drop the whole folder in, check what we made of each file, then fill any gap in the
+   trail by hand.
 
-   The model suggests the column mapping; this screen exists so a person confirms it before
-   anything is written. A wrong sign or a wrong date order does not throw, it just quietly makes
-   every later answer worse, which is exactly the kind of mistake a confirmation step catches. */
+   Nobody exports one file at a time with our names on it, so the screen does not ask which kind
+   each file is. It reads the columns, says what it thinks and why, and puts the answer in a
+   dropdown the person can change. The confirmation step stays, because a wrong sign or a wrong
+   date order does not throw: it quietly makes every later answer worse, which is exactly the kind
+   of mistake a person catches in one glance at a preview and code never catches at all. */
 (function () {
   const view = document.getElementById("view");
   const esc = SO.esc;
@@ -16,9 +19,13 @@
     ["approvals", "Approvals", "Anything that needed a second signature.", false],
     ["invoices", "Invoices", "Optional. Lets rules reason about terms and invoice age.", false],
     ["documents", "Emails and remittances", "Optional, and unusually useful: remittance advices and the email trail.", false],
-  ].filter(([role])=>!incoming || ["bank_lines","ledger_entries","invoices","documents"].includes(role));
+    ["chart_of_accounts", "Chart of accounts", "Account codes the playbook is allowed to name.", false],
+    ["people", "People", "Who is on the finance team, and who is senior enough to approve.", false],
+  ].filter(([role]) => !incoming || ["bank_lines", "ledger_entries", "invoices", "documents"].includes(role));
+  const LABELS = Object.fromEntries(ROLES.map(([role, label]) => [role, label]));
 
   let company = null, state = null, current = null;
+  let dropped = [], seq = 0;                 // one entry per file the person handed over
 
   async function refresh() {
     company = await CO.get("/api/onboarding/company");
@@ -48,18 +55,26 @@
 
   function uploadPanel() {
     return `<section class="panel">
-      <div class="panel-head"><h3>Files</h3></div>
+      <div class="panel-head"><h3>Files</h3><span class="faint">CSV, as many at once as you like</span></div>
       <div class="panel-body">
-        <div class="roles">${ROLES.map(([role, label, note, required]) => `
-          <div class="role-row">
-            <div><div class="want">${esc(label)}${required ? "" : ' <span class="faint">optional</span>'}</div></div>
-            <div class="req">${esc(note)}</div>
-            <div><label class="btn btn-secondary btn-sm">Choose file
-              <input type="file" accept=".csv,text/csv,text/plain" data-role="${role}"></label> <a class="faint" href="/api/onboarding/template?role=${role}">CSV template</a></div>
-          </div>`).join("")}
-        </div>
-        <p class="faint" style="margin-top:12px">CSV. We read the header and a few rows to work out the
-          columns, then show you what we think before anything is written.</p>
+        <label class="drop" id="drop">
+          <b>Drop your exports here</b>
+          <div class="faint">or choose files. We read the header and a few rows of each one and
+            work out which is which. Nothing is written until you say so.</div>
+          <input type="file" id="pick" multiple accept=".csv,text/csv,text/plain">
+        </label>
+        <div id="files"></div>
+        <div id="batch"></div>
+        <details class="kinds">
+          <summary>What we can read, and blank templates</summary>
+          <div class="roles">${ROLES.map(([role, label, note, required]) => `
+            <div class="role-row">
+              <div><div class="want">${esc(label)}${required ? "" : ' <span class="faint">optional</span>'}</div></div>
+              <div class="req">${esc(note)}</div>
+              <div><a class="faint" href="/api/onboarding/template?role=${role}">CSV template</a></div>
+            </div>`).join("")}
+          </div>
+        </details>
       </div>
     </section>`;
   }
@@ -94,64 +109,201 @@
     if (!(await refresh())) return;
     if(!incoming && company.training_before){view.innerHTML=counts()+`<section class="panel"><div class="panel-body"><h3>Your training history is saved</h3><p>Policies learn only from records before ${esc(company.training_before)}. Add undecided receipts separately.</p><a class="btn btn-primary" href="receipts.html">Upload new receipts</a> <a class="btn btn-secondary" href="playbook.html">Review learned policies</a></div></section>`;return;}
     view.innerHTML = counts() + uploadPanel() + (incoming?`<div class="actions"><a class="btn btn-primary" href="reconcile.html">Continue to reconciliation</a></div>`:coveragePanel()) + `<div id="mapping"></div><div id="label"></div>`;
-    view.querySelectorAll('input[type="file"]').forEach((inp) =>
-      inp.addEventListener("change", () => inp.files[0] && upload(inp.dataset.role, inp.files[0])));
+    wireDrop();
+    drawFiles();
     const d = document.getElementById("derive");
     if (d) d.addEventListener("click", derive);
     const g = document.getElementById("golabel");
     if (g) g.addEventListener("click", (e) => { e.preventDefault(); labeller(); });
   }
 
-  // --- upload and mapping -------------------------------------------------------------------
-  async function upload(role, file) {
-    const box = document.getElementById("mapping");
-    box.innerHTML = `<section class="panel"><div class="panel-body"><div class="note">
-      <span class="spin"></span> Reading ${esc(file.name)}...</div></div></section>`;
-    try {
-      const raw = await file.arrayBuffer();
-      const up = await CO.postRaw(
-        `/api/onboarding/upload?role=${encodeURIComponent(role)}&filename=${encodeURIComponent(file.name)}&purpose=${incoming?"incoming":"history"}`, raw);
-      box.innerHTML = `<section class="panel"><div class="panel-body"><div class="note">
-        <span class="spin"></span> Working out what each column is...</div></div></section>`;
-      const proposal = await CO.post("/api/onboarding/mapping/propose", { upload_id: up.upload_id });
-      current = { up, mapping: { columns: proposal.columns, sign: proposal.sign, dayfirst: proposal.dayfirst },
-                  why: proposal.why || {}, notes: proposal.notes, source: proposal.source };
-      await validateAndShow();
-      box.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (e) {
-      box.innerHTML = CO.err(e);
+  // --- taking the files in ------------------------------------------------------------------
+  function wireDrop() {
+    const zone = document.getElementById("drop");
+    const pick = document.getElementById("pick");
+    pick.addEventListener("change", () => { absorb([...pick.files]); pick.value = ""; });
+    ["dragenter", "dragover"].forEach((e) => zone.addEventListener(e, (ev) => {
+      ev.preventDefault(); zone.classList.add("over");
+    }));
+    ["dragleave", "drop"].forEach((e) => zone.addEventListener(e, (ev) => {
+      ev.preventDefault(); zone.classList.remove("over");
+    }));
+    zone.addEventListener("drop", (ev) => absorb([...(ev.dataTransfer.files || [])]));
+  }
+
+  /* Read the files one at a time rather than all at once: each one is a request that stages a
+     copy on the server, and a folder of twenty is a burst worth not sending in parallel. */
+  async function absorb(files) {
+    for (const file of files) {
+      const entry = { key: `f${++seq}`, file, filename: file.name, working: true };
+      dropped.push(entry);
+      drawFiles();
+      await identify(entry);
+      drawFiles();
     }
   }
 
-  async function validateAndShow() {
-    const res = await CO.post("/api/onboarding/mapping/validate",
-      { upload_id: current.up.upload_id, mapping: current.mapping });
-    current.check = res;
+  async function identify(entry, opts = {}) {
+    const q = new URLSearchParams({ filename: entry.filename, purpose: incoming ? "incoming" : "history" });
+    if (opts.role) q.set("role", opts.role);
+    if (opts.use_llm) q.set("use_llm", "true");
+    entry.working = true;
+    entry.error = null;
+    try {
+      const card = await CO.postRaw(`/api/onboarding/identify?${q}`, await entry.file.arrayBuffer());
+      Object.assign(entry, card, { working: false });
+      // showMapping and the importer both read this shape, so keep one of them.
+      entry.up = { upload_id: card.upload_id, filename: card.filename, rows: card.rows,
+                   role: card.role, header: card.header, encoding: card.encoding,
+                   delimiter: card.delimiter, skipped_preamble: card.skipped_preamble };
+    } catch (e) {
+      entry.working = false;
+      entry.error = e.message;
+    }
+  }
+
+  function status(entry) {
+    if (entry.working) return { word: "reading", cls: "state" };
+    if (entry.error) return { word: "failed", cls: "state-escalate" };
+    if (entry.blocked) return { word: "needs you", cls: "state-escalate" };
+    if (!entry.role) return { word: "unplaced", cls: "state-escalate" };
+    if (entry.check && !entry.check.ok) return { word: "check columns", cls: "state-carry" };
+    if (entry.check && entry.check.stats.date_format_ambiguous) return { word: "check dates", cls: "state-carry" };
+    if (entry.close) return { word: "close call", cls: "state-carry" };
+    return { word: "ready", cls: "state-book" };
+  }
+
+  const ready = () => dropped.filter((e) => e.upload_id && e.check && e.check.ok &&
+                                            !e.check.stats.date_format_ambiguous);
+
+  function drawFiles() {
+    const box = document.getElementById("files");
+    if (!box) return;
+    if (!dropped.length) { box.innerHTML = ""; drawBatch(); return; }
+    box.innerHTML = `<div class="table-wrap"><table class="grid tight files"><thead><tr>
+        <th>File</th><th>What we make of it</th><th>Why</th><th></th><th></th></tr></thead>
+      <tbody>${dropped.map((e) => fileRow(e)).join("")}</tbody></table></div>`;
+    box.querySelectorAll("[data-kind]").forEach((sel) => sel.addEventListener("change", async () => {
+      const entry = dropped.find((e) => e.key === sel.dataset.kind);
+      await identify(entry, { role: sel.value });
+      drawFiles();
+      if (current && current.key === entry.key) review(entry.key);
+    }));
+    box.querySelectorAll("[data-review]").forEach((b) => b.addEventListener("click",
+      () => review(b.dataset.review)));
+    box.querySelectorAll("[data-ask]").forEach((b) => b.addEventListener("click", async () => {
+      const entry = dropped.find((e) => e.key === b.dataset.ask);
+      await identify(entry, { use_llm: true });
+      drawFiles();
+    }));
+    box.querySelectorAll("[data-drop]").forEach((b) => b.addEventListener("click", () => {
+      dropped = dropped.filter((e) => e.key !== b.dataset.drop);
+      if (current && current.key === b.dataset.drop) { current = null; document.getElementById("mapping").innerHTML = ""; }
+      drawFiles();
+    }));
+    drawBatch();
+  }
+
+  function fileRow(entry) {
+    const st = status(entry);
+    const note = entry.error || entry.blocked ||
+      (entry.duplicate_of ? "You already uploaded this file. Importing it again changes nothing." : "") ||
+      entry.why || "";
+    return `<tr class="r">
+      <td><b>${esc(entry.filename)}</b>${entry.rows !== undefined
+        ? `<div class="faint">${entry.rows.toLocaleString()} row${entry.rows === 1 ? "" : "s"}</div>` : ""}</td>
+      <td>${entry.working ? `<span class="spin"></span>` : `
+        <select class="select" data-kind="${entry.key}">
+          <option value="">not sure</option>
+          ${ROLES.map(([role, label]) => `<option value="${role}" ${entry.role === role ? "selected" : ""}>${esc(label)}</option>`).join("")}
+        </select>
+        ${entry.role && entry.confidence ? `<div class="faint">${Math.round(entry.confidence * 100)}% sure${entry.source === "you" ? ", your choice" : entry.source === "model" ? ", the model" : ""}</div>` : ""}`}</td>
+      <td class="faint">${esc(note)}</td>
+      <td><span class="state ${st.cls}">${st.word}</span></td>
+      <td>${entry.upload_id ? `<button class="btn btn-sm btn-secondary" data-review="${entry.key}">Check columns</button> ` : ""}
+        ${!entry.role && !entry.working ? `<button class="btn btn-sm btn-secondary" data-ask="${entry.key}">Ask the model</button> ` : ""}
+        <button class="btn btn-sm btn-ghost" data-drop="${entry.key}">Remove</button></td>
+    </tr>`;
+  }
+
+  function drawBatch() {
+    const box = document.getElementById("batch");
+    if (!box) return;
+    const n = ready().length, waiting = dropped.length - n;
+    if (!dropped.length) { box.innerHTML = ""; return; }
+    box.innerHTML = `<div class="actions" style="margin-top:16px">
+      <button class="btn btn-primary" id="importall" ${n ? "" : "disabled"}>Import ${n} file${n === 1 ? "" : "s"}</button>
+      ${waiting ? `<span class="faint">${waiting} still ${waiting === 1 ? "needs" : "need"} you</span>` : ""}
+      <span id="batchmsg" class="muted"></span></div>`;
+    document.getElementById("importall").addEventListener("click", importAll);
+  }
+
+  async function importAll() {
+    const files = ready();
+    const msg = document.getElementById("batchmsg");
+    document.getElementById("importall").disabled = true;
+    msg.className = "muted"; msg.textContent = "Importing...";
+    try {
+      const job = await CO.post("/api/onboarding/import/batch", {
+        files: files.map((e) => ({ upload_id: e.upload_id, mapping: e.mapping })) });
+      const done = await CO.watch(job.job_id, (r) => { msg.textContent = r.phase || r.state; });
+      if (done.state !== "done") throw new Error(done.error || "import failed");
+      const r = done.result;
+      const keep = dropped.filter((e) => !files.includes(e) ||
+        r.failed.some((f) => f.filename === e.filename));
+      dropped = keep;
+      current = null;
+      await render();
+      const box = document.getElementById("batch");
+      box.innerHTML = `<div class="note ${r.failed.length ? "bad" : "good"}">
+        ${r.inserted.toLocaleString()} records added, ${r.updated.toLocaleString()} updated, in the
+        order ${r.order.map((x) => esc(LABELS[x] || x)).join(" then ")}.
+        ${r.failed.map((f) => `<br>${esc(f.filename)}: ${esc(f.error)}`).join("")}</div>
+        ${r.warnings.map((w) => `<div class="note">${esc(w)}</div>`).join("")}`;
+    } catch (e) {
+      msg.className = "note bad"; msg.textContent = e.message;
+      drawBatch();
+    }
+  }
+
+  // --- checking one file's columns ----------------------------------------------------------
+  function review(key) {
+    const entry = dropped.find((e) => e.key === key);
+    if (!entry || !entry.upload_id) return;
+    current = entry;
     showMapping();
+    document.getElementById("mapping").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function validateAndShow() {
+    current.check = await CO.post("/api/onboarding/mapping/validate",
+      { upload_id: current.up.upload_id, mapping: current.mapping });
+    showMapping();
+    drawFiles();
   }
 
   function showMapping() {
     const { up, mapping, check } = current;
     const cols = up.header;
-    const fields = Object.keys(check.stats ? {} : {});
     const spec = FIELD_LIST(up.role);
     const box = document.getElementById("mapping");
     const s = check.stats || {};
     box.innerHTML = `<section class="panel" id="mapcard">
       <div class="panel-head"><h3>${esc(up.filename)}</h3>
-        <span class="faint">${up.rows.toLocaleString()} rows · ${esc(up.encoding)} · delimiter "${esc(up.delimiter)}"${up.skipped_preamble ? ` · skipped ${up.skipped_preamble} row(s) above the header` : ""}</span></div>
+        <span class="faint">${esc(LABELS[up.role] || up.role)} · ${up.rows.toLocaleString()} rows · ${esc(up.encoding)} · delimiter "${esc(up.delimiter)}"${up.skipped_preamble ? ` · skipped ${up.skipped_preamble} row(s) above the header` : ""}</span></div>
       <div class="panel-body">
-        ${current.source === "heuristic" ? `<div class="note">Matched by name, without the model. Check it closely.</div>` : ""}
-        ${current.notes ? `<p class="faint">${esc(current.notes)}</p>` : ""}
+        <div class="note">Matched by column name, without the model. ${esc(current.why || "")}</div>
+        ${current.close ? `<div class="note bad">This reads almost as well as
+          ${esc(LABELS[current.alternatives[0]] || current.alternatives[0] || "another kind")}.
+          Check the preview below before importing.</div>` : ""}
         <div class="table-wrap"><table class="grid tight"><thead><tr>
-          <th>We need</th><th>Your column</th><th>Why</th></tr></thead><tbody>
+          <th>We need</th><th>Your column</th></tr></thead><tbody>
           ${spec.map((f) => `<tr class="r">
             <td><b>${esc(f.field)}</b>${f.required ? "" : ' <span class="faint">optional</span>'}</td>
             <td><select class="select" data-map="${esc(f.field)}">
               <option value="">not in this file</option>
               ${cols.map((c) => `<option value="${esc(c)}" ${mapping.columns[f.field] === c ? "selected" : ""}>${esc(c)}</option>`).join("")}
             </select></td>
-            <td class="faint">${esc(current.why[f.field] || "")}</td>
           </tr>`).join("")}
         </tbody></table></div>
 
@@ -168,9 +320,8 @@
         ${previewBlock(check)}
 
         <div class="actions" style="margin-top:16px">
-          <button class="btn btn-primary" id="commit" ${check.ok ? "" : "disabled"}>Import ${up.rows.toLocaleString()} rows</button>
-          <button class="btn btn-ghost" id="cancelmap">Cancel</button>
-          <span id="impmsg" class="muted"></span>
+          <button class="btn btn-primary" id="commit" ${check.ok ? "" : "disabled"}>These columns are right</button>
+          <span class="faint">Nothing is written until you import.</span>
         </div>
       </div>
     </section>`;
@@ -251,34 +402,12 @@
     box.querySelectorAll("[data-df]").forEach((b) => b.addEventListener("click", async () => {
       current.mapping.dayfirst = b.dataset.df === "1"; await validateAndShow();
     }));
-    document.getElementById("cancelmap").addEventListener("click", () => {
-      current = null; document.getElementById("mapping").innerHTML = "";
-    });
-    document.getElementById("commit").addEventListener("click", commit);
-  }
-
-  async function commit() {
-    const msg = document.getElementById("impmsg");
-    msg.className = "muted"; msg.textContent = "Importing...";
-    try {
-      const job = await CO.post("/api/onboarding/import",
-        { upload_id: current.up.upload_id, mapping: current.mapping });
-      const done = await CO.watch(job.job_id, (r) => { msg.textContent = r.phase; });
-      if (done.state !== "done") throw new Error(done.error || "import failed");
-      const r = done.result;
-      msg.className = "note good";
-      msg.textContent = `${r.inserted} added, ${r.updated} updated` +
-        (r.errors.length ? `, ${r.errors.length} skipped` : "");
+    document.getElementById("commit").addEventListener("click", () => {
       current = null;
-      await render();
-      if (r.warnings && r.warnings.length) {
-        document.getElementById("mapping").innerHTML =
-          `<section class="panel"><div class="panel-body">${r.warnings.map((w) =>
-            `<div class="note">${esc(w)}</div>`).join("")}</div></section>`;
-      }
-    } catch (e) {
-      msg.className = "note bad"; msg.textContent = e.message;
-    }
+      document.getElementById("mapping").innerHTML = "";
+      drawFiles();
+      document.getElementById("files").scrollIntoView({ behavior: "smooth", block: "center" });
+    });
   }
 
   // --- derive and label ---------------------------------------------------------------------

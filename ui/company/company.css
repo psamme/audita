@@ -30,9 +30,22 @@
 .people label { display: inline-flex; align-items: center; gap: var(--s-2); white-space: nowrap; }
 
 .drop { border: 1px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--s-5);
-  text-align: center; color: var(--ink-3); background: var(--surface-2); }
+  text-align: center; color: var(--ink-3); background: var(--surface-2); cursor: pointer;
+  display: block; }
+.drop b { display: block; color: var(--ink); margin-bottom: var(--s-1); }
+.drop .faint { max-width: 34rem; margin: 0 auto; }
 .drop.over { border-color: var(--ink); color: var(--ink); }
 .drop input[type="file"] { display: none; }
+
+/* One row per file handed over: what it is, why we think so, and what still needs a person. */
+.files th, .files td { vertical-align: top; text-align: left; }
+.files td:nth-child(2) { min-width: 13rem; }
+.files td:nth-child(3) { max-width: 26rem; }
+.files td:last-child { white-space: nowrap; text-align: right; }
+.files .select { width: 100%; }
+details.kinds { margin-top: var(--s-5); }
+details.kinds > summary { font-size: var(--t-sm); color: var(--ink-3); cursor: pointer; }
+details.kinds[open] > summary { margin-bottom: var(--s-3); }
 
 .roles { display: grid; gap: var(--s-2); }
 .role-row { display: grid; grid-template-columns: 14rem 1fr auto; gap: var(--s-3); align-items: center;
@@ -92,3 +105,34 @@
 .stat span { font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
 
 .workspace-hero{padding:38px;margin:16px 0 24px}.workspace-hero h1{font-size:42px;line-height:1.1;max-width:700px;margin:18px 0}.workspace-hero p{font-size:17px;line-height:1.6;max-width:680px}.workspace-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:24px}.workspace-card{padding:24px;color:inherit;text-decoration:none}.workspace-card h2{font-size:21px;margin:15px 0}.workspace-card p{line-height:1.6;min-height:100px}.workspace-card:hover{border-color:var(--ink)}@media(max-width:850px){.workspace-cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.workspace-cards{grid-template-columns:1fr}.workspace-hero{padding:24px}.workspace-hero h1{font-size:32px}}
+
+/* Role combobox on the roster. The chevron is always drawn, so the field reads as a list and not
+   as another free-text box, and the input reserves room for it so a long role is never sat on. */
+.combo { position: relative; }
+.combo .input { padding-right: 34px; text-overflow: ellipsis; }
+.combo-toggle {
+  position: absolute; top: 1px; right: 1px; bottom: 1px; width: 30px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; background: none; color: var(--ink-3); cursor: pointer;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.combo-toggle:hover { color: var(--ink); }
+.combo-toggle svg {
+  width: 10px; height: 6px; fill: none; stroke: currentColor;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform 120ms ease;
+}
+.combo.open .combo-toggle svg { transform: rotate(180deg); }
+.combo-list {
+  position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0;
+  max-height: 15rem; overflow-y: auto; margin: 0; padding: var(--s-1); list-style: none;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-sm);
+  box-shadow: 0 8px 24px rgba(13, 13, 13, 0.14);
+}
+.combo-list[hidden] { display: none; }
+.combo-list li {
+  padding: 6px 9px; border-radius: 4px; font-size: var(--t-sm); color: var(--ink);
+  cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.combo-list li:hover { background: var(--surface-2); }
+.combo-list li[aria-selected="true"] { background: var(--invert); color: var(--invert-ink); }

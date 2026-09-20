@@ -41,6 +41,7 @@ uv run python -m shadow.pipeline A 2026-03 --track dev --no-llm                 
 
 | Path | What |
 |---|---|
+| `shadow/onboard/classify.py` | what each dropped file is, from its columns; the file name only breaks ties |
 | `shadow/matcher.py` | tier 0, deterministic, abstains unless a match is mutually unique |
 | `shadow/guardrails.py` | controls no playbook can switch off (changed payee bank details, duplicate payments) |
 | `shadow/rules.py` | tier 1, the rule language and its executor; abstains when two items claim one entry |

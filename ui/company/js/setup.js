@@ -98,7 +98,6 @@
               </tr></thead>
               <tbody id="rows"></tbody>
             </table>
-            <datalist id="roles">${ROLE_SUGGESTIONS.map((r) => `<option value="${r}">`).join("")}</datalist>
             <div class="actions" style="margin-top: 12px">
               <button type="button" class="btn btn-secondary btn-sm" id="add">Add someone</button>
             </div>
@@ -151,14 +150,23 @@
 
   function renderPeople(focus) {
     const rows = document.getElementById("rows");
+    closeCombo();
     rows.innerHTML = state.people.map((p, i) => `
       <tr>
         <td><input class="input" data-f="id" data-i="${i}" value="${esc(p.id)}"
                    placeholder="${EXAMPLES[i % EXAMPLES.length][0]}" aria-label="Person ${i + 1} id"></td>
         <td><input class="input" data-f="name" data-i="${i}" value="${esc(p.name)}"
                    placeholder="${EXAMPLES[i % EXAMPLES.length][1]}" aria-label="Person ${i + 1} name"></td>
-        <td><input class="input" data-f="role" data-i="${i}" value="${esc(p.role)}"
-                   list="roles" placeholder="bookkeeper" aria-label="Person ${i + 1} role"></td>
+        <td><div class="combo">
+          <input class="input" data-f="role" data-i="${i}" value="${esc(p.role)}"
+                 placeholder="bookkeeper" aria-label="Person ${i + 1} role" autocomplete="off"
+                 role="combobox" aria-autocomplete="list" aria-expanded="false"
+                 aria-controls="rolelist-${i}">
+          <button type="button" class="combo-toggle" tabindex="-1" aria-hidden="true">
+            <svg viewBox="0 0 10 6"><path d="M1 1l4 4 4-4"/></svg></button>
+          <ul class="combo-list" id="rolelist-${i}" role="listbox"
+              aria-label="Role suggestions" hidden></ul>
+        </div></td>
         <td><label><input type="checkbox" data-f="senior" data-i="${i}"
                    ${p.senior ? "checked" : ""}> senior</label></td>
         <td><button type="button" class="btn btn-ghost btn-sm" data-rm="${i}"
@@ -175,6 +183,7 @@
       });
       if (field === "senior") el.addEventListener("change", () => { p.senior = el.checked; refreshDerived(); });
     });
+    rows.querySelectorAll(".combo").forEach(wireCombo);
     rows.querySelectorAll("[data-rm]").forEach((b) => b.addEventListener("click", () => {
       state.people.splice(+b.dataset.rm, 1);
       if (!state.people.length) state.people.push({ id: "", name: "", role: "", senior: false });
@@ -187,6 +196,103 @@
       if (el) el.focus();
     }
     refreshDerived();
+  }
+
+  /* Role used to be a native <datalist>. Two things were wrong with that. The field looked exactly
+     like the free-text Id and Name beside it, so nothing said a list was there until it had focus,
+     and the browser filters a datalist against whatever is already in the box, so opening a row
+     that came prefilled with "bookkeeper" offered one suggestion out of eight. Clicking the field
+     here always offers the whole list and typing narrows it. A role that is not on the list is
+     still accepted, because these are suggestions and not a fixed set. */
+  let openCombo = null;
+
+  function closeCombo() {
+    if (!openCombo) return;
+    openCombo.list.hidden = true;
+    openCombo.wrap.classList.remove("open");
+    openCombo.input.setAttribute("aria-expanded", "false");
+    openCombo.input.removeAttribute("aria-activedescendant");
+    openCombo = null;
+  }
+
+  document.addEventListener("mousedown", (e) => {
+    if (openCombo && !openCombo.wrap.contains(e.target)) closeCombo();
+  });
+
+  function wireCombo(wrap) {
+    const input = wrap.querySelector("[data-f='role']");
+    const list = wrap.querySelector(".combo-list");
+    const toggle = wrap.querySelector(".combo-toggle");
+    let shown = [];
+    let active = -1;
+    let committing = false;
+
+    function paint() {
+      list.innerHTML = shown.map((r, n) =>
+        `<li role="option" id="${list.id}-o${n}" aria-selected="${n === active}">${esc(r)}</li>`
+      ).join("");
+      if (active < 0) return input.removeAttribute("aria-activedescendant");
+      input.setAttribute("aria-activedescendant", `${list.id}-o${active}`);
+      list.children[active].scrollIntoView({ block: "nearest" });
+    }
+
+    // all=true is the click and arrow-key path: show everything, whatever is already typed.
+    function open(all) {
+      const q = input.value.trim().toLowerCase();
+      shown = (all || !q) ? ROLE_SUGGESTIONS.slice()
+                          : ROLE_SUGGESTIONS.filter((r) => r.includes(q));
+      if (!shown.length) return closeCombo();
+      closeCombo();
+      active = shown.indexOf(q);
+      openCombo = { wrap, input, list };
+      list.hidden = false;
+      wrap.classList.add("open");
+      input.setAttribute("aria-expanded", "true");
+      paint();
+    }
+
+    // State is written in one place, on the [data-f] binding above, so picking goes through it.
+    function commit(role) {
+      committing = true;
+      input.value = role;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      committing = false;
+      closeCombo();
+    }
+
+    function move(d) {
+      if (list.hidden) return open(true);
+      active = (active + d + shown.length) % shown.length;
+      paint();
+    }
+
+    input.addEventListener("click", () => { if (list.hidden) open(true); });
+    input.addEventListener("input", () => { if (!committing) open(false); });
+    // Deferred, because during focusout the focus has not landed yet: pressing the chevron blurs
+    // the field on the way to the button, and closing there would make every press reopen.
+    input.addEventListener("focusout", () => setTimeout(() => {
+      if (openCombo && openCombo.wrap === wrap && !wrap.contains(document.activeElement)) closeCombo();
+    }, 0));
+    toggle.addEventListener("click", () => {
+      const reopen = list.hidden;
+      input.focus();
+      if (reopen) open(true); else closeCombo();
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); move(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
+      else if (e.key === "Enter" && !list.hidden) {
+        // Enter takes the highlighted role. Without this it would submit the form instead.
+        e.preventDefault();
+        if (active >= 0) commit(shown[active]); else closeCombo();
+      } else if (e.key === "Escape" && !list.hidden) { e.preventDefault(); closeCombo(); }
+      else if (e.key === "Tab") closeCombo();
+    });
+    list.addEventListener("mousedown", (e) => e.preventDefault()); // keep the caret in the field
+    list.addEventListener("click", (e) => {
+      const li = e.target.closest("li");
+      if (li) commit(shown[[...list.children].indexOf(li)]);
+    });
   }
 
   function addPerson() {
