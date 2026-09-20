@@ -1,7 +1,7 @@
 """Package only the recorded demonstration and aggregate benchmark for static hosting.
 
 python3 scripts/build_public_demo.py
-npx vercel deploy work/public-demo --prod --yes --project audita-hackmit
+# Archived recording package only. Use build_live_demo.py for the production website.
 
 The recording is checked in. Regenerate it with export_stage_replay.py only when
 changing the demo sequence. No company uploads, credentials or backend are copied.

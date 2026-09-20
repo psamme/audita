@@ -54,8 +54,8 @@ Benchmark scoring context: BenchRec cash v1.0 contains anonymised production ban
 
 ## Submission links
 
-Public recorded interactive demo and benchmark: https://audita-hackmit.vercel.app
+Live interactive demo and benchmark: https://audita-hackmit.vercel.app
 
 Public source code: https://github.com/psamme/audita
 
-The public site replays measured approval and undo execution with synthetic sample companies, then explains the separate real-data BenchRec result. The local application runs live approval, policy changes and undo.
+The public site runs live policy preview, approval and undo against isolated synthetic sample workspaces, and explains the separate real-data BenchRec result. The backend is hosted on the judging laptop for the hackathon. A recorded offline fallback is included.
