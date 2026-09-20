@@ -83,7 +83,7 @@
     if (month4.length) {
       const tag = `<span class="state ${m.test_set === "blind" ? "" : "state-proposed"}">${m.test_set === "blind" ? "Blind test set" : "Interim test set"}</span>`;
       for (const [id, c] of month4) blocks.push(clientBlock(`${name[id] || id} · ${period(m.period)}`, order.filter((k) => c[k]).map((k) => [k, c[k]]), tag));
-      summary.innerHTML = m.test_set === "blind" ? "" : `<span class="state state-proposed">Interim test set</span><span>${esc(period(m.period))} numbers use a test set built by the agent and predate the last fixes in the frozen code. Never the headline: the teammate's blind set replaces them.</span>`;
+      summary.innerHTML = m.test_set === "blind" ? "" : `<span class="state state-proposed">Interim test set</span><span>${esc(period(m.period))} numbers use a test set built by a separate agent. The agent code cannot open its key. For numbers nobody here wrote, see <a href="real.html">Real ledger</a>, graded against a bank's own analysts.</span>`;
     } else {
       // month 4 not graded yet: show the March holdout, and say so
       for (const id of ["A", "B"]) {
