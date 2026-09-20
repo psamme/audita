@@ -1,5 +1,10 @@
 # Audita
 
+**HackMIT demo:** [Open the recorded interactive demo](https://audita-hackmit.vercel.app) · [Three-minute presentation guide](docs/PRESENTATION.md).
+
+For the live queue, run `uv run python demo_stage.py --data-dir work/judging-submission --port 8795` and open `http://127.0.0.1:8795/`. The public recording requires no local server.
+
+
 HackMIT 2026, Maximor track: "Agentic Systems for the Office of the CFO."
 
 Bank-to-ledger reconciliation where the agent gets **no per-client configuration**. It reads how a client's finance team resolved past exceptions, writes that client's **playbook** (human-readable rules, each citing the precedents behind it), and a controller signs off the playbook once instead of reviewing every transaction.

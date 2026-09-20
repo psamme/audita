@@ -50,3 +50,12 @@ Three repeats per condition with ranges, drift detection beyond the conflict pat
 
 
 Benchmark scoring context: BenchRec cash v1.0 contains anonymised production bank and general-ledger transactions. The evaluation contains 32,048 bank lines, 31,836 with labelled ledger matches. Pair-level correctness means every attached ledger entry belongs to the labelled group; partial groups can count as correct. Requiring the exact complete group yields 96.50% precision and 87.46% coverage. We use our own scorer, applied equally to the supplied reference baseline, not an official leaderboard score. Training and evaluation dates overlap; this is a held-out transaction split, not a future-period test. These results evaluate the separate BenchRec implementation, not the company upload workflow. Dataset context: https://www.operartis.com/benchrec
+
+
+## Submission links
+
+Public recorded interactive demo and benchmark: https://audita-hackmit.vercel.app
+
+Public source code: https://github.com/psamme/shadow-onboarding
+
+The public site replays measured approval and undo execution with synthetic sample companies, then explains the separate real-data BenchRec result. The local application runs live approval, policy changes and undo.

@@ -69,10 +69,11 @@
   async function render() {
     try { sessionStorage.setItem("so-audit-client", client); } catch (e) {}
     seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === client)));
+    dl.hidden = false;
     dl.href = `/api/audit/${client}/download`;
     let r;
     try { r = await get(`/api/audit/${client}`); } catch (e) {
-      summary.innerHTML = ""; view.innerHTML = `<div class="panel error">No audit for this client yet. Run <span class="mono">uv run python -m shadow.auditor --client ${esc(client)} --run runs/${esc(client)}_2026-04_corrected</span></div>`; return;
+      dl.hidden = true; summary.innerHTML = ""; view.innerHTML = `<section class="panel"><div class="panel-body"><h3>No saved audit in this sample workspace</h3><p>The audit screen shows independent checks of a completed reconciliation run. The prepared judging flow focuses on policy review, approval and undo.</p><a class="btn btn-primary" href="queue.html?track=stage&present=1">Return to the review queue</a> <a class="btn btn-secondary" href="real.html?track=stage&present=1">See benchmark evidence</a></div></section>`; return;
     }
     const t = r.team, rp = r.reperformance, sev = r.findings_by_severity;
     const tests = r.controls.length + r.consistency.length, passed = [...r.controls, ...r.consistency].filter((k) => k.status === "pass").length;
