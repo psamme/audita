@@ -12,6 +12,7 @@
     ["playbook.html", "Playbook"],
     ["receipts.html", "New receipts"],
     ["reconcile.html", "Review"],
+    ["../real.html?track=main", "Benchmark"],
   ];
   const here = location.pathname.split("/").pop() || "setup.html";
   const nav = document.querySelector(".nav");

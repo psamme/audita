@@ -10,6 +10,15 @@
   if (SO.track === "stage") document.querySelector(".mark").href = "queue.html?track=stage";
   if (nav) nav.innerHTML = NAV.map(([href, label]) => `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
 
+  // Only the combined app provides company onboarding.
+  if (nav) fetch("/api/onboarding/company").then((r) => {
+    if (r.ok && (r.headers.get("content-type") || "").includes("json")) {
+      const link = document.createElement("a");
+      link.href = "/company/index.html?track=main"; link.textContent = "Workspace";
+      nav.append(link);
+    }
+  }).catch(() => {});
+
   // Sam picked the white stone (Statuario, medium veining, whole page) as the look. Dark stays a toggle,
   // but the OS theme no longer decides, so the demo opens the same way on any machine.
   let stone = "statuario";

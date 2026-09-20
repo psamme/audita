@@ -28,12 +28,17 @@
   if (rehearsal) banner("banner-rehearsal", `<b>REHEARSAL (${track} track)</b><span>Corrections and answers here do not touch the main playbook.</span><a href="?track=main">Turn off</a>`);
 
   async function get(path) {
+    let detail = "";
     try {
       const res = await fetch(path, { headers: { accept: "application/json" } });
       if (res.ok && (res.headers.get("content-type") || "").includes("json")) return await res.json();
+      if ((res.headers.get("content-type") || "").includes("json")) {
+        const problem = await res.json();
+        if (typeof problem.detail === "string") detail = problem.detail;
+      }
     } catch (e) { /* server not running */ }
     const file = FIXTURES[path.split("?")[0]];
-    if (!file) throw new Error("No data for " + path + ". Start the server: uv run uvicorn shadow.server:app --port 8787");
+    if (!file) throw new Error(detail || "This report is not available in this workspace yet. Return to the review queue or try again after the report is prepared.");
     usedFixture = true;
     banner("banner-fixture", `<b>FIXTURE DATA, NOT LIVE</b><span>The server is not running, so this page shows a saved example.</span>`);
     return (await fetch(file)).json();

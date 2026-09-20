@@ -1,0 +1,147 @@
+{
+  "client": "Client C: a real bank's cash desk",
+  "dataset": "BenchRec cash v1.0 (Kaggle, CC BY 4.0): real, anonymised bank-to-ledger lines labelled by the bank's analysts",
+  "generated_at": "2026-09-20T13:00:44+00:00",
+  "code_commit": "7647d23",
+  "protocol": [
+    "Matcher thresholds tuned on the train split only.",
+    "Conventions induced from the analysts' resolutions in the train split only; bands chosen by back-test on train.",
+    "The eval split is the dataset authors' own held-out file. Its value dates overlap the end of the train period, so it is held out by line, not by calendar.",
+    "One pass over the eval split with everything frozen. The answer key (solution.csv) is opened only by the grader.",
+    "A convention executes only if it agrees with the analysts on at least 98% of the train lines it touches.",
+    "Correct means pair level: every ledger allocation we attach belongs to that bank line's labelled match. Strict (exact set) is reported beside it."
+  ],
+  "train": {
+    "bank_lines": 68975,
+    "ledger_lines": 80879,
+    "from": "2015-03-08",
+    "to": "2023-03-05",
+    "analyst_closed_groups": 11054
+  },
+  "eval": {
+    "bank_lines": 32048,
+    "matchable": 31836,
+    "ledger_lines": 37123,
+    "from": "2022-12-21",
+    "to": "2023-05-31"
+  },
+  "tiers": {
+    "shipped_baseline": {
+      "matched": 20800,
+      "correct_pair": 20686,
+      "precision_pair": 0.9945192307692308,
+      "match_rate_pair": 0.649767558738535,
+      "precision_strict": 0.9520192307692308,
+      "match_rate_strict": 0.6220002512878502,
+      "left_for_review": 0.3509735396904643,
+      "wrong_pair": 114
+    },
+    "matcher": {
+      "matched": 28551,
+      "correct_pair": 28519,
+      "precision_pair": 0.9988791986270183,
+      "match_rate_pair": 0.895809775097374,
+      "precision_strict": 0.9650450071801338,
+      "match_rate_strict": 0.8654667671818067,
+      "left_for_review": 0.10911757363954067,
+      "wrong_pair": 32
+    },
+    "matcher_plus_conventions": {
+      "matched": 28855,
+      "correct_pair": 28818,
+      "precision_pair": 0.9987177265638537,
+      "match_rate_pair": 0.9052016584998115,
+      "precision_strict": 0.9649974007970888,
+      "match_rate_strict": 0.8746387737152909,
+      "left_for_review": 0.09963180229655522,
+      "wrong_pair": 37
+    }
+  },
+  "residue": {
+    "bank_lines_left_by_matcher": 3497,
+    "cleared_by_conventions": 304,
+    "matched_to_ledger_by_conventions": 304,
+    "right_pair": 299,
+    "precision_pair": 0.9835526315789473,
+    "declared_no_ledger_side": {
+      "bank_lines": 0,
+      "right": 0
+    },
+    "share_of_residue_cleared": 0.0869316557048899,
+    "escalated_with_a_suggestion": 817,
+    "suggestions_that_were_right": 716,
+    "escalated_other": {
+      "no_ledger_candidate": 1131,
+      "one_same_amount_candidate_outside_every_band": 73,
+      "several_same_amount_candidates": 1172
+    },
+    "still_for_a_person": 3193,
+    "model_calls": 0,
+    "model_cost_usd": 0.0
+  },
+  "by_convention_on_eval": {
+    "penny_difference": {
+      "bank_lines": 304,
+      "right": 299,
+      "precision": 0.9835526315789473
+    }
+  },
+  "operators": [
+    {
+      "operator": "PATACO",
+      "kind": "matching engine (inferred: never closes anything manually)",
+      "groups": 45020,
+      "share_manual": 0.0,
+      "share_one_to_one": 0.9999555752998667,
+      "share_groups_with_no_ledger_side": 0.0,
+      "one_to_one_groups": 45018,
+      "one_to_one_with_a_difference": 11,
+      "one_to_one_amount_exact": 0.9997556532942379,
+      "one_to_one_same_value_date": 0.9986005597760895,
+      "median_accepted_difference_cents": 35,
+      "p90_accepted_difference_cents": 227
+    },
+    {
+      "operator": "FAECAL",
+      "kind": "analyst",
+      "groups": 10472,
+      "share_manual": 0.8740450725744844,
+      "share_one_to_one": 0.19117647058823528,
+      "share_groups_with_no_ledger_side": 0.03074866310160428,
+      "one_to_one_groups": 2002,
+      "one_to_one_with_a_difference": 1116,
+      "one_to_one_amount_exact": 0.44255744255744256,
+      "one_to_one_same_value_date": 0.7752247752247752,
+      "median_accepted_difference_cents": 6,
+      "p90_accepted_difference_cents": 1820
+    },
+    {
+      "operator": "FAECAL IPL",
+      "kind": "analyst",
+      "groups": 582,
+      "share_manual": 0.4209621993127148,
+      "share_one_to_one": 0.006872852233676976,
+      "share_groups_with_no_ledger_side": 0.058419243986254296,
+      "one_to_one_groups": 4,
+      "one_to_one_with_a_difference": 4,
+      "one_to_one_amount_exact": 0.0,
+      "one_to_one_same_value_date": 0.75,
+      "median_accepted_difference_cents": 15018018,
+      "p90_accepted_difference_cents": 290300000
+    }
+  ],
+  "account_contrast": {
+    "possible": false,
+    "finding": "The dataset holds one account (ACC#00001) in one currency (USD), so it cannot show two clients or two accounts disagreeing. What it does show is who resolves what: the engine closes exact amounts on the same value date (all but a handful of its matches), and the people close everything else under conventions the engine does not have."
+  },
+  "runtime_seconds": 23.0,
+  "notes": [
+    "No model was called anywhere on this page. Every number is from deterministic code and costs $0 to run.",
+    "The scoring script used by the dataset's authors was not available; the grader is our own reading of solution.csv, and the shipped baseline is graded with the same function.",
+    "A bank-side offset is graded right when the key lists no ledger match for either line. It is reported apart from precision and match rate, which only count lines matched to the ledger.",
+    "Operator names are the dataset's own anonymised labels. Which one is the engine is our inference."
+  ],
+  "playbook": [],
+  "examples": [],
+  "summary_only": true
+}
