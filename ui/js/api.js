@@ -32,7 +32,7 @@
     el.id = id; el.className = "banner"; el.setAttribute("role", "status"); el.innerHTML = html;
     document.body.prepend(el);
   }
-  if (rehearsal) banner("banner-rehearsal", `<b>REHEARSAL (${track} track)</b><span>Corrections and answers here do not touch the main playbook.</span><a href="?track=main">Turn off</a>`);
+  if (rehearsal && track !== "stage" && !presenting) banner("banner-rehearsal", `<b>REHEARSAL (${track} track)</b><span>Corrections and answers here do not touch the main playbook.</span><a href="?track=main">Turn off</a>`);
 
   async function get(path) {
     let detail = "";
