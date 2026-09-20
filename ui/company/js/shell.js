@@ -5,21 +5,14 @@
   const canvas = document.getElementById("slab");
   const SEED = 11, VEINING = 0.75;
 
-  const NAV = [
-    ["index.html", "Workspace"],
-    ["setup.html", "Company"],
-    ["import.html", "History"],
-    ["playbook.html", "Playbook"],
-    ["receipts.html", "New receipts"],
-    ["reconcile.html", "Review"],
-    ["../real.html?track=main", "Benchmark"],
-  ];
-  const here = location.pathname.split("/").pop() || "setup.html";
-  const nav = document.querySelector(".nav");
-  if (nav) {
-    nav.innerHTML = NAV.map(([href, label]) =>
-      `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
-  }
+  SO.renderNavigation();
+
+  const steps = document.createElement("nav");
+  steps.className = "company-steps";
+  steps.setAttribute("aria-label", "Company setup progress");
+  const page = location.pathname.split('/').pop();
+  steps.innerHTML = [["setup.html","1. Company"],["import.html","2. History"],["playbook.html","3. Policies"],["receipts.html","4. New receipts"],["reconcile.html","5. Review"]].map(([url,label]) => `<a href="${url}"${page===url ? ' aria-current="step"' : ''}>${label}</a>`).join('');
+  document.querySelector('main').prepend(steps);
 
   const stone = "statuario";
   root.setAttribute("data-stone", stone);

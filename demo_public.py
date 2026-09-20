@@ -1,8 +1,9 @@
 """Public HackMIT API gateway over isolated copies of the prepared sample workspace.
 
-uv run uvicorn demo_public:app --host 127.0.0.1 --port 8796
+uv run uvicorn demo_public:app --host 127.0.0.1 --port 8797
 Only synthetic demo data is reachable. Each visitor owns a cookie-scoped sandbox;
-local company uploads, API-key setup, induction and arbitrary model jobs are blocked.
+the sample API blocks local uploads and arbitrary model jobs. The separate
+company API runs onboarding and background jobs in isolated visitor processes.
 """
 import asyncio
 import json
@@ -47,6 +48,9 @@ def fail(message, code=400):
 @app.middleware('http')
 async def sandbox(request: Request, call_next):
     path = request.url.path
+    if path.startswith('/company-api/'):
+        from public_workspaces import proxy
+        return await proxy(request)
     if not ((request.method == 'GET' and READ.fullmatch(path)) or (request.method == 'POST' and path in WRITE)):
         return fail('This public demo supports the sample review queue, policy approval, undo and benchmark. Company uploads and model training are available in the local app.', 404)
     if request.query_params.get('grades'):

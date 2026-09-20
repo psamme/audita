@@ -71,7 +71,7 @@
             <div class="role-row">
               <div><div class="want">${esc(label)}${required ? "" : ' <span class="faint">optional</span>'}</div></div>
               <div class="req">${esc(note)}</div>
-              <div><a class="faint" href="/api/onboarding/template?role=${role}">CSV template</a></div>
+              <div><a class="faint" href="${window.AUDITA_PUBLIC ? "/company-api" : "/api"}/onboarding/template?role=${role}">CSV template</a></div>
             </div>`).join("")}
           </div>
         </details>

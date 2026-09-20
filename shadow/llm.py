@@ -116,7 +116,8 @@ def _openai_call(system, messages, tools, schema, max_tokens, model):
                             "strict": False} for t in tools]
     if schema:
         kwargs["text"] = {"format": {"type": "json_object"}}
-        kwargs["instructions"] += "\nReturn only JSON matching this schema:\n" + json.dumps(schema)
+        kwargs["input"].insert(0, {"role": "developer", "content":
+            "Return only JSON matching this schema:\n" + json.dumps(schema)})
     response = _openai().responses.create(**kwargs)
     u = response.usage
     cached = getattr(u.input_tokens_details, "cached_tokens", 0) or 0

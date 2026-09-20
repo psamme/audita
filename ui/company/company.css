@@ -136,3 +136,7 @@ details.kinds[open] > summary { margin-bottom: var(--s-3); }
 }
 .combo-list li:hover { background: var(--surface-2); }
 .combo-list li[aria-selected="true"] { background: var(--invert); color: var(--invert-ink); }
+
+.company-steps{display:flex;gap:10px;flex-wrap:wrap;padding:16px 0 24px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.company-steps a{font-size:14px;padding:8px 12px;border-radius:6px;color:var(--ink-2);text-decoration:none}
+.company-steps a[aria-current="step"]{background:var(--ink);color:var(--surface)}

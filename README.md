@@ -13,6 +13,8 @@ Every client has a different system. The real difference is not schema, it is po
 
 ## Company workspace
 
+[Set up your company on the public site](https://audita-hackmit.vercel.app/company/index.html?track=main). Andrew's full onboarding flow is available alongside the sample review queue, with a separate workspace per visitor.
+
 Start `uv run uvicorn shadow.app:app --host 127.0.0.1 --port 8787` and open http://127.0.0.1:8787/.
 Create your company, upload historical decisions, learn its policies, then upload new receipt CSVs with no decisions attached. Shadow reconciles supported cases and sends unresolved items to your review queue. The workspace includes CSV templates and a labelled example pack. See [the company guide](docs/COMPANY_WORKSPACE.md).
 

@@ -22,6 +22,14 @@
     if (location.pathname.startsWith("/company/")) sessionStorage.setItem("so-present", "0");
     presenting = sessionStorage.getItem("so-present") === "1";
   } catch (e) {}
+  // Keep Andrew's full company flow separate from the prepared sample queue.
+  const companyMode = location.pathname.startsWith("/company/") || !track;
+  if (window.AUDITA_PUBLIC && companyMode) {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (input, options) => originalFetch(
+      typeof input === "string" && input.startsWith("/api/")
+        ? input.replace("/api/", "/company-api/") : input, options);
+  }
   const rehearsal = track !== "";
   const withTrack = (path) => (rehearsal ? path + (path.includes("?") ? "&" : "?") + "track=" + track : path);
   const body = (obj) => JSON.stringify(rehearsal ? { ...obj, track } : obj);
