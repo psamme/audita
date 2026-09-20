@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
 from shadow import db, jobs, llm, pipeline, playbook as pbmod
-from shadow.onboard import coldstart, company, importer, mapping, preflight, staging
+from shadow.onboard import coldstart, company, importer, mapping, preflight, staging, boundary
 
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
 jobs_router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -81,13 +81,13 @@ def set_users(r: Roster):
 
 # --- import ---------------------------------------------------------------------------------
 @router.post("/upload")
-async def upload(request: Request, role: str = Query(...), filename: str = Query("upload.csv")):
+async def upload(request: Request, role: str = Query(...), filename: str = Query("upload.csv"), purpose: str = Query("history")):
     """Raw CSV body, so no multipart dependency is needed."""
     raw = await request.body()
     if not raw:
         raise HTTPException(400, "empty upload")
     try:
-        return staging.store(_client(), role, filename, raw)
+        return staging.store(_client(), role, filename, raw, purpose)
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -104,7 +104,7 @@ def propose(p: Proposal):
     except ValueError as e:
         raise HTTPException(404, str(e))
     usage = llm.Usage()
-    out = mapping.propose(up["role"], up["columns"], usage=usage)
+    out = mapping.guess(up["role"], up["columns"]) | {"source": "heuristic", "notes": "Review the column matches before importing. No model call was needed."}
     return out | {"role": up["role"], "upload_id": p.upload_id, "usage": usage.as_dict()}
 
 
@@ -237,7 +237,7 @@ def unlabel(item_id: str):
 # --- learn and run --------------------------------------------------------------------------
 @router.get("/preflight")
 def get_preflight(before: str | None = None):
-    return preflight.run(_client(), before)
+    return preflight.run(_client(), boundary.cutoff(_client()) or before)
 
 
 class Induce(BaseModel):
@@ -249,17 +249,21 @@ class Induce(BaseModel):
 @router.post("/induce")
 def induce(i: Induce):
     client = _client()
-    pre = preflight.run(client, i.before)
+    before = boundary.cutoff(client) or i.before
+    if i.before and boundary.cutoff(client) and i.before != boundary.cutoff(client):
+        raise HTTPException(400, "New receipts are excluded from training.")
+    pre = preflight.run(client, before)
     if not pre["ready"] and not i.force:
         raise HTTPException(409, {"message": "the history cannot teach a playbook yet",
                                   "blocking": [c for c in pre["checks"] if c["level"] == "block"]})
-    before = i.before or pre["before"]
+    before = before or pre["before"]
+    boundary.freeze(client, before)
 
     def work(job):
         job.phase("reading the trail")
         usage = llm.Usage()
         with jobs.client_lock(client):
-            pb = pbmod.induce(client, before, i.track, usage=usage)
+            pb = pbmod.induce(client, before, i.track, usage=usage, db_file=db.DATA / client / "training_snapshot.db")
         approved = sum(r["status"] == "approved" for r in pb["rules"])
         return {"version": pb["version"], "rules": len(pb["rules"]), "approved": approved,
                 "open_questions": sum(bool(r.get("open_question")) for r in pb["rules"]),
@@ -288,13 +292,15 @@ def reconcile_estimate(r: Reconcile):
     """Free: the deterministic tiers alone tell us how many items need the model, and what that
     will cost, before anything is spent."""
     client = _client()
+    boundary.run_period(client, r.period)
     rid = f"estimate_{client}_{r.period}"
     summary = pipeline.run(client, r.period, r.condition, r.track, version=r.version,
-                           use_llm=False, run_id=rid, label="cost estimate")
-    need = summary["tiers"]["investigator"] + summary["tiers"]["guardrail"]
+                           use_llm=False, run_id=rid, label="cost estimate", persist=False)
+    need = summary["tiers"]["investigator"]
+    resolved = sum(i["resolution"]["action"] in {"match", "match_adjust", "book"} for i in summary["items"])
     per_item = 0.09
     return {"period": r.period, "n_items": summary["n_items"], "tiers": summary["tiers"],
-            "needs_model": need, "cleared_free": summary["n_items"] - need,
+            "needs_model": need, "cleared_free": resolved,
             "est_usd": round(need * per_item, 2), "est_seconds": int(20 + need * 4),
             "run_id": rid}
 
@@ -302,14 +308,16 @@ def reconcile_estimate(r: Reconcile):
 @router.post("/reconcile")
 def reconcile(r: Reconcile):
     client = _client()
+    boundary.run_period(client, r.period)
     if r.condition != "zero_shot" and not pbmod.load(client, r.track):
         raise HTTPException(409, "there is no playbook on this track yet: induce one first, or "
                                  "run with condition zero_shot")
 
     def work(job):
         job.phase("guardrails and matching")
-        return pipeline.run(client, r.period, r.condition, r.track, version=r.version,
-                            use_llm=r.use_llm, label="company run")
+        with jobs.client_lock(client):
+            return pipeline.run(client, r.period, r.condition, r.track, version=r.version,
+                                use_llm=r.use_llm, label="company run")
 
     try:
         return jobs.submit("reconcile", client, work,
@@ -324,6 +332,8 @@ def get_job(job_id: str):
     rec = jobs.get(job_id)
     if not rec:
         raise HTTPException(404, "no such job")
+    if rec["client"] != _client():
+        raise HTTPException(404, "no such job")
     return rec
 
 
@@ -337,3 +347,15 @@ def list_jobs(kind: str | None = None, limit: int = 20):
 def cancel_job(job_id: str):
     return {"cancelled": jobs.cancel(job_id),
             "note": "a model call already in flight will finish before the job stops"}
+
+@router.get('/template')
+def csv_template(role: str):
+    import csv
+    import io
+    from fastapi.responses import Response
+    from shadow.onboard import contract
+    if role not in contract.SPECS:
+        raise HTTPException(404, 'No such CSV template')
+    buf = io.StringIO()
+    csv.writer(buf).writerow(contract.fields_for(role))
+    return Response(buf.getvalue(), media_type='text/csv', headers={'Content-Disposition': f'attachment; filename="{role}.csv"'})

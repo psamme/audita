@@ -44,6 +44,8 @@ def create(client: str, name: str, blurb: str, chart: dict, users: list[dict],
     entire escalation vocabulary, and with none of them the investigator rejects every escalation
     it tries to make.
     """
+    if client in {"A", "B"}:
+        raise ValueError("That workspace ID is reserved for the sample companies.")
     if not valid_id(client):
         raise ValueError("company id must be 1 to 8 characters of letters, digits or underscore")
     if not name.strip():
@@ -76,7 +78,9 @@ def create(client: str, name: str, blurb: str, chart: dict, users: list[dict],
         con.close()
 
     CONFIG.parent.mkdir(parents=True, exist_ok=True)
-    CONFIG.write_text(json.dumps({"client": client, "reconciler": reconciler}, indent=1))
+    cfg = json.loads(CONFIG.read_text()) if CONFIG.exists() and configured() == client else {}
+    CONFIG.write_text(json.dumps(cfg | {"client": client, "reconciler": reconciler}, indent=1))
+    register()
     return summary(client)
 
 
@@ -146,7 +150,9 @@ def summary(client: str) -> dict:
     cfg = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
     from shadow import playbook as pbmod
     versions = pbmod.versions(client, "main") if (db.DATA / client / "playbook" / "main").exists() else []
-    return {"client": client, "created": True, "name": info.get("name"),
+    from shadow.onboard import boundary
+    before = boundary.cutoff(client)
+    return {"training_before": before, "incoming_periods": [p for p in periods if before and p >= before], "client": client, "created": True, "name": info.get("name"),
             "blurb": info.get("blurb"), "chart": info.get("chart") or {},
             "close_days": info.get("close_days"), "reconciler": cfg.get("reconciler"),
             "users": users, "counts": counts, "periods": periods,

@@ -5,14 +5,15 @@
   if (SO.track === "stage" || new URLSearchParams(location.search).get("track") === "stage") return;
   const { get, usd, cost, day, esc, role, cap, period, reasonPill, bandBar, outcome, verdict, cite, reasoning, ruleBlock, diffBlock } = SO;
   const view = document.getElementById("view"), summary = document.getElementById("summary"), runSel = document.getElementById("run");
-  let clients = {}, run = null, queue = [], current = null, resultHtml = "";
+  let clients = {}, run = null, queue = [], current = null, resultHtml = "", jevBusy=false;
   // Grades come from the answer key. They stay off screen unless the presenter asks (?grades=1),
   // and even then they sit in their own marked block, never beside the agent's own output.
   const showGrades = new URLSearchParams(location.search).get("grades") === "1";
 
   const text = (rec) => rec.description || rec.memo || rec.id;
-  const SENIOR = { A: "owner", B: "controller" };
-  const ROLES = { A: ["owner", "bookkeeper", "ops_manager"], B: ["controller", "ar_lead", "ap_lead", "staff_accountant"] };
+  const SENIOR = {};
+  const ROLES = {};
+  const companyId = new URLSearchParams(location.search).get("company");
   const TRACE_WORDS = {
     case_file: "Assembled the case file", search_bank: "Searched the bank feed", search_ledger: "Searched the ledger",
     search_documents: "Searched documents", find_precedents: "Looked for how this was handled before", get_record: "Opened a record",
@@ -42,12 +43,12 @@
   function correctionForm(it, chart) {
     const start = it.resolution.proposed || it.resolution;
     const accounts = Object.entries(chart).map(([a, n]) => `<option value="${esc(a)}">${esc(a)} ${esc(n)}</option>`).join("");
-    const roles = ["owner", "controller", "ar_lead", "ap_lead", "ops_manager"].map((r) => `<option value="${r}">${esc(cap(role(r).replace(/^the /, "")))}</option>`).join("");
+    const roles = (clients[run.client]?.senior_roles||[]).map((r) => `<option value="${r}">${esc(cap(role(r).replace(/^the /, "")))}</option>`).join("");
     // who may teach: a junior correction that contradicts a signed-off rule is raised as a conflict, not applied
     const senior = SENIOR[run.client], people = [senior, ...ROLES[run.client].filter((r) => r !== senior)];
     const who = people.map((r) => `<option value="${r}">${esc(cap(role(r).replace(/^the /, "")))}${r === senior ? " (signs off)" : ""}</option>`).join("");
     return `<form id="correct" class="panel">
-      <div class="panel-head"><h3>Correct this</h3><span class="faint small">Your answer becomes a playbook change you can read before it applies anywhere else.</span></div>
+      <div class="panel-head"><h3>Correct this</h3><span class="faint small">Your correction is checked against the evidence before a policy change is saved.</span></div>
       <div class="panel-body formgrid">
         <div class="ctl"><label class="label" for="c-action">What should happen</label>
           <select class="select" id="c-action">
@@ -61,7 +62,7 @@
         <div class="ctl" data-for="escalate"><label class="label" for="c-role">Send to</label><select class="select" id="c-role">${roles}</select></div>
         <div class="ctl"><label class="label" for="c-who">Who is teaching</label><select class="select" id="c-who">${who}</select></div>
         <div class="ctl wide"><label class="label" for="c-note">Why, in your words</label>
-          <textarea class="input" id="c-note" rows="2" placeholder="Quarry always nets their wire fee and a 3% volume rebate. Book the rebate to 4050."></textarea></div>
+          <textarea class="input" id="c-note" rows="2" placeholder="Explain the correct treatment and which source records support it."></textarea></div>
         <div class="wide runrow"><button class="btn btn-primary" id="c-send">Send correction</button><span class="note" id="c-note-status">Takes 10 to 25 seconds. One model call, then a back-test against history.</span></div>
       </div>
     </form>`;
@@ -70,7 +71,7 @@
   function wireForm(it) {
     const form = document.getElementById("correct"), action = document.getElementById("c-action");
     const sync = () => form.querySelectorAll("[data-for]").forEach((el) => { el.hidden = !el.dataset.for.split(" ").includes(action.value); });
-    action.value = "match_adjust"; sync();
+    action.value = it.resolution.proposed?.action || it.resolution.action || "escalate"; sync();
     action.addEventListener("change", sync);
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -189,18 +190,27 @@
       </div>
       <div class="panel"><div class="panel-head"><h3>Evidence trace</h3><span class="faint small">Every step the agent took, in order</span></div>
         <div class="panel-body"><ol class="trace">${it.trace.map((t) => traceStep(t, run.client)).join("")}</ol></div></div>
+      ${companyId && it.item_kind==='bank' && SO.jev ? SO.jev.panel({client:run.client}, {id:it.item_id,kind:'review',items:[it]}) : ''}
       ${correctionForm(it, c.chart || {})}
     </div>`;
   }
 
   function paint() {
     if (!queue.length) { view.innerHTML = `${resultHtml}<div class="panel error">Nothing in this run is waiting on a person.</div>`; return; }
-    view.innerHTML = `${resultHtml}<div class="qlayout"><div class="panel qlist">${queue.map(listRow).join("")}</div><div id="detail">${detail(current)}</div></div>`;
+    view.innerHTML = `${resultHtml}${companyId && SO.jev?SO.jev.connection():""}<div class="qlayout"><div class="panel qlist">${queue.map(listRow).join("")}</div><div id="detail">${detail(current)}</div></div>`;
     view.querySelectorAll(".qrow").forEach((b) => b.addEventListener("click", () => {
       current = queue.find((q) => q.item_id === b.dataset.id); paint();
       if (matchMedia("(max-width: 900px)").matches) document.getElementById("detail").scrollIntoView({ behavior: "smooth" });
     }));
     wireForm(current);
+    if(companyId && SO.jev){
+      SO.jev.bind({client:run.client},current.item_kind==='bank'?{id:current.item_id,kind:'review',items:[current]}:null,async fn=>{
+        if(jevBusy)return;jevBusy=true;
+        view.querySelectorAll('button,input,select,textarea').forEach(x=>x.disabled=true);
+        try{await fn();}catch(e){const box=document.getElementById('jev-result');if(box)box.textContent=e.message;}
+        finally{jevBusy=false;view.querySelectorAll('button,input,select,textarea').forEach(x=>x.disabled=false);}
+      },paint);
+    }
   }
 
   async function load(runId) {
@@ -208,24 +218,29 @@
     view.innerHTML = `<div class="panel error">Loading the queue</div>`;
     const runs = await get("/api/runs");
     run = runs.find((r) => r.run_id === runId);
+    if (companyId && run?.client!==companyId) throw new Error("This run belongs to another workspace.");
     if (!run) throw new Error("That run is not on the server any more. Pick another one.");
     queue = await get(`/api/runs/${runId}/queue` + (showGrades ? "?grades=true" : ""));
     current = queue[0] || null;
-    const t = run.tiers, free = t.matcher + t.guardrail + t.rule;
-    summary.innerHTML = `<span><b class="num">${run.n_items}</b> items</span><span><b class="num">${free}</b> cleared by code at $0.00</span><span><b class="num">${t.investigator}</b> worked by the investigator</span><span><b class="num">${queue.length}</b> sent to a person</span><span>Run cost <b class="num">${cost(run.cost_usd)}</b></span>${run.label ? `<span class="state state-proposed">${esc(cap(run.label))}</span>` : ""}`;
+    const t = run.tiers;
+    const complete = await get(`/api/runs/${runId}`);
+    const free = complete.items.filter(i=>i.usage.llm_calls===0 && ["match","match_adjust","book"].includes(i.resolution.action)).length;
+    summary.innerHTML = `<span><b class="num">${run.n_items}</b> items</span><span><b class="num">${free}</b> cleared by code at $0.00</span><span><b class="num">${complete.items.filter(i=>i.usage.llm_calls>0).length}</b> investigated with AI</span><span><b class="num">${queue.length}</b> sent to a person</span><span>Run cost <b class="num">${cost(run.cost_usd)}</b></span>${run.label ? `<span class="state state-proposed">${esc(cap(run.label))}</span>` : ""}`;
     paint();
   }
 
   const fail = (e) => { summary.innerHTML = ""; view.innerHTML = `<div class="panel error">${esc(e.message)}</div>`; };
 
   try {
+    if(companyId && SO.jev)await SO.jev.refresh();
     const [cl, runs] = await Promise.all([get("/api/clients"), get("/api/runs")]);
     clients = Object.fromEntries(cl.map((c) => [c.id, c]));
-    const usable = runs.filter((r) => r.n_items > 1);
+    for(const c of cl){SENIOR[c.id]=c.senior_roles?.[0];ROLES[c.id]=c.roles||c.senior_roles||[];}
+    const usable = runs.filter((r) => r.n_items > 0 && (!companyId || (r.client===companyId && r.track==="main")));
     runSel.innerHTML = usable.map((r) => `<option value="${esc(r.run_id)}">${esc((clients[r.client] || {}).name || r.client)} · ${esc(period(r.period))} · ${esc(r.condition.replace(/_/g, " "))}${r.cost_usd === 0 ? " · no model" : ""}</option>`).join("");
     const want = new URLSearchParams(location.search).get("run");
     const first = usable.find((r) => r.run_id === want) || usable.find((r) => r.condition === "playbook" && r.cost_usd > 0) || usable[0];
-    if (!first) throw new Error("No runs yet. Start one with the build session, then reload.");
+    if (!first) throw new Error("No reconciliation runs yet. Upload new receipts and start reconciliation from your workspace.");
     runSel.value = first.run_id;
     runSel.addEventListener("change", () => load(runSel.value).catch(fail));
     await load(first.run_id);

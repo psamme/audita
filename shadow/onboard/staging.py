@@ -13,7 +13,7 @@ import uuid
 from datetime import datetime, timezone
 
 from shadow import db
-from shadow.onboard import contract
+from shadow.onboard import contract, boundary
 
 MAX_BYTES = 64 * 1024 * 1024
 SAMPLE_ROWS = 20
@@ -57,7 +57,7 @@ def find_header(rows: list[list[str]]) -> int:
     return 0
 
 
-def read(raw: bytes) -> dict:
+def read(raw: bytes, purpose: str = "history") -> dict:
     text, encoding = decode(raw)
     delim = sniff_delimiter(text)
     all_rows = list(csv.reader(io.StringIO(text), delimiter=delim))
@@ -120,17 +120,18 @@ def _try(fn, v) -> bool:
         return False
 
 
-def store(client: str, role: str, filename: str, raw: bytes) -> dict:
+def store(client: str, role: str, filename: str, raw: bytes, purpose: str = "history") -> dict:
     if len(raw) > MAX_BYTES:
         raise ValueError(f"file is larger than {MAX_BYTES // (1024 * 1024)} MB")
     if role not in contract.SPECS:
         raise ValueError(f"unknown upload kind {role}")
     sha = hashlib.sha256(raw).hexdigest()
     parsed = read(raw)
+    boundary.check_upload(client, purpose, role, parsed["header"])
     prior = _find_by_sha(client, role, sha)
     upload_id = prior["upload_id"] if prior else f"up_{uuid.uuid4().hex[:10]}"
     rec = {"upload_id": upload_id, "client": client, "role": role, "filename": filename,
-           "sha256": sha, "rows": len(parsed["rows"]), "encoding": parsed["encoding"],
+           "purpose": purpose, "sha256": sha, "rows": len(parsed["rows"]), "encoding": parsed["encoding"],
            "delimiter": parsed["delimiter"], "skipped_preamble": parsed["skipped_preamble"],
            "header": parsed["header"], "columns": profile(parsed["header"], parsed["rows"]),
            "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -153,6 +154,8 @@ def _find_by_sha(client: str, role: str, sha: str) -> dict | None:
 
 
 def load(client: str, upload_id: str) -> dict:
+    if not re.fullmatch(r"up_[a-f0-9]{10}", upload_id):
+        raise ValueError("no such upload")
     path = upload_dir(client) / f"{upload_id}.json"
     if not path.exists():
         raise ValueError("no such upload")

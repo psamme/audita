@@ -6,11 +6,13 @@
   const SEED = 11, VEINING = 0.75;
 
   const NAV = [
-    ["setup.html", "Setup"],
+    ["index.html", "Workspace"],
+    ["setup.html", "Company"],
     ["import.html", "History"],
     ["playbook.html", "Playbook"],
-    ["reconcile.html", "Reconcile"],
-    ["../index.html", "Demo"],
+    ["receipts.html", "New receipts"],
+    ["reconcile.html", "Review"],
+    ["../queue.html?track=stage", "Sample demo"],
   ];
   const here = location.pathname.split("/").pop() || "setup.html";
   const nav = document.querySelector(".nav");

@@ -9,7 +9,7 @@
   // It survives navigation within the tab and is always announced by a banner.
   let track = "";
   try {
-    const p = new URLSearchParams(location.search).get("track");
+    const p = location.pathname.startsWith("/company/") ? "main" : new URLSearchParams(location.search).get("track");
     const clean = (v) => (v && v !== "main" && /^[a-z0-9_-]{1,24}$/i.test(v) ? v : "");
     if (p) sessionStorage.setItem("so-track", clean(p));
     track = clean(sessionStorage.getItem("so-track"));

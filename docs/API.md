@@ -225,3 +225,23 @@ The result contains `reviewer` (a real company role, or null), `next_step`, `nex
 Each uncached request makes one TypeSafe call containing two Choice questions. A single-process limit allows 20 attempts, including failures, and unchanged requests reuse an in-memory cache. Cache keys include the workspace, company, full request evidence, policy and reviewer note. They expire on server restart. Source or policy changes during a call discard its result. Timeouts, malformed responses and provider failures leave reconciliation unchanged; errors do not expose the API key or provider response body. The queue always retains its ordinary deterministic workflow. Unit tests mock the provider; only clicking Get suggestion (or explicitly calling the triage endpoint) spends model tokens.
 
 Official request/response contract: https://docs.typesafe.ai/introduction/quickstart and https://docs.typesafe.ai/primitives/choice.
+
+## Company workspace
+
+Run `shadow.app:app` (or `demo_stage.py`) to include the company routes. `/` redirects to `/company/index.html?track=main`. The original demo routes remain available. The configured company is registered with the existing record, playbook and correction APIs immediately after setup. `GET /api/clients` includes all actual `roles` as well as `senior_roles`.
+
+The onboarding implementation from `codex/company-onboarding` is now integrated, with these contracts:
+
+- `GET/POST /api/onboarding/company`: read/create company metadata, account chart and roster. Sample IDs A and B are reserved. `POST /api/onboarding/users` updates the roster.
+- `POST /api/onboarding/upload?role=...&filename=...&purpose=history|incoming`: raw CSV body. Returns upload metadata and column profiles. Incoming roles are bank_lines, ledger_entries, invoices and documents. Incoming decision columns and historical decision file types are rejected.
+- `GET /api/onboarding/template?role=...`: download canonical CSV headers.
+- `POST /api/onboarding/mapping/propose`: `{upload_id}` returns an editable deterministic column mapping without a model call. `/mapping/validate` accepts `{upload_id,mapping}` and returns a preview, `ok`, errors and date/sign information.
+- `POST /api/onboarding/import`: `{upload_id,mapping,...}` starts an import job. Required fields, invalid rows and unresolved date format must be corrected before writes. Incoming uploads cannot replace a historical date window or overwrite a training record. The purpose is persisted with the source upload and import manifest.
+- `GET /api/onboarding/preflight`: history readiness and estimated induction cost. `POST /api/onboarding/induce` starts background induction, with a frozen training cutoff and a `training_snapshot.db`. The optional `db_file` argument on `playbook.induce` lets this route learn exclusively from the snapshot. Later evidence is excluded even when its document date predates the cutoff.
+- `POST /api/onboarding/reconcile/estimate`: `{period}` runs deterministic checks with `persist=False`, returning actual cleared record counts and estimated model work. It never creates a pretend reconciliation run. Historical months are rejected.
+- `POST /api/onboarding/reconcile`: `{period,use_llm:true|false}` starts a saved pipeline run against new source records. It resolves supported cases and escalates uncertain ones. It does not import reconciliation decisions or post to an accounting service.
+- `GET /api/jobs/{job_id}` and `GET /api/jobs`: job status, result and errors. The job lookup is limited to the configured company. Import, induction and reconciliation return job records immediately.
+
+Company summaries add `training_before` and `incoming_periods`. The company UI filters the review queue to the company's own main-track runs. Both review and correction selectors use the actual uploaded roster. The original demo clients and their stage policies are separate.
+
+Jev triage also accepts unresolved bank items from the configured company without a stage manifest. It reconstructs their current source records, policies and company roles, and retains the same suggestion-only controls. Keys stay in the local data workspace's ignored `.typesafe-key` (or `TYPESAFE_API_KEY`), never in browser storage.

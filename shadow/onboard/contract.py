@@ -7,6 +7,7 @@ trail, because the playbook is induced from what the humans did, not from what m
 Money in is positive, money out is negative, everywhere.
 """
 import re
+import math
 from datetime import date
 
 CURRENCY = re.compile(r"[^\d.,()\-+]")
@@ -44,6 +45,8 @@ def to_amount(raw, field: str = "amount") -> float:
         v = float(s)
     except ValueError:
         raise Bad(field, raw, "not a number")
+    if not math.isfinite(v):
+        raise Bad(field, raw, "amount must be finite")
     return round(-v if negative else v, 2)
 
 

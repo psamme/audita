@@ -15,7 +15,7 @@ import uuid
 from datetime import datetime, timezone
 
 from shadow import db
-from shadow.onboard import contract, ids, staging
+from shadow.onboard import contract, ids, staging, boundary, mapping as mapmod
 
 TABLE_COLUMNS = {
     "bank_line": ["id", "period", "date", "amount", "description", "counterparty", "ref"],
@@ -64,6 +64,11 @@ def run_import(client: str, upload_id: str, mapping: dict, mode: str = "upsert",
     up = staging.load(client, upload_id)
     role, parsed = up["role"], up["parsed"]
     spec = contract.SPECS[role]
+    purpose = up.get("purpose", "history")
+    boundary.check_upload(client, purpose, role, up["header"])
+    check = mapmod.validate(role, mapping, parsed)
+    if not check["ok"] or check["stats"]["date_format_ambiguous"]:
+        raise ValueError("Fix the column mapping and invalid rows before importing.")
     if job:
         job.phase(f"reading {up['filename']}")
 
@@ -112,11 +117,16 @@ def run_import(client: str, upload_id: str, mapping: dict, mode: str = "upsert",
     if job:
         job.phase(f"writing {len(rows_out)} rows")
 
-    written = _write_rows(client, role, table, rows_out, alloc, mode, date_from, date_to)
+    if errors:
+        raise ValueError("Fix invalid rows before importing; no records were written.")
+    boundary.check_rows(client, purpose, role, rows_out)
+    if purpose == "incoming" and mode != "upsert":
+        raise ValueError("New receipts are added without replacing a historical date window.")
+    written = _write_rows(client, role, table, rows_out, alloc, mode, date_from, date_to, boundary.cutoff(client) if purpose == "incoming" else None)
     alloc.commit()
 
     report = {"import_id": f"imp_{uuid.uuid4().hex[:10]}", "client": client, "role": role,
-              "table": table, "filename": up["filename"], "upload_id": upload_id,
+              "purpose": purpose, "table": table, "filename": up["filename"], "upload_id": upload_id,
               "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
               "mode": mode, "rows_in_file": len(parsed["rows"]),
               "inserted": written["inserted"], "updated": written["updated"],
@@ -143,7 +153,7 @@ def run_import(client: str, upload_id: str, mapping: dict, mode: str = "upsert",
     return report
 
 
-def _write_rows(client: str, role: str, table: str, rows, alloc, mode, date_from, date_to) -> dict:
+def _write_rows(client: str, role: str, table: str, rows, alloc, mode, date_from, date_to, training_before=None) -> dict:
     con = db.connect(client, readonly=False)
     inserted = updated = 0
     written_ids, unresolved = [], []
@@ -157,6 +167,10 @@ def _write_rows(client: str, role: str, table: str, rows, alloc, mode, date_from
                 unresolved.append({"row": i + 1, "ref": v.get("bank_ref") or v.get("subject_ref")})
                 continue
             rid, values = built
+            if training_before:
+                old = con.execute(f"SELECT date FROM {table} WHERE id=?", (rid,)).fetchone()
+                if old and old[0][:7] < training_before:
+                    raise ValueError("A new upload cannot overwrite a record from your training history.")
             existing = con.execute(f"SELECT 1 FROM {table} WHERE id=?", (rid,)).fetchone()
             cols = TABLE_COLUMNS[table]
             con.execute(f"INSERT OR REPLACE INTO {table} VALUES ({','.join('?' * len(cols))})",

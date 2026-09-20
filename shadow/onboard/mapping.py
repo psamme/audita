@@ -211,6 +211,8 @@ def validate(role: str, mapping: dict, parsed: dict, limit: int = 200) -> dict:
             if not src and not (field == "amount" and contract.has_amount(mapping)):
                 continue
             raw = row.get(src, "") if src else ""
+            if field in spec["optional"] and not str(raw).strip():
+                continue
             try:
                 if field in ("date", "posted_at", "reconciled_at", "due_date", "undone_at"):
                     out[field] = contract.to_date(raw, field, dayfirst=bool(dayfirst))

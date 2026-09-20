@@ -71,7 +71,7 @@ def clients():
         if db.db_path(c).exists():
             con = db.connect(c, readonly=True)
             out.append({k: v for k, v in db.q(con, "SELECT * FROM client")[0].items() if k != "close_days"} |
-                       {"senior_roles": [u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT role FROM user WHERE senior=1")]})
+                       {"roles": sorted({u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT role FROM user")}), "senior_roles": [u["role"].lower().replace(" ", "_") for u in db.q(con, "SELECT role FROM user WHERE senior=1")]})
     return out
 
 

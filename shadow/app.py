@@ -32,6 +32,12 @@ for _m in _mounts:
 app.include_router(onboard.router)
 app.include_router(onboard.jobs_router)
 
+from fastapi.responses import RedirectResponse
+
+@app.get('/')
+def company_home():
+    return RedirectResponse('/company/index.html?track=main')
+
 app.router.routes.extend(_mounts)          # the catch-all static mount stays last
 
 # Anything registered after this point would be shadowed by that mount. New routes belong on a

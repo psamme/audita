@@ -3,18 +3,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Setup · Shadow Onboarding</title>
+  <title>Review queue · Shadow Onboarding</title>
   <link rel="stylesheet" href="../design/fonts/fonts.css">
   <link rel="stylesheet" href="../design/tokens.css">
   <link rel="stylesheet" href="../design/components.css">
   <link rel="stylesheet" href="../app.css">
-  <link rel="stylesheet" href="company.css">
+  <link rel="stylesheet" href="../inbox.css">
 </head>
 <body>
   <canvas id="slab" aria-hidden="true"></canvas>
   <div class="page">
     <header class="wrap bar">
-      <a class="mark" href="setup.html">Shadow Onboarding</a>
+      <a class="mark" href="index.html">Shadow Onboarding</a>
       <nav class="nav" aria-label="Screens"></nav>
       <div style="display: flex; gap: 12px; align-items: center;">
         <div class="seg" id="stone" aria-label="Stone">
@@ -24,18 +24,18 @@
       </div>
     </header>
 
-    <main class="wrap compact">
-      <ol class="steps">
-        <li class="on">1 Your company</li>
-        <li>2 Your history</li>
-        <li>3 Your playbook</li>
-        <li>4 Reconcile</li>
-      </ol>
-      <div class="lede">
-        <div class="label">Setup</div>
-        <h2>Tell us who you are</h2>
-        <p class="muted">Create your company workspace, add the accounts you use, and name the people who can review exceptions. Next, you’ll upload examples of past decisions.</p>
+    <main class="wrap compact"><a href="reconcile.html">← Back to your company workspace</a>
+      <div class="lede-row">
+        <div class="lede">
+          <div class="label">Review queue</div>
+          <h2>What the agent would not decide alone</h2>
+        </div>
+        <div class="ctl">
+          <label class="label" for="run">Run</label>
+          <select id="run" class="select"></select>
+        </div>
       </div>
+      <div id="summary" class="summary"></div>
       <div id="view"></div>
     </main>
   </div>
@@ -44,7 +44,7 @@
   <script src="../js/api.js"></script>
   <script src="../js/parts.js"></script>
   <script src="js/shell.js"></script>
-  <script src="js/co.js"></script>
-  <script src="js/setup.js"></script>
+  <script src="../js/jev.js"></script>
+  <script src="../js/queue.js"></script>
 </body>
 </html>

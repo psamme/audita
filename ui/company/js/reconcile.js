@@ -1,155 +1,21 @@
-/* Step 4. Run a period, then work the queue.
-
-   The estimate is free and worth having: the deterministic tiers run without the model and tell us
-   exactly how many items actually need it, so the cost shown before the button is measured rather
-   than guessed. */
-(function () {
-  const view = document.getElementById("view");
-  const esc = SO.esc;
-  let company = null, est = null, run = null, queue = [];
-
-  async function load() {
-    company = await CO.get("/api/onboarding/company");
-    if (!company.created) {
-      view.innerHTML = CO.empty("No company yet", 'Start at <a href="setup.html">Setup</a>.');
-      return false;
-    }
-    return true;
+(async function(){
+  const view=document.getElementById('view'),{esc,usd}=SO;
+  let company,period='',estimate=null,run=null,items=[],filter='review',busy=false;
+  const clear=i=>['match','match_adjust','book'].includes(i.resolution.action);
+  async function load(){company=await CO.get('/api/onboarding/company');if(!company.created||!company.has_playbook){view.innerHTML=CO.empty('Finish onboarding first','Create your workspace and <a href="playbook.html">learn its policies</a>.');return;}
+    period=period||company.incoming_periods?.at(-1)||'';
+    const runs=(await SO.get('/api/runs')).filter(r=>r.client===company.client&&r.track==='main'&&r.period===period&&!r.run_id.startsWith('estimate_'));
+    run=runs[0]||null;
+    items=run?(await SO.get('/api/runs/'+encodeURIComponent(run.run_id))).items.filter(i=>i.item_kind==='bank'):[];
+    draw();
   }
-
-  function periodOptions() {
-    const ps = company.periods || [];
-    if (!ps.length) return `<option value="">nothing imported yet</option>`;
-    return ps.map((p, i) => `<option value="${p}" ${i === ps.length - 1 ? "selected" : ""}>${SO.period ? SO.period(p) : p}</option>`).join("");
+  function draw(){const review=items.filter(i=>i.resolution.action==='escalate'),resolved=items.filter(clear),visible=filter==='review'?review:filter==='resolved'?resolved:items;
+    view.innerHTML=`<section class="panel"><div class="panel-body"><h3>${esc(company.name)} · Incoming receipts</h3><div class="actions"><label>Receipt month <select class="select" id="period">${(company.incoming_periods||[]).map(p=>`<option ${p===period?'selected':''}>${esc(p)}</option>`).join('')||'<option value="">No new receipts yet</option>'}</select></label><a class="btn btn-secondary" href="receipts.html">Upload new receipts</a><button class="btn btn-secondary" id="estimate" ${!period?'disabled':''}>Check receipts</button></div><p class="faint">Policies learned from history before ${esc(company.training_before)}. New receipts have no imported decisions.</p><div id="estimate-result">${estimate?`<div class="note">${estimate.cleared_free} records can be resolved by matching and learned policies. ${estimate.needs_model} records need investigation. Estimated AI cost: ${SO.cost(estimate.est_usd)}.</div><label><input type="checkbox" id="use-model" checked> Use AI to investigate unresolved records</label><div class="actions"><button class="btn btn-primary" id="run">Reconcile receipts</button></div><p class="faint">Uncertain cases and verification holds stay in review. Decisions are saved locally, without posting to your accounting system.</p>`:''}</div><div id="job"></div></div></section>${run?`<section class="panel"><div class="panel-body"><div class="stat-row"><div class="stat"><b>${items.length}</b><span>receipts processed</span></div><div class="stat"><b>${resolved.length}</b><span>resolved</span></div><div class="stat"><b>${review.length}</b><span>need review</span></div><div class="stat"><b>${SO.cost(run.cost_usd)}</b><span>model cost</span></div></div><div class="actions"><a class="btn btn-primary" href="review.html?run=${encodeURIComponent(run.run_id)}&company=${company.client}&track=main">Work the review queue</a><a class="btn btn-secondary" href="../playbook.html?client=${company.client}&track=main">Policies and Undo history</a></div><p class="faint">Latest run: ${esc(run.created_at)} · ${run.llm?'AI investigation enabled':'Matching and learned rules only'}</p></div></section><section class="panel"><div class="panel-body"><div class="actions">${[['review','Needs review'],['resolved','Resolved'],['all','All receipts']].map(([k,title])=>`<button class="btn ${filter===k?'btn-primary':'btn-secondary'}" data-filter="${k}">${title}</button>`).join('')}</div><div class="table-wrap"><table class="grid tight"><thead><tr><th>Receipt</th><th>Amount</th><th>Decision</th><th>Reviewer</th></tr></thead><tbody>${visible.map(i=>`<tr><td>${esc(i.record.description)}<div class="faint">${esc(i.record.date)}</div></td><td>${usd(i.record.amount)}</td><td>${esc(i.resolution.action.replaceAll('_',' '))}<details><summary>Evidence and explanation</summary><p>${esc(i.resolution.rationale)}</p>${[...new Set([...(i.resolution.evidence_ids||[]),...(i.resolution.precedent_ids||[])])].map(id=>SO.cite(company.client,id)).join(' ')}</details></td><td>${esc((i.resolution.escalate_to||'No review needed').replaceAll('_',' '))}</td></tr>`).join('')||'<tr><td colspan="4">No receipts in this view.</td></tr>'}</tbody></table></div></div></section>`:CO.empty('Ready for your first run',period?'Check your receipts, then start reconciliation.':'Upload a new receipt CSV and its ledger records to get started.')}`;
+    document.getElementById('period').onchange=async e=>{period=e.target.value;estimate=null;await load();};
+    view.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{filter=b.dataset.filter;draw();});
+    document.getElementById('estimate').onclick=()=>action(async box=>{box.textContent='Checking matching rules and company policies…';estimate=await CO.post('/api/onboarding/reconcile/estimate',{period});draw();});
+    const go=document.getElementById('run');if(go)go.onclick=()=>{const use_llm=document.getElementById('use-model').checked;action(async box=>{const job=await CO.post('/api/onboarding/reconcile',{period,use_llm});const result=await CO.watch(job.job_id,r=>box.innerHTML=CO.jobLine(r));if(result.state!=='done')throw Error(result.error||'Reconciliation did not finish.');estimate=null;await load();});};
   }
-
-  function controls() {
-    return `<section class="panel">
-      <div class="panel-head"><h3>Which period</h3></div>
-      <div class="panel-body">
-        <div class="actions">
-          <select class="select" id="period" style="max-width:14rem">${periodOptions()}</select>
-          <button class="btn btn-secondary" id="estimate">What will this cost?</button>
-          <button class="btn btn-primary" id="go" disabled>Reconcile it</button>
-        </div>
-        <p class="faint" style="margin-top:8px">To bring in a new month, add its statement and ledger
-          on the <a href="import.html">history</a> screen. Leave the reconciliation file out: deciding
-          is the part we are doing here.</p>
-        <div id="est"></div>
-        <div id="job"></div>
-      </div>
-    </section>`;
-  }
-
-  function tierBar(t, n) {
-    const seg = (k, label) => t[k] ? `<span class="t-${k}" style="width:${(100 * t[k] / n).toFixed(1)}%" title="${label}: ${t[k]}"></span>` : "";
-    return `<div class="tiers">
-      <div class="tier-bar">${seg("matcher", "Matched outright")}${seg("rule", "Your playbook")}${seg("investigator", "Worked by the model")}${seg("guardrail", "Held by a control")}</div>
-      <div class="tier-key">
-        <span><i style="background:var(--ink)"></i>matched outright ${t.matcher || 0}</span>
-        <span><i style="background:var(--ink-3)"></i>your playbook ${t.rule || 0}</span>
-        <span><i style="background:var(--surface-2)"></i>worked by the model ${t.investigator || 0}</span>
-        ${t.guardrail ? `<span><i style="background:var(--neg-wash)"></i>held by a control ${t.guardrail}</span>` : ""}
-      </div>
-    </div>`;
-  }
-
-  function estimatePanel() {
-    if (!est) return "";
-    const free = est.n_items - est.needs_model;
-    return `<div class="note good" style="display:block">
-      ${est.n_items.toLocaleString()} items. ${free.toLocaleString()} of them
-      (${Math.round(100 * free / Math.max(1, est.n_items))}%) clear with no model call at all.
-      ${est.needs_model.toLocaleString()} need the model: about ${SO.cost(est.est_usd)} and
-      ${Math.round(est.est_seconds / 60) || 1} minute(s).
-      ${tierBar(est.tiers, est.n_items)}
-    </div>`;
-  }
-
-  function resultPanel() {
-    if (!run) return "";
-    const t = run.tiers || {};
-    const reasons = run.escalation_reasons || {};
-    const named = Object.entries(reasons).filter(([, v]) => v);
-    return `<section class="panel">
-      <div class="panel-head"><h3>${esc(run.period)}</h3><span class="faint">${esc(run.run_id)}</span></div>
-      <div class="panel-body">
-        <div class="stat-row">
-          <div class="stat"><b>${run.n_items}</b><span>items</span></div>
-          <div class="stat"><b>${run.n_items - run.escalated}</b><span>settled</span></div>
-          <div class="stat"><b>${run.escalated}</b><span>for you to look at</span></div>
-          <div class="stat"><b>${SO.cost(run.cost_usd)}</b><span>spent</span></div>
-        </div>
-        ${tierBar(t, run.n_items)}
-        ${named.length ? `<p class="faint">Sent to you because:
-          ${named.map(([k, v]) => `${v} ${esc(k.replace(/_/g, " "))}`).join(", ")}.</p>` : ""}
-        <div class="actions">
-          <a class="btn btn-primary" href="../queue.html?run=${encodeURIComponent(run.run_id)}">
-            Work the queue (${run.escalated})</a>
-          <a class="btn btn-secondary" href="../playbook.html?client=${encodeURIComponent(company.client)}">See the playbook</a>
-        </div>
-        <p class="faint" style="margin-top:8px">Resolving an item in the queue also teaches the
-          playbook, so the next month of the same thing does not come back to you.</p>
-      </div>
-    </section>`;
-  }
-
-  function queuePanel() {
-    if (!queue.length) return "";
-    return `<section class="panel">
-      <div class="panel-head"><h3>What it would not decide alone</h3><span class="faint">${queue.length}</span></div>
-      <div class="panel-body"><div class="table-wrap"><table class="grid tight">
-        <thead><tr><th>Date</th><th>Amount</th><th>What it is</th><th>Why it stopped</th><th>To</th></tr></thead>
-        <tbody>${queue.slice(0, 12).map((it) => `<tr class="r">
-          <td>${SO.day(it.record.date)}</td>
-          <td class="num">${SO.usd(it.record.amount)}</td>
-          <td class="wrap">${esc((it.record.description || it.record.memo || "").slice(0, 60))}</td>
-          <td>${SO.reasonPill ? SO.reasonPill(it.resolution) : esc(it.resolution.reason || "")}</td>
-          <td>${esc(SO.role ? SO.role(it.resolution.escalate_to) : (it.resolution.escalate_to || ""))}</td>
-        </tr>`).join("")}</tbody></table></div>
-        ${queue.length > 12 ? `<p class="faint">${queue.length - 12} more in the queue screen.</p>` : ""}
-      </div></section>`;
-  }
-
-  async function doEstimate() {
-    const box = document.getElementById("est");
-    const period = document.getElementById("period").value;
-    if (!period) return;
-    box.innerHTML = `<div class="note"><span class="spin"></span> Running the free tiers...</div>`;
-    try {
-      est = await CO.post("/api/onboarding/reconcile/estimate", { period });
-      draw();
-      document.getElementById("go").disabled = false;
-    } catch (e) { box.innerHTML = CO.err(e); }
-  }
-
-  async function doRun() {
-    const box = document.getElementById("job");
-    const period = document.getElementById("period").value;
-    document.getElementById("go").disabled = true;
-    box.innerHTML = `<div class="note"><span class="spin"></span> Starting...</div>`;
-    try {
-      const job = await CO.post("/api/onboarding/reconcile", { period });
-      const done = await CO.watch(job.job_id, (r) => { box.innerHTML = CO.jobLine(r); });
-      if (done.state !== "done") throw new Error(done.error || "that did not finish");
-      run = done.result;
-      queue = await SO.get(`/api/runs/${run.run_id}/queue`);
-      draw();
-    } catch (e) {
-      box.innerHTML = CO.err(e);
-      document.getElementById("go").disabled = false;
-    }
-  }
-
-  function draw() {
-    view.innerHTML = controls() + resultPanel() + queuePanel();
-    const e = document.getElementById("est");
-    if (e) e.innerHTML = estimatePanel();
-    document.getElementById("estimate").addEventListener("click", doEstimate);
-    const go = document.getElementById("go");
-    go.disabled = !est;
-    go.addEventListener("click", doRun);
-  }
-
-  load().then((ok) => ok && draw()).catch((err) => { view.innerHTML = CO.err(err); });
+  async function action(fn){if(busy)return;busy=true;view.querySelectorAll('button,select,input').forEach(x=>x.disabled=true);try{await fn(document.getElementById('job'));}catch(e){document.getElementById('job').innerHTML=CO.err(e);}finally{busy=false;view.querySelectorAll('button,select,input').forEach(x=>x.disabled=false);}}
+  try{await load();}catch(e){view.innerHTML=CO.err(e);}
 })();

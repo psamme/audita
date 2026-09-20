@@ -53,11 +53,11 @@
         <div class="stat"><b>${proposed.length}</b><span>waiting on an answer</span></div>
         <div class="stat"><b>v${pb.version}</b><span>version</span></div>
       </div>
-      ${section("Signed off, running", approved, "These agree with enough of your own history to act without asking.")}
+      ${section("Supported by your history", approved, "These agree with enough of your own history to act without asking.")}
       ${section("Questions for you", proposed, "We saw too little, or saw it handled two ways. Answering one of these is usually worth more than any amount of extra history.")}
       <div class="actions">
         <a class="btn btn-secondary" href="../playbook.html?client=${encodeURIComponent(company.client)}">Open the full playbook screen</a>
-        <a class="btn btn-primary" href="reconcile.html">Next: reconcile a month</a>
+        <a class="btn btn-primary" href="receipts.html">Next: upload new receipts</a>
       </div>`;
   }
 

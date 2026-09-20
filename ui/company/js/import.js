@@ -7,6 +7,7 @@
   const view = document.getElementById("view");
   const esc = SO.esc;
 
+  const incoming = document.body.dataset.purpose === "incoming";
   const ROLES = [
     ["bank_lines", "Bank statement", "Every line on the account. Required.", true],
     ["ledger_entries", "Cash-clearing ledger", "The entries that clear against the bank, not your whole general ledger. Required.", true],
@@ -15,7 +16,7 @@
     ["approvals", "Approvals", "Anything that needed a second signature.", false],
     ["invoices", "Invoices", "Optional. Lets rules reason about terms and invoice age.", false],
     ["documents", "Emails and remittances", "Optional, and unusually useful: remittance advices and the email trail.", false],
-  ];
+  ].filter(([role])=>!incoming || ["bank_lines","ledger_entries","invoices","documents"].includes(role));
 
   let company = null, state = null, current = null;
 
@@ -25,12 +26,16 @@
       view.innerHTML = CO.empty("No company yet", 'Start at <a href="setup.html">Setup</a>.');
       return null;
     }
+    if (incoming && !company.has_playbook) {
+      view.innerHTML=CO.empty('Learn your policies first','Upload <a href="import.html">historical decisions</a>, then <a href="playbook.html">learn your policies</a>. New receipts stay separate.');return null;
+    }
     state = await CO.get("/api/onboarding/coldstart/status");
     return company;
   }
 
   function counts() {
     const c = company.counts || {};
+    if(incoming)return `<div class="note">New receipts must be dated ${esc(company.training_before)} or later. Historical decisions remain in their original training window.</div>`;
     return `<div class="stat-row">
       ${stat(c.bank_line, "bank lines")}
       ${stat(c.ledger_entry, "ledger entries")}
@@ -50,7 +55,7 @@
             <div><div class="want">${esc(label)}${required ? "" : ' <span class="faint">optional</span>'}</div></div>
             <div class="req">${esc(note)}</div>
             <div><label class="btn btn-secondary btn-sm">Choose file
-              <input type="file" accept=".csv,text/csv,text/plain" data-role="${role}"></label></div>
+              <input type="file" accept=".csv,text/csv,text/plain" data-role="${role}"></label> <a class="faint" href="/api/onboarding/template?role=${role}">CSV template</a></div>
           </div>`).join("")}
         </div>
         <p class="faint" style="margin-top:12px">CSV. We read the header and a few rows to work out the
@@ -87,7 +92,8 @@
 
   async function render() {
     if (!(await refresh())) return;
-    view.innerHTML = counts() + uploadPanel() + coveragePanel() + `<div id="mapping"></div><div id="label"></div>`;
+    if(!incoming && company.training_before){view.innerHTML=counts()+`<section class="panel"><div class="panel-body"><h3>Your training history is saved</h3><p>Policies learn only from records before ${esc(company.training_before)}. Add undecided receipts separately.</p><a class="btn btn-primary" href="receipts.html">Upload new receipts</a> <a class="btn btn-secondary" href="playbook.html">Review learned policies</a></div></section>`;return;}
+    view.innerHTML = counts() + uploadPanel() + (incoming?`<div class="actions"><a class="btn btn-primary" href="reconcile.html">Continue to reconciliation</a></div>`:coveragePanel()) + `<div id="mapping"></div><div id="label"></div>`;
     view.querySelectorAll('input[type="file"]').forEach((inp) =>
       inp.addEventListener("change", () => inp.files[0] && upload(inp.dataset.role, inp.files[0])));
     const d = document.getElementById("derive");
@@ -104,7 +110,7 @@
     try {
       const raw = await file.arrayBuffer();
       const up = await CO.postRaw(
-        `/api/onboarding/upload?role=${encodeURIComponent(role)}&filename=${encodeURIComponent(file.name)}`, raw);
+        `/api/onboarding/upload?role=${encodeURIComponent(role)}&filename=${encodeURIComponent(file.name)}&purpose=${incoming?"incoming":"history"}`, raw);
       box.innerHTML = `<section class="panel"><div class="panel-body"><div class="note">
         <span class="spin"></span> Working out what each column is...</div></div></section>`;
       const proposal = await CO.post("/api/onboarding/mapping/propose", { upload_id: up.upload_id });

@@ -29,6 +29,12 @@
     ],
   };
 
+  if(new URLSearchParams(location.search).get('example')==='1') Object.assign(state, {
+    name:'Example Company',client:'EXAMPLE',blurb:'Customer receipts against invoices. Finance reviews unusual deductions.',
+    chart_text:'1200, Accounts receivable\n6990, Small payment differences\n2000, Accounts payable',reconciler:'clerk',
+    people:[{id:'clerk',name:'Jamie',role:'bookkeeper',senior:false},{id:'lead',name:'Riley',role:'finance lead',senior:true}]
+  });
+
   const chartText = (chart) =>
     chart ? Object.entries(chart).map(([k, v]) => `${k}, ${v}`).join("\n") : "";
 
@@ -49,11 +55,11 @@
                      placeholder="Northwind Trading">
             </div>
             <div class="field">
-              <label for="cid">Short id</label>
+              <label for="cid">Workspace ID</label>
               <input class="input" id="cid" required maxlength="8" pattern="[A-Za-z0-9_]{1,8}"
                      value="${esc(state.client)}" ${state.created ? "readonly" : ""}
                      placeholder="NWIND">
-              <div class="hint">Up to eight letters or digits. It prefixes every record id.</div>
+              <div class="hint">Created from your company name. You can change it before setup.</div>
             </div>
           </div>
           <div class="field">
@@ -115,6 +121,13 @@
       </form>`;
 
     bindField("name", "name");
+    document.getElementById('name').addEventListener('input', e => {
+      if (!state.created && !document.getElementById('cid').dataset.edited) {
+        state.client=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
+        document.getElementById('cid').value=state.client;
+      }
+    });
+    document.getElementById('cid').addEventListener('input', e=>e.target.dataset.edited='1');
     bindField("cid", "client");
     bindField("blurb", "blurb");
     bindField("chart", "chart_text");
@@ -233,7 +246,7 @@
             { users: roster, reconciler: state.reconciler || null, force: state.forceRoster })
         : await CO.post("/api/onboarding/company", {
             id: state.client.trim(), name: state.name.trim(), blurb: state.blurb.trim(),
-            chart_text: state.chart_text, close_days: state.close_days || 5,
+            chart_text: state.chart_text, close_days: state.close_days ?? 5,
             users: roster, reconciler: state.reconciler || null });
       msg.className = "note good";
       msg.textContent = "Saved. Taking you to your history...";

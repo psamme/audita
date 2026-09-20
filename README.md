@@ -6,6 +6,13 @@ Bank-to-ledger reconciliation where the agent gets **no per-client configuration
 
 Every client has a different system. The real difference is not schema, it is policy and convention: how each team resolves exceptions. That is what this learns.
 
+## Company workspace
+
+Start `uv run uvicorn shadow.app:app --host 127.0.0.1 --port 8787` and open http://127.0.0.1:8787/.
+Create your company, upload historical decisions, learn its policies, then upload new receipt CSVs with no decisions attached. Shadow reconciles supported cases and sends unresolved items to your review queue. The workspace includes CSV templates and a labelled example pack. See [the company guide](docs/COMPANY_WORKSPACE.md).
+
+The isolated hackathon server uses `uv run python demo_stage.py --data-dir work/judging-final --port 8795`. The original sample demo remains available through the navigation.
+
 ## How it works
 
 1. **Deterministic matcher** clears the easy lines with zero model calls ($0). On our simulated clients that is about half of volume; compiled playbook rules clear roughly another third, also with no model calls.
