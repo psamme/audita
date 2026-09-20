@@ -26,7 +26,7 @@ What we added beyond the original brief, all built but only partly exercised end
 
 ## 3. How to work without colliding with three other agents
 
-- **Use your own clone**, not Sam's working directory: `git clone git@github.com:psamme/shadow-onboarding.git shadow-codex`. Then `uv sync` and `uv run python -m sim.build` (deterministic, free, builds months 1 to 3). `uv run pytest -q` should pass before you change anything.
+- **Use your own clone**, not Sam's working directory: `git clone git@github.com:psamme/audita.git shadow-codex`. Then `uv sync` and `uv run python -m sim.build` (deterministic, free, builds months 1 to 3). `uv run pytest -q` should pass before you change anything.
 - **Branch and PR. Never push to `main`.** Branch names `codex/<topic>`. Small PRs, one topic each, opened with `gh pr create`. The control-panel Claude session reviews and merges. Rebase on `origin/main` often; `main` moves every 20 to 30 minutes.
 - **File ownership.** Build session: `shadow/*` except `server.py`, plus `sim/*`, `experiments.py`, `curve.py`, `benchrec/*`. Control panel: `grade.py`, `shadow/server.py`, `README.md`, `docs/TRUTH_LANE.md`, git. Design session: `ui/*`. You may freely add NEW files. To change an owned file, keep the diff surgical and explain it in the PR; do not reformat or reorganise.
 - **Every PR description states**: what changed, how you verified it (command and output), whether it needs model calls to verify, and any contract change to `docs/API.md`.

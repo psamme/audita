@@ -56,7 +56,7 @@ We also run a deterministic matcher on [BenchRec](https://www.kaggle.com/dataset
 Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
-git clone git@github.com:psamme/shadow-onboarding.git
+git clone git@github.com:psamme/audita.git
 cd shadow-onboarding
 uv sync
 cp .env.example .env   # then add your ANTHROPIC_API_KEY

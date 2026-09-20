@@ -56,6 +56,6 @@ Benchmark scoring context: BenchRec cash v1.0 contains anonymised production ban
 
 Public recorded interactive demo and benchmark: https://audita-hackmit.vercel.app
 
-Public source code: https://github.com/psamme/shadow-onboarding
+Public source code: https://github.com/psamme/audita
 
 The public site replays measured approval and undo execution with synthetic sample companies, then explains the separate real-data BenchRec result. The local application runs live approval, policy changes and undo.

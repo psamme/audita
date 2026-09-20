@@ -4,7 +4,7 @@
 
 Public submission demo: https://audita-hackmit.vercel.app
 
-Public source code: https://github.com/psamme/shadow-onboarding
+Public source code: https://github.com/psamme/audita
 
 The public site is a recorded interactive execution with benchmark results. The local app is the live demo where approvals and undo change policies.
 
@@ -141,7 +141,7 @@ Company onboarding and CSV uploads, the second company, the second deposit-limit
 
 - Open the public demo URL in a signed-out browser. It must load without a Vercel login.
 - Put that URL in the website/demo field and describe it as a recorded interactive demo with benchmark results.
-- The GitHub repository is public: https://github.com/psamme/shadow-onboarding. Include it in the source-code field.
+- The GitHub repository is public: https://github.com/psamme/audita. Include it in the source-code field.
 - Put the honest benchmark headline and its source in the written submission. Use docs/PLUME.md as the base.
 - Keep the local queue and recorded-demo.html open before judging. Charge the laptop and prevent sleep during the presentation.
 - If the submission form requires a video, record the three-minute walkthrough separately. The HTML replay is not a video upload.

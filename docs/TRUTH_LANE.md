@@ -2,7 +2,7 @@
 
 Paste this whole file into your Claude as the first message, along with: "Read this, then read the files it points to, then help me do the job it describes."
 
-Repo: `git@github.com:psamme/shadow-onboarding.git` (private, ask Sam for collaborator access). The project pitch and cut list are in `README.md`. Read that first.
+Repo: `git@github.com:psamme/audita.git` (private, ask Sam for collaborator access). The project pitch and cut list are in `README.md`. Read that first.
 
 ## 1. Your job in one paragraph
 
@@ -29,7 +29,7 @@ A company has two records of its money: the **bank statement** (what actually mo
 ## 4. Setup
 
 ```sh
-git clone git@github.com:psamme/shadow-onboarding.git
+git clone git@github.com:psamme/audita.git
 cd shadow-onboarding
 uv sync
 uv run python -m sim.build        # builds months 1-3 for both clients into data/A and data/B
