@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit · Shadow Onboarding</title>
+  <link rel="stylesheet" href="design/fonts/fonts.css">
+  <link rel="stylesheet" href="design/tokens.css">
+  <link rel="stylesheet" href="design/components.css">
+  <link rel="stylesheet" href="app.css">
+  <style>
+    /* Audit screen only. Monochrome; colour is kept for a verdict that differs. */
+    .team { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s-3); align-items: stretch; }
+    .seat { display: grid; gap: 6px; align-content: start; padding: var(--s-4); }
+    .seat .big { font-size: var(--t-xl); font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+    .seat .small { color: var(--ink-2); }
+    .hand { display: grid; align-content: center; justify-items: center; gap: 2px; color: var(--ink-3); font-size: var(--t-xs); min-width: 84px; text-align: center; }
+    .hand b { font-family: var(--mono); font-weight: 500; color: var(--ink); font-size: var(--t-sm); }
+    .hand i { font-style: normal; font-size: 1.1rem; line-height: 1; color: var(--ink-2); }
+    .headline { display: grid; grid-template-columns: 2.2fr 1.2fr 1.2fr 1.2fr; gap: var(--s-2) var(--s-5); align-items: start; width: 100%; }
+    @media (max-width: 900px) { .headline { grid-template-columns: 1fr 1fr; } }
+    .headline .fig { font-size: var(--t-2xl); font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
+    .headline > div { display: grid; gap: 4px; }
+    .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+    .check { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: var(--s-3); align-items: baseline; padding: 10px var(--s-5); border-bottom: 1px solid var(--line); font-size: var(--t-sm); }
+    .check:last-child { border-bottom: 0; }
+    .check .code { font-family: var(--mono); font-size: var(--t-xs); color: var(--ink-3); }
+    .check .what { color: var(--ink-3); font-size: var(--t-xs); }
+    .check details { grid-column: 2 / -1; }
+    .check details summary { cursor: pointer; color: var(--ink-2); font-size: var(--t-xs); }
+    .finding { padding: 8px 0; display: grid; gap: 2px; }
+    .finding + .finding { border-top: 1px solid var(--line); }
+    .sev { font-family: var(--mono); font-size: var(--t-xs); text-transform: uppercase; letter-spacing: 0.06em; }
+    .sev-high { color: var(--neg); } .sev-medium { color: var(--warn); } .sev-low, .sev-note { color: var(--ink-3); }
+    .v-disagree { background: var(--neg-wash); border-color: var(--neg); color: var(--neg); }
+    .v-cautious, .v-cannot_conclude { border-style: dashed; }
+    .v-exceptions { border-color: var(--warn); color: var(--warn); }
+    tr.pick { cursor: pointer; }
+    .file { width: min(960px, 94vw); max-height: 88vh; overflow: auto; padding: 0; }
+    .file .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4); }
+    .file .two > div { display: grid; gap: var(--s-2); align-content: start; padding: var(--s-4); background: var(--surface-2); border-radius: var(--r-sm); }
+    .ck { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; font-size: var(--t-sm); padding: 4px 0; }
+    .ck .res { font-family: var(--mono); font-size: var(--t-xs); text-transform: uppercase; }
+    .ck .fail { color: var(--neg); }
+    @media (max-width: 900px) { .team, .cols, .file .two { grid-template-columns: minmax(0, 1fr); } .hand { grid-auto-flow: column; justify-content: start; gap: 8px; } }
+  </style>
+</head>
+<body>
+  <canvas id="slab" aria-hidden="true"></canvas>
+  <div class="page">
+    <header class="wrap bar">
+      <a class="mark" href="index.html">Shadow Onboarding</a>
+      <nav class="nav" aria-label="Screens"></nav>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="seg" id="stone" aria-label="Stone">
+          <button data-v="statuario">Light</button>
+          <button data-v="nero">Dark</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap compact">
+      <div class="lede-row">
+        <div class="lede">
+          <div class="label">Audit</div>
+          <h2>A second agent checks the first, without reading its reasoning</h2>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div class="seg" id="client" aria-label="Client"></div>
+          <a class="btn btn-secondary btn-sm" id="download" href="#">Download audit file</a>
+        </div>
+      </div>
+      <div id="summary" class="summary"></div>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <script src="design/marble.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/parts.js"></script>
+  <script src="js/shell.js"></script>
+  <script src="js/audit.js"></script>
+</body>
+</html>
