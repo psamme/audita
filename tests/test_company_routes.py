@@ -43,7 +43,7 @@ def test_the_company_screens_are_served(client):
                  "/company/playbook.html", "/company/reconcile.html"):
         res = client.get(path)
         assert res.status_code == 200, path
-        assert b"Shadow Onboarding" in res.content
+        assert b"Audita" in res.content
 
 
 def test_the_demo_api_is_unchanged(client):

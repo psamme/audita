@@ -1,4 +1,4 @@
-/* Shadow Onboarding design tokens.
+/* Audita design tokens.
    Two stones: Statuario (white, grey veins) and Nero Marquina (black, white veins).
    Set data-stone="statuario|nero" on <html> to pin one; otherwise the OS theme picks.
    Colour is reserved for state. Everything else is ink on stone.
