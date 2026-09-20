@@ -1,18 +1,17 @@
-"""Model access with per-call usage logging.
+"""OpenAI Responses API access with per-call usage logging.
 
-Primary backend is the Anthropic SDK (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN or an `ant auth login` profile).
-When no credential is present the same interface is served by the local `claude` CLI in headless mode, so the
-project still runs on a laptop that is only logged in to Claude Code. Both report real token usage and cost.
+Set OPENAI_API_KEY in .env. Legacy Anthropic SDK/CLI backends require an
+explicit SHADOW_BACKEND override; missing OpenAI credentials never switch providers.
 """
 import json
 import os
 import subprocess
 import threading
 from pathlib import Path
+from jsonschema import validate, ValidationError
 
-MODEL = os.environ.get("SHADOW_MODEL", "claude-opus-5")
-EFFORT = os.environ.get("SHADOW_EFFORT", "medium")
 PRICES = {  # USD per million tokens: input, output
+    "gpt-5.2": (1.75, 14.0),
     "claude-opus-5": (5.0, 25.0), "claude-sonnet-5": (2.0, 10.0), "claude-haiku-4-5": (1.0, 5.0),
     "claude-fable-5-1": (10.0, 50.0),
 }
@@ -28,19 +27,16 @@ def _load_env():
 
 
 _load_env()
+MODEL = os.environ.get("SHADOW_MODEL", "gpt-5.2" if os.environ.get("SHADOW_BACKEND", "openai") == "openai" else "claude-opus-5")
+EFFORT = os.environ.get("SHADOW_EFFORT", "medium")
 
 
 def backend() -> str:
-    forced = os.environ.get("SHADOW_BACKEND")
-    if forced:
-        return forced
-    has_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN") \
-        or (Path.home() / ".config/anthropic").exists()
-    return "sdk" if has_key else "cli"
+    return os.environ.get("SHADOW_BACKEND", "openai")
 
 
 def cost(model: str, usage: dict) -> float:
-    pin, pout = PRICES.get(model, PRICES["claude-opus-5"])
+    pin, pout = PRICES[model]
     return round((usage.get("input_tokens", 0) * pin + usage.get("cache_creation_tokens", 0) * pin * 1.25
                   + usage.get("cache_read_tokens", 0) * pin * 0.1 + usage.get("output_tokens", 0) * pout) / 1e6, 6)
 
@@ -66,6 +62,85 @@ class Reply:
     def __init__(self, text: str, tool_calls: list[dict], raw_content, stop_reason: str, usage: dict):
         self.text, self.tool_calls, self.raw_content = text, tool_calls, raw_content
         self.stop_reason, self.usage = stop_reason, usage
+
+
+# --- OpenAI backend ------------------------------------------------------------------------
+_openai_client = None
+
+
+def _openai():
+    global _openai_client
+    if _openai_client is None:
+        if not os.environ.get("OPENAI_API_KEY"):
+            raise RuntimeError("Add OPENAI_API_KEY to .env and restart Audita to enable model calls")
+        from openai import OpenAI
+        _openai_client = OpenAI(max_retries=2, timeout=180)
+    return _openai_client
+
+
+def _openai_input(messages):
+    items = []
+    for message in messages:
+        content = message["content"]
+        if isinstance(content, str):
+            items.append({"role": message["role"], "content": content})
+            continue
+        for block in content:
+            if block["type"] == "openai_response_item":
+                items.append(block["item"])
+            elif block["type"] == "text":
+                items.append({"role": message["role"], "content": block["text"]})
+            elif block["type"] == "tool_use":
+                items.append({"type": "function_call", "call_id": block["id"],
+                              "name": block["name"], "arguments": json.dumps(block["input"])})
+            elif block["type"] == "tool_result":
+                result = block["content"]
+                items.append({"type": "function_call_output", "call_id": block["tool_use_id"],
+                              "output": result if isinstance(result, str) else json.dumps(result)})
+            else:
+                raise ValueError("Unsupported conversation block")
+    return items
+
+
+def _openai_call(system, messages, tools, schema, max_tokens, model):
+    # Existing patch schemas contain open dictionaries. Preserve their semantics
+    # using JSON mode plus local schema validation instead of silently narrowing them.
+    if model not in PRICES:
+        raise ValueError(f"Add verified pricing for model {model} before using it")
+    kwargs = dict(model=model, instructions=system, input=_openai_input(messages),
+                  max_output_tokens=max_tokens, reasoning={"effort": EFFORT},
+                  store=False, include=["reasoning.encrypted_content"])
+    if tools:
+        kwargs["tools"] = [{"type": "function", "name": t["name"],
+                            "description": t["description"], "parameters": t["input_schema"],
+                            "strict": False} for t in tools]
+    if schema:
+        kwargs["text"] = {"format": {"type": "json_object"}}
+        kwargs["instructions"] += "\nReturn only JSON matching this schema:\n" + json.dumps(schema)
+    response = _openai().responses.create(**kwargs)
+    u = response.usage
+    cached = getattr(u.input_tokens_details, "cached_tokens", 0) or 0
+    usage = {"input_tokens": u.input_tokens - cached, "output_tokens": u.output_tokens,
+             "cache_read_tokens": cached, "cache_creation_tokens": 0, "llm_calls": 1}
+    usage["cost_usd"] = cost(model, usage)
+    raw = [{"type": "openai_response_item", "item": item.model_dump(exclude_none=True)}
+           for item in response.output]
+    refused = any(part.type == "refusal" for item in response.output if item.type == "message"
+                  for part in item.content)
+    stop = "refusal" if refused else ("end_turn" if response.status == "completed" else "incomplete")
+    calls = []
+    if stop == "end_turn":
+        specs = {t["name"]: t["input_schema"] for t in tools or []}
+        for item in response.output:
+            if item.type == "function_call":
+                if item.name not in specs:
+                    raise RuntimeError("Model requested an unknown tool; no tool was executed")
+                arguments = json.loads(item.arguments)
+                validate(arguments, specs[item.name])
+                calls.append({"id": item.call_id, "name": item.name, "input": arguments})
+        if calls:
+            stop = "tool_use"
+    return Reply(response.output_text, calls, raw, stop, usage)
 
 
 # --- SDK backend ---------------------------------------------------------------------------
@@ -164,17 +239,26 @@ def _cli_call(system: str, messages: list, tools: list | None, schema: dict | No
 def call(system: str, messages: list, tools: list | None = None, schema: dict | None = None,
          max_tokens: int = 16000, model: str | None = None, usage: Usage | None = None) -> Reply:
     """One model turn. With `schema`, reply.text is JSON matching it. With `tools`, read reply.tool_calls."""
-    fn = _sdk_call if backend() == "sdk" else _cli_call
+    providers = {"openai": _openai_call, "sdk": _sdk_call, "cli": _cli_call}
+    if backend() not in providers:
+        raise ValueError("SHADOW_BACKEND must be openai, sdk, or cli")
+    fn = providers[backend()]
     for attempt in range(3):
         reply = fn(system, messages, tools, schema, max_tokens, model or MODEL)
         if usage:
             usage.add(reply.usage)
+        if reply.stop_reason in {"incomplete", "failed"}:
+            raise RuntimeError("Model response was incomplete; no decision was accepted")
         if not schema:
             return reply
+        if reply.stop_reason == "refusal":
+            raise RuntimeError("Model refused the request; no decision was accepted")
         try:                       # callers json.loads(reply.text); make sure that cannot blow up on them
-            json.loads(reply.text)
+            data = json.loads(reply.text)
+            if backend() == "openai":
+                validate(data, schema)
             return reply
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, ValidationError):
             if attempt == 2:
                 raise RuntimeError(f"model did not return valid JSON for the requested schema (stop_reason={reply.stop_reason})")
     return reply

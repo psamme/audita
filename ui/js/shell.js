@@ -1,4 +1,4 @@
-/* Shared by every screen: stone toggle and the marble ground. */
+/* Shared navigation and the light marble background. */
 (function () {
   const root = document.documentElement;
   const canvas = document.getElementById("slab");
@@ -27,22 +27,14 @@
     }
   }).catch(() => {});
 
-  // Sam picked the white stone (Statuario, medium veining, whole page) as the look. Dark stays a toggle,
-  // but the OS theme no longer decides, so the demo opens the same way on any machine.
-  let stone = "statuario";
-  try { stone = localStorage.getItem("so-stone") || stone; } catch (e) {}
-
+  // Use the same light appearance on every device.
+  const stone = "statuario";
+  root.setAttribute("data-stone", stone);
+  root.setAttribute("data-theme", "light");
   function paint() {
     requestAnimationFrame(() => Marble.paint(canvas, { stone, veining: VEINING, seed: SEED }));
   }
-  function apply() {
-    root.setAttribute("data-stone", stone);
-    document.querySelectorAll("#stone button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === stone)));
-    try { localStorage.setItem("so-stone", stone); } catch (e) {}
-    paint();
-  }
-  document.querySelectorAll("#stone button").forEach((b) => b.addEventListener("click", () => { stone = b.dataset.v; apply(); }));
   let t = 0;
   addEventListener("resize", () => { clearTimeout(t); t = setTimeout(paint, 200); });
-  apply();
+  paint();
 })();

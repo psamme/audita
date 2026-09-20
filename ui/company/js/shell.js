@@ -21,22 +21,13 @@
       `<a href="${href}"${href === here ? ' aria-current="page"' : ""}>${label}</a>`).join("");
   }
 
-  let stone = "statuario";
-  try { stone = localStorage.getItem("so-stone") || stone; } catch (e) {}
-
+  const stone = "statuario";
+  root.setAttribute("data-stone", stone);
+  root.setAttribute("data-theme", "light");
   function paint() {
     requestAnimationFrame(() => Marble.paint(canvas, { stone, veining: VEINING, seed: SEED }));
   }
-  function apply() {
-    root.setAttribute("data-stone", stone);
-    document.querySelectorAll("#stone button").forEach((b) =>
-      b.setAttribute("aria-pressed", String(b.dataset.v === stone)));
-    try { localStorage.setItem("so-stone", stone); } catch (e) {}
-    paint();
-  }
-  document.querySelectorAll("#stone button").forEach((b) =>
-    b.addEventListener("click", () => { stone = b.dataset.v; apply(); }));
   let t = 0;
   addEventListener("resize", () => { clearTimeout(t); t = setTimeout(paint, 200); });
-  apply();
+  paint();
 })();

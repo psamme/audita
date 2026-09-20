@@ -127,11 +127,11 @@ The canonical judging sandbox is work/judging-submission. Earlier work is preser
 
 ## Where the AI is used
 
-Claude proposes company policies from historical evidence, investigates unresolved exceptions when enabled, and independently re-performs sampled cases in the audit feature. Deterministic code checks the policies and executes matching, preview, approval, reruns and undo.
+OpenAI proposes company policies from historical evidence, investigates unresolved exceptions when enabled, and independently re-performs sampled cases in the audit feature. Deterministic code checks the policies and executes matching, preview, approval, reruns and undo.
 
 Jev, through TypeSafe's jev-latest model, is an optional review assistant. Clicking Get suggestion sends the selected case, policy, source evidence, reviewer roles and optional note. It chooses a reviewer and next step from defined options. Low confidence falls back to manual triage. It cannot approve policies, bypass verification holds or move money. Confidence scores are not measured accuracy.
 
-Pitch line: “Claude learns the company's conventions. Jev suggests the reviewer and next action. Code enforces the policy, and a human controls approval.” The live approval demo needs no new model calls; its policies were learned beforehand. BenchRec uses zero LLM calls.
+Pitch line: “OpenAI learns the company's conventions. Jev suggests the reviewer and next action. Code enforces the policy, and a human controls approval.” The live approval demo needs no new model calls; its saved policies were learned beforehand using Claude, before the OpenAI switch. Do not claim those saved results are an OpenAI evaluation. BenchRec uses zero LLM calls.
 
 ## What to show only if asked
 
